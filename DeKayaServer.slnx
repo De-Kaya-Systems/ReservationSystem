@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/DeKayaServer.Application/DeKayaServer.Application.csproj" />
     <Project Path="src/DeKayaServer.Domain/DeKayaServer.Domain.csproj" />
   </Folder>
 </Solution>
