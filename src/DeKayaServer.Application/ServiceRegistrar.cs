@@ -5,7 +5,7 @@ using TS.MediatR;
 
 namespace DeKayaServer.Application;
 
-public static class RegistrarService
+public static class ServiceRegistrar
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
@@ -14,11 +14,11 @@ public static class RegistrarService
         //EN : This is where services related to the application layer are registered.Exemple: services.AddTransient<IYourService, YourServiceImplementation>();
         services.AddMediatR(cfg =>
         {
-            cfg.RegisterServicesFromAssembly(typeof(RegistrarService).Assembly);
+            cfg.RegisterServicesFromAssembly(typeof(ServiceRegistrar).Assembly);
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
             cfg.AddOpenBehavior(typeof(PermissionBehavior<,>));
         });
-        services.AddValidatorsFromAssembly(typeof(RegistrarService).Assembly);
+        services.AddValidatorsFromAssembly(typeof(ServiceRegistrar).Assembly);
 
         return services;
     }
