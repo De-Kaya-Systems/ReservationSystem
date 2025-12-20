@@ -10,6 +10,7 @@ public static class ServiceRegistrar
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddHttpContextAccessor();
         // Infrastructure Services Registration
         // Burasi altyapi katmanina ait servislerin kaydedildigi yerdir.Ornegin: services.AddTransient<IYourService, YourServiceImplementation>();
         //EN : This is where services related to the infrastructure layer are registered.Exemple: services.AddTransient<IYourService, YourServiceImplementation>();
