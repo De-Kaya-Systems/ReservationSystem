@@ -9,6 +9,7 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 /// <summary>
@@ -70,5 +71,6 @@ app.UseRateLimiter();
 app.UseExceptionHandler();
 app.MapControllers().RequireRateLimiting("fixed").RequireAuthorization();
 app.MapAuth();
+app.MapDefaultEndpoints();
 //await app.CreateFirstUser();
 app.Run();
