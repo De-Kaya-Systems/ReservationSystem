@@ -13,6 +13,10 @@ public static class ServiceRegistrar
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
+        services.ConfigureOptions<JwtSetupOptions>();
+        services.AddAuthentication().AddJwtBearer();
+        services.AddAuthorization();
+
         services.AddHttpContextAccessor();
         // Infrastructure Services Registration
         // Burasi altyapi katmanina ait servislerin kaydedildigi yerdir.Ornegin: services.AddTransient<IYourService, YourServiceImplementation>();
