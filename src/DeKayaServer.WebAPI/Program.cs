@@ -25,6 +25,13 @@ builder.Services.AddRateLimiter(cfr =>
         options.Window = TimeSpan.FromSeconds(1);
         options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
+    cfr.AddFixedWindowLimiter("login-fixed", options =>
+    {
+        options.PermitLimit = 5;
+        options.QueueLimit = 1;
+        options.Window = TimeSpan.FromMinutes(1);
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
 });
 
 builder.Services
@@ -40,6 +47,11 @@ builder.Services
 builder.Services.AddCors();
 builder.Services.AddOpenApi();
 builder.Services.AddExceptionHandler<ExceptionHandler>().AddProblemDetails();
+//Response compression kullaniyoruz cunku veriyi sıkıştırarak ağ üzerinden iletimini optimize eder.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
 
 var app = builder.Build();
 app.MapOpenApi();
@@ -51,10 +63,12 @@ app.UseCors(policy => policy
     .AllowAnyHeader()
     .SetPreflightMaxAge(TimeSpan.FromMinutes(10)));
 
-app.UseExceptionHandler();
+app.UseResponseCompression();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers().RequireRateLimiting("fixed");
+app.UseRateLimiter();
+app.UseExceptionHandler();
+app.MapControllers().RequireRateLimiting("fixed").RequireAuthorization();
 app.MapAuth();
 //await app.CreateFirstUser();
 app.Run();
