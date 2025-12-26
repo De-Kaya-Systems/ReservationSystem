@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Infrastructure.Context;
+using DeKayaServer.Infrastructure.Options;
 using GenericRepository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -11,6 +12,7 @@ public static class ServiceRegistrar
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
         services.AddHttpContextAccessor();
         // Infrastructure Services Registration
         // Burasi altyapi katmanina ait servislerin kaydedildigi yerdir.Ornegin: services.AddTransient<IYourService, YourServiceImplementation>();
