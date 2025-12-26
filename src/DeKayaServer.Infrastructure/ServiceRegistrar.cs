@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Infrastructure.Context;
+using GenericRepository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,9 @@ public static class ServiceRegistrar
         /// UsingRegistrationStrategy skips those that are already registered. AsImplementedInterfaces registers classes as the interfaces they implement.
         /// Class name and interface name match, this method automatically matches them.
         /// </summary>
+        /// 
+        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ApplicationDbContext>());
+
         services.Scan(action => action
         .FromAssemblies(typeof(ServiceRegistrar).Assembly)
         .AddClasses(publicOnly: false)
