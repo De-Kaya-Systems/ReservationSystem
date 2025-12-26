@@ -1,4 +1,6 @@
 ﻿using DeKayaServer.Domain.Abstractions;
+using DeKayaServer.Domain.Users;
+using GenericRepository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -8,11 +10,13 @@ namespace DeKayaServer.Infrastructure.Context;
 
 //Dışardan erişim gerekmiyor.Onun için internal yaptım.
 //EN: No external access is required. Therefore, I made it internal.
-internal sealed class ApplicationDbContext : DbContext
+internal sealed class ApplicationDbContext : DbContext, IUnitOfWork
 {
     public ApplicationDbContext(DbContextOptions options) : base(options)
     {
     }
+
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

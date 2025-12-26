@@ -51,4 +51,5 @@ app.UseCors(policy => policy
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers().RequireRateLimiting("fixed");
+//await app.CreateFirstUser();
 app.Run();
