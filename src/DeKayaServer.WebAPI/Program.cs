@@ -1,5 +1,7 @@
 ﻿using DeKayaServer.Application;
 using DeKayaServer.Infrastructure;
+using DeKayaServer.WebAPI;
+using DeKayaServer.WebAPI.Modules;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.RateLimiting;
 using Scalar.AspNetCore;
@@ -37,6 +39,7 @@ builder.Services
 
 builder.Services.AddCors();
 builder.Services.AddOpenApi();
+builder.Services.AddExceptionHandler<ExceptionHandler>().AddProblemDetails();
 
 var app = builder.Build();
 app.MapOpenApi();
@@ -48,8 +51,10 @@ app.UseCors(policy => policy
     .AllowAnyHeader()
     .SetPreflightMaxAge(TimeSpan.FromMinutes(10)));
 
+app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers().RequireRateLimiting("fixed");
+app.MapAuth();
 //await app.CreateFirstUser();
 app.Run();

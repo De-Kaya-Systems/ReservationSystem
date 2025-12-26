@@ -15,4 +15,8 @@
     <PackageReference Include="TS.Result" Version="10.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\DeKayaServer.Domain\DeKayaServer.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
