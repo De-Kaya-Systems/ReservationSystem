@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DeKayaServer.BlazorApp\DeKayaServer.BlazorApp.csproj" />
     <ProjectReference Include="..\DeKayaServer.WebAPI\DeKayaServer.WebAPI.csproj" />
   </ItemGroup>
 
