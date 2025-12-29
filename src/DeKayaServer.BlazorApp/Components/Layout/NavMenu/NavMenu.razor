@@ -1,0 +1,89 @@
+﻿@using DeKayaServer.BlazorApp.Components.Layout.NavMenu.Data
+@using DeKayaServer.BlazorApp.Components.Layout.NavMenu.Model
+
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            <img src="/images/dekaya.png" alt="De-Kaya Logo" />
+            <span class="brand-text">De-Kaya Systems</span>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle" @onclick="ToggleSidebar">
+            <i class="bi bi-list"></i>
+        </button>
+    </div>
+
+    <div class="sidebar-content">
+        <ul class="sidebar-menu">
+            @foreach (var nav in Navigations)
+            {
+                var hasChildren = nav.Children.Count > 0;
+                var isExpanded = ExpandedItems.Contains(nav.Title);
+
+                <li class="menu-item @(hasChildren && isExpanded ? "open" : "")">
+                    @if (!hasChildren)
+                    {
+                        <NavLink class="menu-link" href="@nav.Url" Match="NavLinkMatch.All">
+                            @if (!string.IsNullOrWhiteSpace(nav.Icon))
+                            {
+                                <i class="bi @nav.Icon"></i>
+                            }
+                            <span class="menu-text">@nav.Title</span>
+                        </NavLink>
+                    }
+                    else
+                    {
+                        <a href="#" class="menu-link" @onclick="() => ToggleSubMenu(nav.Title)" @onclick:preventDefault>
+                            @if (!string.IsNullOrWhiteSpace(nav.Icon))
+                            {
+                                <i class="bi @nav.Icon"></i>
+                            }
+                            <span class="menu-text">@nav.Title</span>
+                            <i class="bi bi-chevron-right menu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            @foreach (var child in nav.Children)
+                            {
+                                <li>
+                                    <NavLink href="@child.Url">@child.Title</NavLink>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </li>
+            }
+        </ul>
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <div class="user-avatar">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNBRW6kw4PvewS5EGHKY7nNsJiWvrbsVIzZA&s"
+                     alt="Admin">
+            </div>
+            <div class="user-details">
+                <span class="user-name">Admin User</span>
+                <span class="user-role">Süper Admin</span>
+            </div>
+        </div>
+    </div>
+</nav>
+
+@code 
+{
+    private IReadOnlyList<NavigationItem> Navigations => NavigationData.Items;
+
+    private HashSet<string> ExpandedItems = new();
+
+    private bool IsSideBarOpen = true;
+
+    private void ToggleSidebar()
+    {
+        IsSideBarOpen = !IsSideBarOpen;
+    }
+
+    private void ToggleSubMenu(string key)
+    {
+        if (!ExpandedItems.Add(key))
+            ExpandedItems.Remove(key);
+    }
+}

@@ -1,0 +1,26 @@
+﻿@page "/cooling-rooms"
+@using DeKayaServer.BlazorApp.Components.Shared
+
+<PageHeader
+    Icon="bi-snow"
+    Title="Seyyar Soğuk Odalar"
+    Description="Bu sayfa tüm seyyar soğuk odaları listeler."
+    ShowBackButton="true" />
+
+<p>Bu sayfa tüm seyyar soğuk odaları listeler.</p>
+
+<AuditComponent Audit="_audit" />
+
+@code {
+    private readonly DeKayaServer.BlazorApp.ViewModels.EntityViewModel _audit = new()
+    {
+        Id = "DEMO",
+        CreatedAt = DateTime.Now.AddDays(-7),
+        CreatedBy = "admin",
+        CreatedFullName = "Admin User",
+        UpdatedAt = DateTime.Now.AddHours(-3),
+        UpdatedBy = "admin",
+        UpdatedFullName = "Admin User"
+    };
+}
+

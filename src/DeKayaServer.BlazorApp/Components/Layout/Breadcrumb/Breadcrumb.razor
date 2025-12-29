@@ -1,0 +1,73 @@
+﻿@using DeKayaServer.BlazorApp.Interfaces
+@using DeKayaServer.BlazorApp.ViewModels
+@using Microsoft.AspNetCore.Components.Routing
+@inject NavigationManager Navigation
+@inject IBreadcrumbService BreadcrumbService
+@implements IDisposable
+
+<ol class="breadcrumb">
+    @foreach (var item in breadcrumbs)
+    {
+        <li @key="item.Url" class="breadcrumb-item @(item.IsActive ? "active" : "")" aria-current="@(item.IsActive ? "page" : null)">
+            @if (item.IsActive)
+            {
+                @if (!string.IsNullOrWhiteSpace(item.Icon))
+                {
+                    <i class="bi @item.Icon"></i>
+                }
+                @item.Title
+            }
+            else if (!string.IsNullOrWhiteSpace(item.Url))
+            {
+                <NavLink href="@item.Url" class="breadcrumb-link" Match="NavLinkMatch.Prefix">
+                    @if (!string.IsNullOrWhiteSpace(item.Icon))
+                    {
+                        <i class="bi @item.Icon"></i>
+                    }
+                    @item.Title
+                </NavLink>
+            }
+            else
+            {
+                @item.Title
+            }
+        </li>
+    }
+</ol>
+
+@code {
+    private List<BreadcrumbItemViewModel> breadcrumbs = new();
+    private string? _currentPath;
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        UpdateBreadcrumbs(Navigation.Uri);
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            UpdateBreadcrumbs(e.Location);
+        });
+    }
+
+    private void UpdateBreadcrumbs(string location)
+    {
+        var path = new Uri(location).AbsolutePath;
+        if (string.Equals(_currentPath, path, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _currentPath = path;
+        breadcrumbs = BreadcrumbService.GetBreadcrumbItems(path);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}
