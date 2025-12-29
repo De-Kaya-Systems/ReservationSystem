@@ -1,4 +1,7 @@
 using DeKayaServer.BlazorApp.Components;
+using DeKayaServer.BlazorApp.Http;
+using DeKayaServer.BlazorApp.Interfaces;
+using DeKayaServer.BlazorApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +9,15 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddRazorComponents();
+
+//All Services (DI)
+builder.Services.AddScoped<IBreadcrumbService, BreadcrumbService>();
+
+// Burada DekayaSystemUrlRewriteHandler'? HTTP istemcisine ekliyoruz ve böylece DeKayaSystem API'sine yap?lan istekler do?ru ?ekilde yönlendiriliyor.
+// EN: Here, we add DekayaSystemUrlRewriteHandler to the HTTP client, so that requests made to the DeKayaSystem API are routed correctly.
+builder.Services.AddTransient<DekayaSystemUrlRewriteHandler>();
+builder.Services.AddHttpClient("DeKayaSystem")
+    .AddHttpMessageHandler<DekayaSystemUrlRewriteHandler>();
 
 var app = builder.Build();
 

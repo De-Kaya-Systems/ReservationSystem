@@ -1,0 +1,45 @@
+﻿@using DeKayaServer.BlazorApp.ViewModels
+<!-- Kayıt Bilgileri Footer // EN: Registration Information Footer -->
+@if (Audit is not null)
+{
+    <div class="record-info-footer">
+        <div class="row g-3">
+            @if (Audit.UpdatedAt.HasValue)
+            {
+                <div class="col-md-6">
+                    <div class="record-info-card">
+                        <div class="record-info-icon">
+                            <i class="bi bi-pencil text-warning"></i>
+                        </div>
+                        <div class="record-info-content">
+                            <label class="record-info-label fw-bold">Last Update</label>
+                            <div class="record-info-details">
+                                <span class="record-info-user">@Audit.UpdatedFullName</span>
+                                <span class="record-info-date">@Audit.UpdatedAt.Value.ToString("dd MMMM yyyy HH:mm:ss")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="col-md-6">
+                <div class="record-info-card">
+                    <div class="record-info-icon">
+                        <i class="bi bi-plus-circle text-success"></i>
+                    </div>
+                    <div class="record-info-content">
+                        <label class="record-info-label fw-bold">Created</label>
+                        <div class="record-info-details">
+                            <span class="record-info-user">@Audit.CreatedFullName</span>
+                            <span class="record-info-date">@Audit.CreatedAt.ToString("dd MMMM yyyy HH:mm:ss")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public EntityViewModel? Audit { get; set; }
+}

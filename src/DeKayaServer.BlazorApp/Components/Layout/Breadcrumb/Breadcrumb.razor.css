@@ -1,0 +1,42 @@
+﻿/* Breadcrumb */
+.breadcrumb {
+    margin: 0;
+    background: none;
+    padding: 0;
+    font-size: 0.9rem;
+}
+
+::deep.breadcrumb-item {
+    display: flex;
+    align-items: center;
+}
+
+   ::deep .breadcrumb-item a {
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    ::deep .breadcrumb-item a:hover {
+        color: var(--primary-color);
+    }
+
+    ::deep .breadcrumb-item.active {
+        color: var(--text-dark);
+        font-weight: 500;
+    }
+
+    ::deep .breadcrumb-item + .breadcrumb-item::before {
+        content: "/";
+        color: var(--text-muted);
+        margin: 0 0.5rem;
+    }
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
