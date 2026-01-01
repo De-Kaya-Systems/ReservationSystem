@@ -1,0 +1,102 @@
+﻿@using DeKayaServer.BlazorApp.Constans
+@using DeKayaServer.BlazorApp.Helpers
+@using DeKayaServer.BlazorApp.Interfaces
+@using DeKayaServer.BlazorApp.Services
+
+@inject IAuthService AuthService
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<!-- Profile Dropdown -->
+<div class="profile-dropdown">
+    <button class="profile-btn" data-bs-toggle="dropdown">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNBRW6kw4PvewS5EGHKY7nNsJiWvrbsVIzZA&s"
+             alt="Profile" class="profile-avatar">
+        <span class="layout-profile-name">@fullName</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <ul class="dropdown-menu profile-menu">
+        <li class="profile-header">
+            <div class="profile-info">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNBRW6kw4PvewS5EGHKY7nNsJiWvrbsVIzZA&s"
+                     alt="Profile">
+                <div>
+                    <h6>@personelName</h6>
+                    <p>@email</p>
+                    <span class="role-badge">Süper Admin</span>
+                </div>
+            </div>
+        </li>
+        <li>
+            <hr class="dropdown-divider">
+        </li>
+        <li>
+            <a class="dropdown-item" href="#">
+                <i class="bi bi-person"></i>
+                Profilim
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item" href="#">
+                <i class="bi bi-gear"></i>
+                Hesap Ayarları
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item" href="#">
+                <i class="bi bi-bell"></i>
+                Bildirim Ayarları
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item" href="#">
+                <i class="bi bi-shield-check"></i>
+                Güvenlik
+            </a>
+        </li>
+        <li>
+            <hr class="dropdown-divider">
+        </li>
+        <li>
+            <a class="dropdown-item" href="#">
+                <i class="bi bi-question-circle"></i>
+                Yardım & Destek
+            </a>
+        </li>
+        <li>
+            <hr class="dropdown-divider">
+        </li>
+        <li>
+            <button type="button" class="dropdown-item text-danger" @onclick="ClickLogOutAsync">
+                <i class="bi bi-box-arrow-right"></i>
+                Çıkış Yap
+            </button>
+        </li>
+    </ul>
+</div>
+
+@code
+{
+    private string personelName = "personel Name";
+    private string fullName = "User(mail)";
+    private string email = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userClaims = state.User.ToUserClaims();
+
+        personelName = userClaims.PersonelName ?? "Personel Name";
+        fullName = userClaims.FullName ?? "User";
+        email = userClaims.Email ?? "";
+    }
+
+    private async Task ClickLogOutAsync()
+    {
+        await AuthService.LogOutAsync();
+        if (AuthStateProvider is TokenAuthenticationStateProvider tokenProvider)
+            await tokenProvider.MarkUserAsLoggedOutAsync();
+
+        Nav.NavigateTo(EndpointConstans.LoginPage, forceLoad: true);
+    }
+}

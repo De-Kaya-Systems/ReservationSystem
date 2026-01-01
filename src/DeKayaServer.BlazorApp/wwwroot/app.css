@@ -5,7 +5,7 @@
     --primary-color: #007fff;
     --primary-dark: #004a94;
     --secondary-color: #2c3e50;
-    --sidebar-width: 280px;
+    --sidebar-width: 300px;
     --navbar-height: 70px;
     --sidebar-collapsed-width: 70px;
     --text-dark: #2c3e50;
@@ -258,7 +258,7 @@ body {
 }
 
 .profile-menu {
-    width: 280px;
+    width: 300px;
     border: none;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     border-radius: 12px;

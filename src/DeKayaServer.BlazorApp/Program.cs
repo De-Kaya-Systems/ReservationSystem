@@ -2,16 +2,28 @@ using DeKayaServer.BlazorApp.Components;
 using DeKayaServer.BlazorApp.Http;
 using DeKayaServer.BlazorApp.Interfaces;
 using DeKayaServer.BlazorApp.Services;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Add services to the container.
-builder.Services.AddRazorComponents();
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+builder.Services.AddScoped<ProtectedLocalStorage>();
+builder.Services.AddScoped<IAccessTokenStoreService, AccessTokenStoreService>();
+builder.Services.AddScoped<AuthenticationStateProvider, TokenAuthenticationStateProvider>();
+builder.Services.AddAuthorizationCore();
 
 //All Services (DI)
 builder.Services.AddScoped<IBreadcrumbService, BreadcrumbService>();
+builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!);
+});
+
 
 // Burada DekayaSystemUrlRewriteHandler'? HTTP istemcisine ekliyoruz ve böylece DeKayaSystem API'sine yap?lan istekler do?ru ?ekilde yönlendiriliyor.
 // EN: Here, we add DekayaSystemUrlRewriteHandler to the HTTP client, so that requests made to the DeKayaSystem API are routed correctly.
@@ -34,8 +46,10 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();
+app.UseStaticFiles();
 
 app.MapStaticAssets();
-app.MapRazorComponents<App>();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
 app.Run();
