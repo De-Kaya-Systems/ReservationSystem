@@ -31,13 +31,13 @@ public sealed class LoginCommandHandler(
 
         if (user is null)
         {
-            return Result<string>.Failure("Invalid username or email.");
+            return Result<string>.Failure("Invalid username or email. / Kullanıcı adı veya şifre hatalı!");
         }
 
         var checkPassword = user.VerifyPasswordHash(request.Password);
         if (!checkPassword)
         {
-            return Result<string>.Failure("Invalid password.");
+            return Result<string>.Failure("Invalid password / Şifre Hatalı!");
         }
 
         var token = jwtProvider.CreateToken(user);

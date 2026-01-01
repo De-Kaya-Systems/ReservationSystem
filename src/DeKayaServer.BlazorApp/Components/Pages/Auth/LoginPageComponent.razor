@@ -1,12 +1,22 @@
-﻿@layout LoginLayout
+﻿@page "/login"
+@layout LoginLayout
 
-@page "/login"
+@using DeKayaServer.BlazorApp.Constans
+@using DeKayaServer.BlazorApp.Interfaces
+@using DeKayaServer.BlazorApp.Services
+@using DeKayaServer.BlazorApp.ViewModels
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IAuthService AuthService;
+@inject NavigationManager NavigationManager;
+@inject AuthenticationStateProvider AuthStateProvider;
+@attribute [AllowAnonymous]
+
+<PageTitle>De-Kaya Systems | Login</PageTitle>
 
 <div class="login-part">
-    <!-- Admin Login -->
     <div class="admin-login-wrapper">
         <div class="admin-login-container">
-            <!-- Left Side - Login Form -->
             <div class="admin-login-form">
                 <div class="login-header">
                     <div class="admin-brand">
@@ -15,131 +25,138 @@
                     </div>
                 </div>
 
-                <form class="login-form">
-                    <!-- Email Input -->
+                @if (errors.Count > 0)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Hata!</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach (var error in errors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                        <button type="button" class="btn-close" @onclick="ClearErrors"></button>
+                    </div>
+                }
+
+                <EditForm class="login-form"
+                          Model="@loginViewModel"
+                          OnValidSubmit="@HandleLoginAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger mb-3" />
+
                     <div class="form-group">
-                        <label for="adminEmail" class="form-label">E-posta Adresi</label>
+                        <label for="adminEmail" class="form-label">E-posta Adresi veya Kullanici Adi</label>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="bi bi-person"></i>
                             </span>
-                            <input type="email" class="form-control" id="adminEmail" placeholder="mail@de-kaya.com" required>
+                            <InputText @bind-Value="loginViewModel.EmailOrUserName"
+                                       class="form-control"
+                                       id="adminEmail"
+                                       placeholder="mail@de-kaya.com"
+                                       autocomplete="username"
+                                       disabled="@isSubmitting" />
                         </div>
+                        <ValidationMessage For="@(() => loginViewModel.EmailOrUserName)" class="text-danger small" />
                     </div>
 
-                    <!-- Password Input -->
                     <div class="form-group">
-                        <label for="adminPassword" class="form-label">Şifre</label>
+                        <label for="adminPassword" class="form-label">Sifre</label>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="bi bi-lock"></i>
                             </span>
-                            <input type="password" class="form-control" id="adminPassword" placeholder="Şifrenizi girin"
-                                   required>
-                            <button type="button" class="input-group-text password-toggle" data-target="adminPassword">
-                                <i class="bi bi-eye"></i>
+                            <InputText @bind-Value="loginViewModel.Password"
+                                       type="@(showPassword ? "text" : "password")"
+                                       class="form-control"
+                                       id="adminPassword"
+                                       placeholder="Sifrenizi girin"
+                                       autocomplete="current-password"
+                                       disabled="@isSubmitting" />
+                            <button type="button"
+                                    class="input-group-text password-toggle"
+                                    @onclick="TogglePasswordVisibility"
+                                    disabled="@isSubmitting">
+                                <i class="bi @(showPassword ? "bi-eye-slash" : "bi-eye")"></i>
                             </button>
                         </div>
+                        <ValidationMessage For="@(() => loginViewModel.Password)" class="text-danger small" />
                     </div>
 
-                    <!-- Login Options -->
                     <div class="login-options">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <InputCheckbox @bind-Value="rememberMe" class="form-check-input" id="rememberMe" disabled="@isSubmitting" />
                             <label class="form-check-label" for="rememberMe">
-                                Beni hatırla
+                                Beni hatirla
                             </label>
                         </div>
                         <a href="#" class="forgot-password" data-bs-toggle="modal"
                            data-bs-target="#forgotPasswordModal">
-                            Şifremi unuttum
+                            Sifremi unuttum
                         </a>
                     </div>
 
-                    <!-- Login Button -->
-                    <button type="submit" class="btn btn-admin-primary w-100">
-                        <i class="bi bi-shield-lock me-2"></i>
-                        Personel Girişi
+                    <button type="submit" class="btn btn-admin-primary w-100" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Giris yapiliyor...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-shield-lock me-2"></i>
+                            <span>Personel Girisi</span>
+                        }
                     </button>
+                </EditForm>
 
-                    <!-- Two Factor -->
-                    <div class="two-factor-section d-none">
-                        <div class="two-factor-header">
-                            <i class="bi bi-shield-check text-success"></i>
-                            <h6>İki Faktörlü Doğrulama</h6>
-                            <p>Telefonunuza gönderilen 6 haneli kodu girin</p>
-                        </div>
-                        <div class="verification-code">
-                            <input type="text" class="code-input" maxlength="1">
-                            <input type="text" class="code-input" maxlength="1">
-                            <input type="text" class="code-input" maxlength="1">
-                            <input type="text" class="code-input" maxlength="1">
-                            <input type="text" class="code-input" maxlength="1">
-                            <input type="text" class="code-input" maxlength="1">
-                        </div>
-                        <div class="verification-actions">
-                            <button type="button" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i>Geri
-                            </button>
-                            <button type="button" class="btn btn-admin-primary">
-                                <i class="bi bi-check-circle me-1"></i>Doğrula
-                            </button>
-                        </div>
-                        <div class="resend-section">
-                            <p>Kod gelmedi mi?</p>
-                            <button type="button" class="btn btn-link">
-                                Yeniden gönder <span class="countdown">(30s)</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-
-                <!-- Footer Links -->
                 <div class="login-footer">
-                    <p class="copyright">© 2026 De-Kaya Soğutma Sistemleri. Tüm hakları saklıdır.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Forgot Password Modal -->
-    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel"
-         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="forgotPasswordModalLabel">
-                        <i class="bi bi-key text-primary me-2"></i>
-                        Şifre Sıfırlama
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="reset-form">
-                        <div class="reset-header">
-                            <i class="bi bi-envelope-check text-primary"></i>
-                            <h6>E-posta Adresinizi Girin</h6>
-                            <p class="text-muted">Şifre sıfırlama bağlantısını e-posta adresinize göndereceğiz</p>
-                        </div>
-                        <form>
-                            <div class="form-group">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="bi bi-envelope"></i>
-                                    </span>
-                                    <input type="email" class="form-control" placeholder="mail@de-kaya.com" required>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="button" class="btn btn-primary">
-                        <i class="bi bi-send me-1"></i>Sıfırlama Bağlantısı Gönder
-                    </button>
+                    <p class="copyright">© @DateTime.Now.Year De-Kaya Sogutma Sistemleri. Tüm haklari saklidir.</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    private LoginViewModel loginViewModel = new();
+    private List<string> errors = new();
+    private bool isSubmitting;
+    private bool showPassword;
+    private bool rememberMe;
+
+    private async Task HandleLoginAsync()
+    {
+        isSubmitting = true;
+        ClearErrors();
+
+        var result = await AuthService.LoginAsync(new(loginViewModel.EmailOrUserName, loginViewModel.Password));
+
+        if (!result.IsSuccessful)
+        {
+            errors.AddRange(result.ErrorMessages ?? []);
+            isSubmitting = false;
+            return;
+        }
+
+        if (AuthStateProvider is TokenAuthenticationStateProvider tokenProvider && !string.IsNullOrWhiteSpace(result.Data))
+        {
+            await tokenProvider.MarkUserAsAuthenticatedAsync(result.Data);
+        }
+
+        var targetUrl = string.IsNullOrWhiteSpace(ReturnUrl)
+            ? EndpointConstans.Dashboard
+            : "/" + ReturnUrl.TrimStart('/');
+
+        NavigationManager.NavigateTo(targetUrl, forceLoad: true);
+    }
+
+    private void ClearErrors() => errors.Clear();
+
+    private void TogglePasswordVisibility() => showPassword = !showPassword;
+}

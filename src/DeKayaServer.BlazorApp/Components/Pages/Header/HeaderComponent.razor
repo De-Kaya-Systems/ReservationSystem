@@ -1,0 +1,22 @@
+﻿@using DeKayaServer.BlazorApp.Components.Layout.Breadcrumb
+
+<header class="navbar-custom">
+    <div class="navbar-content">
+        <!-- Left Side - Breadcrumb -->
+        <div class="navbar-left">
+            <button class="mobile-sidebar-toggle d-lg-none">
+                <i class="bi bi-list"></i>
+            </button>
+            <nav aria-label="breadcrumb">
+                <Breadcrumb />
+            </nav>
+        </div>
+
+        <!-- Right Side - Profile & Notifications -->
+        <div class="navbar-right">
+            <NotificationDropdownComponent />
+
+            <ProfileDropdownComponent />
+        </div>
+    </div>
+</header>
