@@ -1,9 +1,6 @@
 ﻿@using DeKayaServer.BlazorApp.Components.Layout.NavMenu.Data
 @using DeKayaServer.BlazorApp.Components.Layout.NavMenu.Model
-@using DeKayaServer.BlazorApp.Helpers
-@using Microsoft.AspNetCore.Components.Authorization
-
-@inject AuthenticationStateProvider AuthStateProvider
+@inherits UserContextComponent
 
 <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -65,8 +62,8 @@
                      alt="Admin">
             </div>
             <div class="user-details">
-                <span class="user-name">@personelName</span>
-                <small>@email</small>
+                <span class="user-name">@CurrentUser!.PersonelName</span>
+                <small>@CurrentUser.Email</small>
                 <span class="user-role">Süper Admin</span>
             </div>
         </div>
@@ -80,20 +77,6 @@
     private HashSet<string> ExpandedItems = new();
 
     private bool IsSideBarOpen = true;
-
-    private string personelName = "personel Name";
-    private string fullName = "User(mail)";
-    private string email = "";
-
-    protected override async Task OnInitializedAsync()
-    {
-        var state = await AuthStateProvider.GetAuthenticationStateAsync();
-        var userClaims = state.User.ToUserClaims();
-
-        personelName = userClaims.PersonelName ?? "Personel Name";
-        fullName = userClaims.FullName ?? "User";
-        email = userClaims.Email ?? "";
-    }
 
     private void ToggleSidebar()
     {

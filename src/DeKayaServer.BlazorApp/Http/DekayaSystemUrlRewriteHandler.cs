@@ -1,9 +1,9 @@
 ﻿namespace DeKayaServer.BlazorApp.Http;
 
-public sealed class DekayaSystemUrlRewriteHandler : DelegatingHandler
+public sealed class DekayaSystemUrlRewriteHandler(IConfiguration config) : DelegatingHandler
 {
     private const string Prefix = "/dekayasystem/";
-    private static readonly Uri ApiBaseUri = new("https://localhost:7040/", UriKind.Absolute);
+    private readonly Uri ApiBaseUri = new(config["DeKayaSystemApi:BaseUrl"]!);
 
     protected override Task<HttpResponseMessage> SendAsync(
          HttpRequestMessage request,

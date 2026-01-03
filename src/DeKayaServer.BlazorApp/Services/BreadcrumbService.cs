@@ -7,6 +7,33 @@ namespace DeKayaServer.BlazorApp.Services;
 
 public class BreadcrumbService : IBreadcrumbService
 {
+    private static Dictionary<string, NavigationItem> _cache;
+    static BreadcrumbService()
+    {
+        _cache = FlattenNavigationItems(NavigationData.Items)
+            .Where(x => !string.IsNullOrEmpty(x.Url))
+            .ToDictionary(x => x.Url!, x => x);
+    }
+
+    // Add this private helper method to flatten navigation items
+    private static IEnumerable<NavigationItem> FlattenNavigationItems(IEnumerable<NavigationItem> items)
+    {
+        foreach (var item in items)
+        {
+            if (!string.IsNullOrEmpty(item.Url))
+            {
+                yield return item;
+            }
+            if (item.Children != null && item.Children.Count > 0)
+            {
+                foreach (var child in FlattenNavigationItems(item.Children))
+                {
+                    yield return child;
+                }
+            }
+        }
+    }
+
     public List<BreadcrumbItemViewModel> GetBreadcrumbItems(string currentPath)
     {
         var breadcrumbs = new List<BreadcrumbItemViewModel>
@@ -19,9 +46,7 @@ public class BreadcrumbService : IBreadcrumbService
             return breadcrumbs;
         }
 
-        var menuItem = FindMenuItem(NavigationData.Items, currentPath);
-
-        if (menuItem != null)
+        if (_cache.TryGetValue(currentPath, out var menuItem))
         {
             BuildBreadcrumbPath(menuItem, breadcrumbs, NavigationData.Items);
         }
@@ -30,26 +55,6 @@ public class BreadcrumbService : IBreadcrumbService
             BuildFromPath(currentPath, breadcrumbs);
         }
         return breadcrumbs;
-    }
-
-    private NavigationItem? FindMenuItem(List<NavigationItem> items, string path)
-    {
-        foreach (var item in items)
-        {
-            if (item.Url == path)
-            {
-                return item;
-            }
-            if (item.Children.Count > 0)
-            {
-                var found = FindMenuItem(item.Children, path);
-                if (found != null)
-                {
-                    return found;
-                }
-            }
-        }
-        return null;
     }
 
     private void BuildBreadcrumbPath(NavigationItem current, List<BreadcrumbItemViewModel> breadcrumbs, List<NavigationItem> allItems)

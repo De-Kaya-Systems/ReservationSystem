@@ -1,4 +1,6 @@
-﻿@using DeKayaServer.BlazorApp.Components.Layout.NavMenu
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
+@using DeKayaServer.BlazorApp.Components.Layout.NavMenu
 @using DeKayaServer.BlazorApp.Components.Pages.Header
 @using DeKayaServer.BlazorApp.Constans
 @using DeKayaServer.BlazorApp.Interfaces
@@ -44,21 +46,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var token = await TokenStore.GetAsync();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
-        if (string.IsNullOrWhiteSpace(token))
+        if (!authState.User.Identity?.IsAuthenticated ?? false)
         {
-            await TokenStore.ClearAsync();
-
-            var current = Nav.ToBaseRelativePath(Nav.Uri);
-            if (!current.StartsWith(EndpointConstans.LoginPage, StringComparison.OrdinalIgnoreCase))
-            {
-                var returnUrl = Uri.EscapeDataString(current);
-                Nav.NavigateTo($"{EndpointConstans.LoginPage}{returnUrl}", forceLoad: true);
-            }
+            var returnUrl = Uri.EscapeDataString(Nav.ToBaseRelativePath(Nav.Uri));
+            Nav.NavigateTo($"{EndpointConstans.LoginPage}{returnUrl}", forceLoad: true);
             return;
         }
-
         ready = true;
     }
 }

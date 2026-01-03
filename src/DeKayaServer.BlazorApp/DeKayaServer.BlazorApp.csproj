@@ -16,4 +16,8 @@
     <ProjectReference Include="..\DeKayaServer.ServiceDefaults\DeKayaServer.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Components\Common\UserContext\" />
+  </ItemGroup>
+
 </Project>
