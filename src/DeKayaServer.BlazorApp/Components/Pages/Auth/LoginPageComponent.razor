@@ -119,26 +119,30 @@
             return;
 
         isSubmitting = true;
+        StateHasChanged();
 
         try
         {
-            var result = await AuthService.LoginAsync(
-                new(loginViewModel.EmailOrUserName, loginViewModel.Password));
+            await AuthService.LoginAsync(
+                new(loginViewModel.EmailOrUserName, loginViewModel.Password),
+                onSuccess: async (token) =>
+                {
+                    if (AuthStateProvider is TokenAuthenticationStateProvider tokenProvider
+                        && !string.IsNullOrWhiteSpace(token))
+                    {
+                        await tokenProvider.MarkUserAsAuthenticatedAsync(token);
+                    }
 
-            if (!result.IsSuccessful)
-                return;
+                    var targetUrl = string.IsNullOrWhiteSpace(ReturnUrl)
+                        ? EndpointConstans.Dashboard
+                        : "/" + ReturnUrl.TrimStart('/');
 
-            if (AuthStateProvider is TokenAuthenticationStateProvider tokenProvider
-                && !string.IsNullOrWhiteSpace(result.Data))
-            {
-                await tokenProvider.MarkUserAsAuthenticatedAsync(result.Data);
-            }
-
-            var targetUrl = string.IsNullOrWhiteSpace(ReturnUrl)
-                ? EndpointConstans.Dashboard
-                : "/" + ReturnUrl.TrimStart('/');
-
-            NavigationManager.NavigateTo(targetUrl);
+                    NavigationManager.NavigateTo(targetUrl);
+                },
+                onError: (result) =>
+                {
+                }
+            );
         }
         finally
         {
