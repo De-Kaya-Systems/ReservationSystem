@@ -5,24 +5,12 @@ using DeKayaServer.BlazorApp.Models;
 namespace DeKayaServer.BlazorApp.Services;
 
 public sealed class AuthService(
-    HttpClient httpClient,
+    IApiClient apiClient,
     IAccessTokenStoreService localStorage
-    ) : IAuthService
+) : IAuthService
 {
-    public async Task<Result<string>> LoginAsync(LoginRequest loginRequest, CancellationToken cancellationToken = default)
-    {
-        var httpResponse = await httpClient.PostAsJsonAsync(EndpointConstans.LoginEndpoint, loginRequest, cancellationToken);
-
-        var result = await httpResponse.Content.ReadFromJsonAsync<Result<string>>(cancellationToken: cancellationToken)
-                     ?? new Result<string>
-                     {
-                         IsSuccessful = false,
-                         StatusCode = (int)httpResponse.StatusCode,
-                         ErrorMessages = ["Empty response from server."]
-                     };
-
-        return result;
-    }
+    public Task<Result<string>> LoginAsync(LoginRequest loginRequest, CancellationToken cancellationToken = default)
+        => apiClient.PostAsync<LoginRequest, string>(EndpointConstans.LoginEndpoint, loginRequest, cancellationToken);
 
     public async Task<bool> LogOutAsync()
     {

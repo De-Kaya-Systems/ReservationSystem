@@ -1,0 +1,32 @@
+﻿@using DeKayaServer.BlazorApp.Services
+@using DeKayaServer.BlazorApp.Components.Common.Toast
+
+<div class="toast-container" aria-live="polite" aria-atomic="true">
+    @foreach (var toast in activeToasts)
+    {
+        <div class="toast-item @GetToastClasses(toast.ToastType) @(toast.IsVisible ? "show" : "hide")"
+             role="status"
+             @key="toast.Id">
+
+            <div class="toast-content">
+                @if (!string.IsNullOrWhiteSpace(toast.Title))
+                {
+                    <div class="toast-title">@toast.Title</div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(toast.Message))
+                {
+                    <div class="toast-message">@toast.Message</div>
+                }
+            </div>
+
+            <button type="button"
+                    class="toast-close @GetCloseButtonClasses(toast.ToastType)"
+                    aria-label="Close toast"
+                    title="Close"
+                    @onclick="() => HideToast(toast)">
+                ✕
+            </button>
+        </div>
+    }
+</div>

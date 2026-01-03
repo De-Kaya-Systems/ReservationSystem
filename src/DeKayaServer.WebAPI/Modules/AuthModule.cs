@@ -15,8 +15,9 @@ public static class AuthModule
                 var result = await sender.Send(request, cancellationToken);
                 return result.IsSuccessful
                 ? Results.Ok(result)
-                : Results.InternalServerError(result);
-            }).
-            Produces<Result<string>>();
+                : Results.Json(result, statusCode: StatusCodes.Status401Unauthorized);
+            })
+            .Produces<Result<string>>(StatusCodes.Status200OK)
+            .Produces<Result<string>>(StatusCodes.Status401Unauthorized);
     }
 }
