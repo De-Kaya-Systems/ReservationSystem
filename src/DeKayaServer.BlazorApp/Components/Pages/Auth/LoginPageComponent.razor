@@ -10,6 +10,7 @@
 @inject IAuthService AuthService;
 @inject NavigationManager NavigationManager;
 @inject AuthenticationStateProvider AuthStateProvider;
+@inject ToastService ToastService
 @attribute [AllowAnonymous]
 
 <PageTitle>De-Kaya Systems | Login</PageTitle>
@@ -101,15 +102,77 @@
                 </div>
             </div>
         </div>
+        <!-- Forgot Password Modal -->
+        <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="forgotPasswordModalLabel">
+                            <i class="bi bi-key text-primary me-2"></i>
+                            Şifre Sıfırlama
+                        </h5>
+                        <button
+                            type="button" 
+                            class="btn-close" 
+                            data-bs-dismiss="modal" 
+                            disabled="@isForgotPasswordSubmitting"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="reset-form">
+                            <div class="reset-header">
+                                <i class="bi bi-envelope-check text-primary"></i>
+                                <h6>E-posta Adresinizi Girin</h6>
+                            </div>
+                            <EditForm Model="@forgotPasswordViewModel" OnValidSubmit="@HandleForgotPassword">
+                                <DataAnnotationsValidator />
+                                <div class="form-group">
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="bi bi-envelope"></i>
+                                        </span>
+                                        <InputText 
+                                            @bind-Value="forgotPasswordViewModel.Email" 
+                                            type="email" 
+                                            class="form-control" 
+                                            placeholder="admin@de-kaya.com"
+                                            disabled="@isForgotPasswordSubmitting" />
+                                    </div>
+                                    <ValidationMessage For="@(() => forgotPasswordViewModel.Email)" class="text-danger small pt-1" />
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" disabled="@isForgotPasswordSubmitting">İptal</button>
+                                    <button type="submit" class="btn btn-primary" disabled="@isForgotPasswordSubmitting">
+                                        @if (isForgotPasswordSubmitting)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                            <span>Gönderiliyor...</span>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-send me-1"></i>
+                                            <span>Sıfırlama Bağlantısı Gönder</span>
+                                        }
+                                    </button>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
 
 @code {
     [SupplyParameterFromQuery(Name = "returnUrl")]
     public string? ReturnUrl { get; set; }
 
+    private ForgotPasswordViewModel forgotPasswordViewModel = new();
     private LoginViewModel loginViewModel = new();
     private bool isSubmitting;
+    private bool isForgotPasswordSubmitting;
     private bool showPassword;
     private bool rememberMe;
 
@@ -147,6 +210,35 @@
         finally
         {
             isSubmitting = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task HandleForgotPassword()
+    {
+        if (isForgotPasswordSubmitting || string.IsNullOrWhiteSpace(forgotPasswordViewModel.Email))
+            return;
+
+        isForgotPasswordSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            await AuthService.ForgotPasswordAsync(
+                 forgotPasswordViewModel.Email,
+                 onSuccess: (message) =>
+                 {
+                     ToastService.ShowSuccess(message);
+                     forgotPasswordViewModel = new(); 
+                 },
+                onError: (result) =>
+                {
+                }
+             );        
+        }
+        finally
+        {
+            isForgotPasswordSubmitting = false;
             await InvokeAsync(StateHasChanged);
         }
     }

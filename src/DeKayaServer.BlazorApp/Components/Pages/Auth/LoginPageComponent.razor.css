@@ -64,15 +64,6 @@
         width: 50px;
     }
 
-.admin-label {
-    background: var(--admin-accent);
-    color: var(--admin-white);
-    padding: 0.25rem 0.75rem;
-    border-radius: 15px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
 .login-header h2 {
     font-size: 1.75rem;
     font-weight: 600;
@@ -131,6 +122,7 @@
     .form-control:focus {
         box-shadow: none;
         border-color: var(--admin-accent);
+        outline: none;
     }
 
     .form-control::placeholder {
@@ -200,6 +192,11 @@
         color: var(--admin-white);
     }
 
+    .btn-admin-primary:focus {
+        outline: 2px solid var(--admin-accent);
+        outline-offset: 2px;
+    }
+
 .copyright {
     text-align: center;
     color: var(--admin-text-muted);
@@ -238,7 +235,6 @@
         margin-bottom: 0.5rem;
     }
 
-
 /* ===== RESPONSIVE DESIGN ===== */
 
 /* Tablet */
@@ -248,17 +244,8 @@
         max-width: 500px;
     }
 
-    .admin-login-info {
-        order: -1;
-        padding: 2rem;
-    }
-
     .admin-login-form {
         padding: 2rem;
-    }
-
-    .info-header {
-        margin-bottom: 2rem;
     }
 }
 
@@ -273,8 +260,7 @@
         min-height: auto;
     }
 
-    .admin-login-form,
-    .admin-login-info {
+    .admin-login-form {
         padding: 1.5rem;
     }
 
@@ -290,41 +276,16 @@
         font-size: 1.5rem;
     }
 
-    .security-badge {
-        width: 60px;
-        height: 60px;
-    }
-
-        .security-badge i {
-            font-size: 1.5rem;
-        }
-
-    .info-header h3 {
-        font-size: 1.5rem;
-    }
-
     .login-options {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
     }
-
-    .verification-actions {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-        .verification-actions .btn {
-            width: 100%;
-        }
-
 }
 
 /* Small Mobile */
 @media (max-width: 576px) {
-
-    .admin-login-form,
-    .admin-login-info {
+    .admin-login-form {
         padding: 1rem;
     }
 
@@ -339,16 +300,6 @@
 
     .login-header h2 {
         font-size: 1.3rem;
-    }
-
-    .verification-code {
-        gap: 0.25rem;
-    }
-
-    .code-input {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
     }
 }
 
@@ -365,114 +316,8 @@
     }
 }
 
-@keyframes slideInRight {
-    from {
-        transform: translateX(30px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
 .admin-login-form {
     animation: slideInUp 0.6s ease-out;
-}
-
-.admin-login-info {
-    animation: slideInRight 0.6s ease-out 0.2s both;
-}
-
-/* Loading State */
-.btn-admin-primary.loading {
-    position: relative;
-    color: transparent !important;
-}
-
-    .btn-admin-primary.loading::after {
-        content: "";
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        top: 50%;
-        left: 50%;
-        margin-left: -10px;
-        margin-top: -10px;
-        border: 2px solid transparent;
-        border-top-color: var(--admin-white);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-/* Focus States */
-.form-control:focus,
-.code-input:focus {
-    outline: none;
-}
-
-.btn-admin-primary:focus {
-    outline: 2px solid var(--admin-accent);
-    outline-offset: 2px;
-}
-
-/* Error States */
-.form-control.is-invalid {
-    border-color: var(--admin-danger);
-}
-
-.code-input.is-invalid {
-    border-color: var(--admin-danger);
-    background-color: #ffeaea;
-}
-
-.invalid-feedback {
-    color: var(--admin-danger);
-    font-size: 0.8rem;
-    margin-top: 0.25rem;
-}
-
-/* Success States */
-.form-control.is-valid {
-    border-color: var(--admin-success);
-}
-
-.code-input.is-valid {
-    border-color: var(--admin-success);
-    background-color: #eafaf1;
-}
-
-/* Two Factor Animation */
-.two-factor-section.show {
-    animation: slideInUp 0.4s ease-out;
-}
-
-/* Status Indicator Colors */
-.bg-success {
-    background-color: var(--admin-success) !important;
-}
-
-.bg-warning {
-    background-color: var(--admin-warning) !important;
-}
-
-.bg-danger {
-    background-color: var(--admin-danger) !important;
-}
-
-.bg-info {
-    background-color: var(--admin-info) !important;
 }
 
 /* High Contrast Mode Support */
