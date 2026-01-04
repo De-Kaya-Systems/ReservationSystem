@@ -13,8 +13,19 @@
 
 @if (!ready)
 {
-    <div class="spinner-border text-primary m-5" role="status">
-        <span class="sr-only"></span>
+    <div class="loading-overlay">
+        <div class="loading-container">
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+            </div>
+            <div class="loading-content">
+                <img src="/images/dekaya.png" alt="De-Kaya Logo" class="loading-logo" />
+                <h3 class="loading-text">De-Kaya Systems</h3>
+                <p class="loading-subtitle">Yükleniyor...</p>
+            </div>
+        </div>
     </div>
 }
 else

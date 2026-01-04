@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Application;
+using DeKayaServer.Application.Services;
 using DeKayaServer.Infrastructure;
 using DeKayaServer.WebAPI;
 using DeKayaServer.WebAPI.Modules;
@@ -31,6 +32,12 @@ builder.Services.AddRateLimiter(cfr =>
         options.PermitLimit = 5;
         options.QueueLimit = 1;
         options.Window = TimeSpan.FromMinutes(1);
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+    cfr.AddFixedWindowLimiter("forgot-password-fixed", options =>
+    {
+        options.PermitLimit = 1;
+        options.Window = TimeSpan.FromMinutes(3);
         options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
 });
@@ -71,6 +78,11 @@ app.UseRateLimiter();
 app.UseExceptionHandler();
 app.MapControllers().RequireRateLimiting("fixed").RequireAuthorization();
 app.MapAuth();
+app.MapGet("/", async (IMailService mailService) =>
+{
+    await mailService.SendAsync("kerdem@live.com", "Test", "<h1><b>This is a test mail</b></h1>", default);
+    return Results.Ok();
+});
 app.MapDefaultEndpoints();
 //await app.CreateFirstUser();
 app.Run();
