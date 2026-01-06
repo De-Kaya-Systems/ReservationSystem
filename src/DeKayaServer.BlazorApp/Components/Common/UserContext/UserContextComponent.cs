@@ -2,6 +2,8 @@ using DeKayaServer.BlazorApp.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 
+namespace DeKayaServer.BlazorApp.Components.Common.UserContext;
+
 public class UserContextComponent : ComponentBase
 {
     [Inject] protected AuthenticationStateProvider? AuthStateProvider { get; set; }

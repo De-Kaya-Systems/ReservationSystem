@@ -2,6 +2,8 @@
 using DeKayaServer.BlazorApp.Services;
 using System.Text.Json;
 
+namespace DeKayaServer.BlazorApp.Http;
+
 public interface IApiClient
 {
     Task<Result<T>> GetAsync<T>(string url, CancellationToken ct = default);

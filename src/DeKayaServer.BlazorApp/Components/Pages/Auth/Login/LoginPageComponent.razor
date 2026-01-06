@@ -1,12 +1,6 @@
 ﻿@page "/login"
 @layout LoginLayout
 
-@using DeKayaServer.BlazorApp.Constans
-@using DeKayaServer.BlazorApp.Interfaces
-@using DeKayaServer.BlazorApp.Services
-@using DeKayaServer.BlazorApp.ViewModels
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.Authorization
 @inject IAuthService AuthService;
 @inject NavigationManager NavigationManager;
 @inject AuthenticationStateProvider AuthStateProvider;
@@ -197,7 +191,7 @@
                     }
 
                     var targetUrl = string.IsNullOrWhiteSpace(ReturnUrl)
-                        ? EndpointConstans.Dashboard
+                        ? EndpointConstants.Dashboard
                         : "/" + ReturnUrl.TrimStart('/');
 
                     NavigationManager.NavigateTo(targetUrl);

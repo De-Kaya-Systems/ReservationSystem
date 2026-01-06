@@ -59,7 +59,7 @@ public partial class ToastComponent(ToastService toastService) : IDisposable
 
         toast.IsVisible = false;
         await InvokeAsync(StateHasChanged);
-        await Task.Delay(300); // Wait for animation to complete
+        await Task.Delay(300);
         activeToasts.Remove(toast);
         await InvokeAsync(StateHasChanged);
     }

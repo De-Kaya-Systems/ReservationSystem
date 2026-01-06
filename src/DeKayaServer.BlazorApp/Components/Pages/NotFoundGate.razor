@@ -1,0 +1,41 @@
+﻿@inject AuthenticationStateProvider AuthStateProvider
+
+@if (!ready)
+{
+    <div class="loading-overlay">
+        <div class="loading-container">
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+            </div>
+            <div class="loading-content">
+                <img src="/images/dekaya.png" alt="De-Kaya Logo" class="loading-logo" style="max-width: 120px;" />
+                <h3 class="loading-text">De-Kaya Systems</h3>
+                <p class="loading-subtitle">Yetkilendiriliyor...</p>
+            </div>
+        </div>
+    </div>
+}
+else if (isAuthenticated)
+{
+    <LayoutView Layout="typeof(Layout.MainLayout)">
+        <NotFound />
+    </LayoutView>
+}
+else
+{
+    <RedirectToLogin />
+}
+
+@code {
+    private bool ready;
+    private bool isAuthenticated;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        isAuthenticated = state.User.Identity?.IsAuthenticated == true;
+        ready = true;
+    }
+}

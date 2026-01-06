@@ -3,7 +3,19 @@
 @code {
     protected override void OnInitialized()
     {
-        var returnUrl = Uri.EscapeDataString(Nav.ToBaseRelativePath(Nav.Uri));
-        Nav.NavigateTo($"/login?returnUrl={returnUrl}", forceLoad: true);
+        var relative = Nav.ToBaseRelativePath(Nav.Uri);
+
+
+        if (relative.StartsWith(EndpointConstants.LoginPage, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (string.IsNullOrWhiteSpace(relative))
+        {
+            Nav.NavigateTo(EndpointConstants.LoginPage, replace: true);
+            return;
+        }
+
+        var returnUrl = "/" + relative.TrimStart('/');
+        Nav.NavigateTo($"{EndpointConstants.LoginPage}?returnUrl={Uri.EscapeDataString(returnUrl)}", replace: true);
     }
-}
+}}
