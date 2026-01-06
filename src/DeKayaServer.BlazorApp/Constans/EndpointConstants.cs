@@ -1,6 +1,6 @@
 ﻿namespace DeKayaServer.BlazorApp.Constans;
 
-public static class EndpointConstans
+public static class EndpointConstants
 {
     public const string Dashboard = "/";
     public const string LoginPage = "/login";

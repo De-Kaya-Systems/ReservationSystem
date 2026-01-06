@@ -1,6 +1,4 @@
-﻿@using DeKayaServer.BlazorApp.Constans
-@using DeKayaServer.BlazorApp.Interfaces
-@using DeKayaServer.BlazorApp.Services
+﻿@using DeKayaServer.BlazorApp.Components.Common.UserContext
 
 @inject IAuthService AuthService
 @inject NavigationManager Nav
@@ -82,6 +80,6 @@
         if (AuthStateProvider is TokenAuthenticationStateProvider tokenProvider)
             await tokenProvider.MarkUserAsLoggedOutAsync();
 
-        Nav.NavigateTo(EndpointConstans.LoginPage, forceLoad: true);
+        Nav.NavigateTo(EndpointConstants.LoginPage, forceLoad: true);
     }
 }

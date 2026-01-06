@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.BlazorApp.Constans;
+using DeKayaServer.BlazorApp.Http;
 using DeKayaServer.BlazorApp.Interfaces;
 using DeKayaServer.BlazorApp.Models;
 
@@ -15,7 +16,7 @@ public sealed class AuthService(
     public Task LoginAsync(LoginRequest loginRequest, Action<string> onSuccess, Action<Result<string>>? onError = null, CancellationToken cancellationToken = default)
     {
         return apiClient.PostAsync<LoginRequest, string>(
-            EndpointConstans.LoginEndpoint,
+            EndpointConstants.LoginEndpoint,
             loginRequest,
             onSuccess,
             onError,
@@ -25,7 +26,7 @@ public sealed class AuthService(
     public Task ForgotPasswordAsync(string email, Action<string> onSuccess, Action<Result<string>>? onError = null, CancellationToken cancellationToken = default)
     {
         return apiClient.PostAsync<object, string>(
-            $"{EndpointConstans.ForgotPasswordEndpoint}/{email}",
+            $"{EndpointConstants.ForgotPasswordEndpoint}/{email}",
             new { },
             onSuccess,
             onError,
@@ -35,7 +36,7 @@ public sealed class AuthService(
     public Task ResetPasswordAsync(string forgotPasswordCode, string newPassword, Action<string> onSuccess, Action<Result<string>>? onError = null, CancellationToken cancellationToken = default)
     {
         return apiClient.PostAsync<object, string>(
-            EndpointConstans.ResetPasswordEndpoint,
+            EndpointConstants.ResetPasswordEndpoint,
             new { forgotPasswordCode, newPassword },
             onSuccess,
             onError,
@@ -45,7 +46,7 @@ public sealed class AuthService(
     public Task CheckForgotPasswordCodeAsync(string forgotPasswordCode, Action<bool> onSuccess, Action<Result<bool>>? onError = null, CancellationToken cancellationToken = default)
     {
         return apiClient.GetAsync<bool>(
-            $"{EndpointConstans.CheckForgotPasswordCodeEndpoint}/{forgotPasswordCode}",
+            $"{EndpointConstants.CheckForgotPasswordCodeEndpoint}/{forgotPasswordCode}",
             onSuccess,
             onError,
             cancellationToken);

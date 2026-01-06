@@ -13,7 +13,7 @@ public sealed class AccessTokenStoreService(ProtectedLocalStorage storage) : IAc
         if (!string.IsNullOrWhiteSpace(cached))
             return cached;
 
-        var result = await storage.GetAsync<string>(StorageKeyConstans.AccessToken);
+        var result = await storage.GetAsync<string>(StorageKeyConstants.AccessToken);
         cached = result.Success ? result.Value : null;
         return cached;
     }
@@ -21,13 +21,13 @@ public sealed class AccessTokenStoreService(ProtectedLocalStorage storage) : IAc
     public async ValueTask SetAsync(string accessToken, CancellationToken cancellation = default)
     {
         cached = accessToken;
-        await storage.SetAsync(StorageKeyConstans.AccessToken, accessToken);
+        await storage.SetAsync(StorageKeyConstants.AccessToken, accessToken);
     }
 
     public async ValueTask ClearAsync(CancellationToken cancellation)
     {
         cached = null;
-        await storage.DeleteAsync(StorageKeyConstans.AccessToken);
+        await storage.DeleteAsync(StorageKeyConstants.AccessToken);
     }
 
 }
