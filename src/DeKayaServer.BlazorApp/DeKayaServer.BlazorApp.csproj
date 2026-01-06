@@ -13,11 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DeKayaServer.ServiceDefaults\DeKayaServer.ServiceDefaults.csproj" />
+    <Folder Include="Components\Common\UserContext\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Components\Common\UserContext\" />
+    <ProjectReference Include="..\DeKayaServer.ServiceDefaults\DeKayaServer.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

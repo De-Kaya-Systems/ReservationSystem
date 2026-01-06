@@ -9,7 +9,7 @@
 .admin-login-container {
     display: flex;
     width: 100%;
-    max-width: 650px;
+    max-width: 550px;
     background: var(--admin-white);
     border-radius: 20px;
     overflow: hidden;
@@ -18,17 +18,6 @@
 }
 
 /* ===== LOGIN FORM SIDE ===== */
-.login-part {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-dark) 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
 .admin-login-form {
     flex: 1;
     padding: 3rem 2.5rem;
@@ -36,6 +25,7 @@
     flex-direction: column;
     justify-content: center;
     background: var(--admin-white);
+    animation: slideInUp 0.6s ease-out;
 }
 
 /* Login Header */
@@ -43,26 +33,6 @@
     text-align: center;
     margin-bottom: 2.5rem;
 }
-
-.admin-brand {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-}
-
-    .admin-brand h1 {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: var(--admin-text);
-        margin: 0;
-    }
-
-    .admin-brand img {
-        height: 50px;
-        width: 50px;
-    }
 
 .login-header h2 {
     font-size: 1.75rem;
@@ -80,66 +50,6 @@
 .login-form {
     margin-bottom: 2rem;
 }
-
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-label {
-    display: block;
-    font-weight: 600;
-    color: var(--admin-text);
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-}
-
-.input-group {
-    border-radius: 10px;
-    overflow: hidden;
-    border: 2px solid var(--admin-border);
-    transition: all 0.3s ease;
-}
-
-    .input-group:focus-within {
-        border-color: var(--admin-accent);
-        box-shadow: 0 0 0 0.2rem rgba(0, 127, 255, 0.25);
-    }
-
-.input-group-text {
-    background: var(--admin-light);
-    border: none;
-    color: var(--admin-text-muted);
-    width: 50px;
-    justify-content: center;
-}
-
-.form-control {
-    padding: 0.875rem 1rem;
-    font-size: 0.95rem;
-    background: var(--admin-white);
-}
-
-    .form-control:focus {
-        box-shadow: none;
-        border-color: var(--admin-accent);
-        outline: none;
-    }
-
-    .form-control::placeholder {
-        color: var(--admin-text-muted);
-    }
-
-.password-toggle {
-    background: var(--admin-light);
-    border: none;
-    color: var(--admin-text-muted);
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-
-    .password-toggle:hover {
-        color: var(--admin-accent);
-    }
 
 /* Login Options */
 .login-options {
@@ -172,37 +82,6 @@
         color: var(--admin-accent-dark);
         text-decoration: underline;
     }
-
-/* Admin Button */
-.btn-admin-primary {
-    background: linear-gradient(135deg, var(--admin-accent) 0%, var(--admin-accent-dark) 100%);
-    border: none;
-    color: var(--admin-white);
-    padding: 0.875rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-    margin-bottom: 1.5rem;
-}
-
-    .btn-admin-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
-        color: var(--admin-white);
-    }
-
-    .btn-admin-primary:focus {
-        outline: 2px solid var(--admin-accent);
-        outline-offset: 2px;
-    }
-
-.copyright {
-    text-align: center;
-    color: var(--admin-text-muted);
-    font-size: 0.8rem;
-    margin: 0;
-}
 
 /* ===== MODAL STYLES ===== */
 .modal-content {
@@ -301,23 +180,6 @@
     .login-header h2 {
         font-size: 1.3rem;
     }
-}
-
-/* ===== ANIMATIONS ===== */
-@keyframes slideInUp {
-    from {
-        transform: translateY(30px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.admin-login-form {
-    animation: slideInUp 0.6s ease-out;
 }
 
 /* High Contrast Mode Support */

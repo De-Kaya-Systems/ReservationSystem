@@ -85,12 +85,32 @@
     animation: fadeInUp 0.6s ease-out 0.2s both;
 }
 
-.loading-logo {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+.logo-circle {
+    width: 120px;
+    height: 120px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
     animation: pulse 2s ease-in-out infinite;
+    position: relative;
+}
+
+.logo-circle::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+    z-index: -1;
+}
+
+.loading-logo {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
 }
 
 .loading-text {
@@ -160,9 +180,14 @@
         height: 100px;
     }
 
+    .logo-circle {
+        width: 100px;
+        height: 100px;
+    }
+
     .loading-logo {
-        width: 60px;
-        height: 60px;
+        width: 55px;
+        height: 55px;
     }
 
     .loading-text {
@@ -196,9 +221,14 @@
         border-width: 2px;
     }
 
+    .logo-circle {
+        width: 80px;
+        height: 80px;
+    }
+
     .loading-logo {
-        width: 50px;
-        height: 50px;
+        width: 45px;
+        height: 45px;
     }
 
     .loading-text {

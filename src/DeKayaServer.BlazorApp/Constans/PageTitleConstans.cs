@@ -1,0 +1,11 @@
+﻿namespace DeKayaServer.BlazorApp.Constans;
+
+public static class PageTitleConstans
+{
+    public const string AppName = "De-Kaya Systems";
+    public const string Dashboard = "Dashboard";
+    public const string LoginPage = "Login";
+    public const string ForgotPasswordPage = "Forgot Password";
+    public const string ResetPasswordPage = "Reset Password";
+
+}
