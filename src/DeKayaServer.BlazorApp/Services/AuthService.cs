@@ -32,6 +32,25 @@ public sealed class AuthService(
             cancellationToken);
     }
 
+    public Task ResetPasswordAsync(string forgotPasswordCode, string newPassword, Action<string> onSuccess, Action<Result<string>>? onError = null, CancellationToken cancellationToken = default)
+    {
+        return apiClient.PostAsync<object, string>(
+            EndpointConstans.ResetPasswordEndpoint,
+            new { forgotPasswordCode, newPassword },
+            onSuccess,
+            onError,
+            cancellationToken);
+    }
+
+    public Task CheckForgotPasswordCodeAsync(string forgotPasswordCode, Action<bool> onSuccess, Action<Result<bool>>? onError = null, CancellationToken cancellationToken = default)
+    {
+        return apiClient.GetAsync<bool>(
+            $"{EndpointConstans.CheckForgotPasswordCodeEndpoint}/{forgotPasswordCode}",
+            onSuccess,
+            onError,
+            cancellationToken);
+    }
+
     public async Task<bool> LogOutAsync()
     {
         await localStorage.ClearAsync();

@@ -13,7 +13,7 @@
 @inject ToastService ToastService
 @attribute [AllowAnonymous]
 
-<PageTitle>De-Kaya Systems | Login</PageTitle>
+<PageTitle>@PageTitleConstans.AppName | @PageTitleConstans.LoginPage</PageTitle>
 
 <div class="login-part">
     <div class="admin-login-wrapper">
@@ -22,7 +22,7 @@
                 <div class="login-header">
                     <div class="admin-brand">
                         <img src="/images/dekaya.png" alt="De-Kaya Logo" />
-                        <h1>De-Kaya Systems</h1>
+                        <h1>@PageTitleConstans.AppName</h1>
                     </div>
                 </div>
 
@@ -48,7 +48,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="adminPassword" class="form-label">Sifre</label>
+                        <label for="adminPassword" class="form-label">Şifre</label>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="bi bi-lock"></i>
@@ -57,7 +57,7 @@
                                        type="@(showPassword ? "text" : "password")"
                                        class="form-control"
                                        id="adminPassword"
-                                       placeholder="Sifrenizi girin"
+                                       placeholder="Şifrenizi girin"
                                        autocomplete="current-password"
                                        disabled="@isSubmitting" />
                             <button type="button"

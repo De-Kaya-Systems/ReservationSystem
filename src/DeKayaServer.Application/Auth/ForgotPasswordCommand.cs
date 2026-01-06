@@ -287,10 +287,9 @@ internal sealed class ForgotPasswordCommandHandler(
             </html>";
 
         body = body.Replace("{UserName}", user.FirstName.Value + " " + user.LastName.Value)
-                   .Replace("{ResetPasswordUrl}", $"https://de-kaya.com/reset-password{user.ForgotPasswordId!.Value}");
+                   .Replace("{ResetPasswordUrl}", $"https://localhost:7246/reset-password/{user.ForgotPasswordCode!.Value}");
         await mailService.SendAsync(to, subject, body, cancellationToken);
 
-        // Burada şifre sıfırlama işlemi yapılabilir (örneğin, bir e-posta gönderme).
         return "Şifre sıfırlama talimatları mail adresinize gönderildi.";
     }
 }

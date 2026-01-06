@@ -36,8 +36,20 @@ builder.Services.AddRateLimiter(cfr =>
     });
     cfr.AddFixedWindowLimiter("forgot-password-fixed", options =>
     {
-        options.PermitLimit = 1;
+        options.PermitLimit = 2;
         options.Window = TimeSpan.FromMinutes(3);
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+    cfr.AddFixedWindowLimiter("reset-password-fixed", options =>
+    {
+        options.PermitLimit = 3;
+        options.Window = TimeSpan.FromMinutes(1);
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+    cfr.AddFixedWindowLimiter("check-forgot-password-code-fixed", options =>
+    {
+        options.PermitLimit = 2;
+        options.Window = TimeSpan.FromMinutes(1);
         options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
 });
