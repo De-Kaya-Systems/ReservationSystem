@@ -1,4 +1,4 @@
-﻿using DeKayaServer.BlazorApp.Constans;
+﻿using DeKayaServer.BlazorApp.Constants;
 using DeKayaServer.BlazorApp.Http;
 using DeKayaServer.BlazorApp.Interfaces;
 using DeKayaServer.BlazorApp.Models;
@@ -11,7 +11,7 @@ public sealed class AuthService(
 ) : IAuthService
 {
     //public Task<Result<string>> LoginAsync(LoginRequest loginRequest, CancellationToken cancellationToken = default)
-    //    => apiClient.PostAsync<LoginRequest, string>(EndpointConstans.LoginEndpoint, loginRequest, cancellationToken);
+    //    => apiClient.PostAsync<LoginRequest, string>(EndpointConstants.LoginEndpoint, loginRequest, cancellationToken);
 
     public Task LoginAsync(LoginRequest loginRequest, Action<string> onSuccess, Action<Result<string>>? onError = null, CancellationToken cancellationToken = default)
     {

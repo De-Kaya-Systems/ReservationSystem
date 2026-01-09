@@ -1,4 +1,4 @@
-﻿using DeKayaServer.BlazorApp.Constans;
+﻿using DeKayaServer.BlazorApp.Constants;
 using DeKayaServer.BlazorApp.Interfaces;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 

@@ -1,4 +1,4 @@
-﻿using DeKayaServer.BlazorApp.Constans;
+﻿using DeKayaServer.BlazorApp.Constants;
 
 namespace DeKayaServer.BlazorApp.Services;
 
@@ -33,21 +33,21 @@ public class ToastService
         }
     }
 
-    public void ShowSuccess(string? message = ToastMessageConstans.Success)
+    public void ShowSuccess(string? message = ToastMessageConstants.Success)
     {
         ShowToast(new ToastInput(ToastTitles.Success, message!, ToastTypeEnum.Success));
     }
 
-    public void ShowError(string? message = ToastMessageConstans.Error)
+    public void ShowError(string? message = ToastMessageConstants.Error)
     {
         ShowToast(new ToastInput(ToastTitles.Error, message!, ToastTypeEnum.Error));
     }
 
-    public void ShowWarning(string? message = ToastMessageConstans.Warning)
+    public void ShowWarning(string? message = ToastMessageConstants.Warning)
     {
         ShowToast(new ToastInput(ToastTitles.Warning, message!, ToastTypeEnum.Warning));
     }
-    public void ShowInfo(string? message = ToastMessageConstans.Info)
+    public void ShowInfo(string? message = ToastMessageConstants.Info)
     {
         ShowToast(new ToastInput(ToastTitles.Info, message!, ToastTypeEnum.Info));
     }

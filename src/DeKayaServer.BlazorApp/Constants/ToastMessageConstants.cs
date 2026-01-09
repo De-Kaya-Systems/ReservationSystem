@@ -1,6 +1,6 @@
-﻿namespace DeKayaServer.BlazorApp.Constans;
+﻿namespace DeKayaServer.BlazorApp.Constants;
 
-public static class ToastMessageConstans
+public static class ToastMessageConstants
 {
     public const string Success = "Successfully operation";
     public const string Error = "An error occurred";
