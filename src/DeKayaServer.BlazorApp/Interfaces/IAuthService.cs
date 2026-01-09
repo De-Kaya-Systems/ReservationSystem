@@ -4,9 +4,9 @@ namespace DeKayaServer.BlazorApp.Interfaces;
 
 public interface IAuthService
 {
-    Task LoginAsync(LoginRequest loginRequest, Action<string> onSuccess, Action<Result<string>>? onError = null, CancellationToken cancellationToken = default);
-    Task ForgotPasswordAsync(string email, Action<string> onSuccess, Action<Result<string>>? onError = null, CancellationToken cancellationToken = default);
-    Task ResetPasswordAsync(string forgotPasswordCode, string newPassword, Action<string> onSuccess, Action<Result<string>>? onError = null, CancellationToken cancellationToken = default);
-    Task CheckForgotPasswordCodeAsync(string forgotPasswordCode, Action<bool> onSuccess, Action<Result<bool>>? onError = null, CancellationToken cancellationToken = default);
+    Task<Result<string>> LoginAsync(LoginRequest loginRequest, CancellationToken ct = default);
+    Task<Result<string>> ForgotPasswordAsync(string email, CancellationToken ct = default);
+    Task<Result<string>> ResetPasswordAsync(string forgotPasswordCode, string newPassword, CancellationToken ct = default);
+    Task<Result<bool>> CheckForgotPasswordCodeAsync(string forgotPasswordCode, CancellationToken ct = default);
     Task<bool> LogOutAsync();
 }

@@ -22,19 +22,13 @@ builder.Services.AddAuthorizationCore();
 //All Services (DI)
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<IBreadcrumbService, BreadcrumbService>();
-builder.Services.AddHttpClient("Api", client =>
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IApiResultPresenter, ToastApiResultPresenter>();
+builder.Services.AddScoped<ApiExecutor>();
+builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!);
 });
-
-builder.Services.AddScoped<IApiClient>(sp =>
-{
-    var factory = sp.GetRequiredService<IHttpClientFactory>();
-    var http = factory.CreateClient("Api");
-    var toast = sp.GetRequiredService<ToastService>();
-    return new ApiClient(http, toast);
-});
-builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Burada DekayaSystemUrlRewriteHandler'? HTTP istemcisine ekliyoruz ve böylece DeKayaSystem API'sine yap?lan istekler do?ru ?ekilde yönlendiriliyor.
 // EN: Here, we add DekayaSystemUrlRewriteHandler to the HTTP client, so that requests made to the DeKayaSystem API are routed correctly.
