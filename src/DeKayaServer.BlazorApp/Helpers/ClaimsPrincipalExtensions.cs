@@ -1,4 +1,4 @@
-﻿using DeKayaServer.BlazorApp.Constans;
+﻿using DeKayaServer.BlazorApp.Constants;
 using System.Security.Claims;
 
 namespace DeKayaServer.BlazorApp.Helpers;

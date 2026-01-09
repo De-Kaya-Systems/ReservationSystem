@@ -1,4 +1,4 @@
-﻿namespace DeKayaServer.BlazorApp.Constans;
+﻿namespace DeKayaServer.BlazorApp.Constants;
 
 public static class EndpointConstants
 {
