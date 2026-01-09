@@ -2,6 +2,7 @@
 
 @inject IAuthService AuthService
 @inject NavigationManager Nav
+@inject TokenAuthenticationStateProvider AuthState
 @inherits UserContextComponent
 
 <!-- Profile Dropdown -->
@@ -9,7 +10,7 @@
     <button class="profile-btn" data-bs-toggle="dropdown">
         <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNBRW6kw4PvewS5EGHKY7nNsJiWvrbsVIzZA&s"
              alt="Profile" class="profile-avatar">
-        <span class="layout-profile-name">@CurrentUser!.FullName</span>
+                <span class="layout-profile-name">@CurrentUser.FullName</span>
         <i class="bi bi-chevron-down"></i>
     </button>
     <ul class="dropdown-menu profile-menu">
@@ -18,7 +19,7 @@
                 <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNBRW6kw4PvewS5EGHKY7nNsJiWvrbsVIzZA&s"
                      alt="Profile">
                 <div>
-                    <h6>@CurrentUser.PersonelName</h6>
+                    <h6 >@CurrentUser.PersonelName</h6>
                     <p>@CurrentUser.Email</p>
                     <span class="role-badge">Süper Admin</span>
                 </div>
@@ -77,9 +78,7 @@
     private async Task ClickLogOutAsync()
     {
         await AuthService.LogOutAsync();
-        if (AuthStateProvider is TokenAuthenticationStateProvider tokenProvider)
-            await tokenProvider.MarkUserAsLoggedOutAsync();
-
+        await AuthState.MarkUserAsLoggedOutAsync();
         Nav.NavigateTo(EndpointConstants.LoginPage, forceLoad: true);
     }
 }

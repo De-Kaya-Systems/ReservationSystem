@@ -1,13 +1,33 @@
 ﻿@using DeKayaServer.BlazorApp.Components.Pages
 @using DeKayaServer.BlazorApp.Components.Shared
 
-<Router AppAssembly="typeof(Program).Assembly">
-    <Found Context="routeData">
-        <AppRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
-    </Found>
+<CascadingAuthenticationState>
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AppRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                <Authorizing>
+                    <LoadingOverlay />
+                </Authorizing>
 
-    <NotFound>
-        <NotFoundGate />
-    </NotFound>
-</Router>
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
+            </AppRouteView>
+
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        </Found>
+
+        <NotFound>
+            <AuthorizeView>
+                <Authorized>
+                    <LayoutView Layout="typeof(Layout.MainLayout)">
+                        <NotFound />
+                    </LayoutView>
+                </Authorized>
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
+            </AuthorizeView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

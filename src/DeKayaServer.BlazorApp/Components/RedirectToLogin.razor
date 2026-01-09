@@ -1,21 +1,28 @@
-@inject NavigationManager Nav
+﻿@inject NavigationManager Nav
 
 @code {
     protected override void OnInitialized()
     {
-        var relative = Nav.ToBaseRelativePath(Nav.Uri);
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        // örn: "/" veya "/cooling-rooms/new?x=1" gibi bir şey alırız burada
+        // EN: for example, we get something like "/" or "/cooling-rooms/new?x=1" here
+        var pathAndQuery = uri.PathAndQuery;
 
-
-        if (relative.StartsWith(EndpointConstants.LoginPage, StringComparison.OrdinalIgnoreCase))
+        //Eğer kullanıcı login sayfasındaysa, tekrar yönlendirme yapmayalım
+        // EN: If the user is already on the login page, do not redirect again
+        if (pathAndQuery.StartsWith(EndpointConstants.LoginPage, StringComparison.OrdinalIgnoreCase))
             return;
 
-        if (string.IsNullOrWhiteSpace(relative))
+        //Dashboard ise returnUrl parametresi olmadan yönlendir
+        if (pathAndQuery == EndpointConstants.Dashboard || string.IsNullOrWhiteSpace(pathAndQuery))
         {
             Nav.NavigateTo(EndpointConstants.LoginPage, replace: true);
             return;
         }
 
-        var returnUrl = "/" + relative.TrimStart('/');
-        Nav.NavigateTo($"{EndpointConstants.LoginPage}?returnUrl={Uri.EscapeDataString(returnUrl)}", replace: true);
+        //Diğer sayfalar ise returnUrl ile yönlendir.Encode burada şu işlemi yapar: "/cooling-rooms/new?x=1" -> "%2Fcooling-rooms%2Fnew%3Fx%3D1"
+        //EN : For other pages, redirect with returnUrl. Encode does the following here: "/cooling-rooms/new?x=1" -> "%2Fcooling-rooms%2Fnew%3Fx%3D1"
+        var encoded = Uri.EscapeDataString(pathAndQuery);
+        Nav.NavigateTo($"{EndpointConstants.LoginPage}?returnUrl={encoded}", replace: true);
     }
-}}
+}

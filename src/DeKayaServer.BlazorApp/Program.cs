@@ -14,7 +14,15 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddScoped<ProtectedLocalStorage>();
 builder.Services.AddScoped<IAccessTokenStoreService, AccessTokenStoreService>();
-builder.Services.AddScoped<AuthenticationStateProvider, TokenAuthenticationStateProvider>();
+builder.Services.AddScoped<TokenAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
+    sp.GetRequiredService<TokenAuthenticationStateProvider>());
+//builder.Services.AddAuthorizationCore(options =>
+//{
+//    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+//        .RequireAuthenticatedUser()
+//        .Build();
+//});
 builder.Services.AddAuthorizationCore();
 
 //All Services (DI)

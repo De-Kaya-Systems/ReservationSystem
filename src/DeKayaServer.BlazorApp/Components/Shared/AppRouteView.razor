@@ -1,46 +1,45 @@
-﻿@inject AuthenticationStateProvider AuthStateProvider
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
 
-@if (!ready)
+@inject AuthenticationStateProvider AuthStateProvider
+
+@if (checking)
 {
-    <div class="loading-overlay">
-        <div class="loading-container">
-            <div class="loading-spinner">
-                <div class="spinner-ring"></div>
-                <div class="spinner-ring"></div>
-                <div class="spinner-ring"></div>
-            </div>
-            <div class="loading-content">
-                <img src="/images/dekaya.png" alt="De-Kaya Logo" class="loading-logo" />
-                <h3 class="loading-text">@PageTitleConstans.AppName</h3>
-                <p class="loading-subtitle">Yükleniyor...</p>
-            </div>
-        </div>
-    </div>
+    @Authorizing
 }
 else if (allowAnonymous || isAuthenticated)
 {
-    <RouteView RouteData="RouteData" DefaultLayout="DefaultLayout" />
+    <RouteView RouteData="@RouteData" DefaultLayout="@DefaultLayout" />
 }
 else
 {
-    <RedirectToLogin />
+    @NotAuthorized
 }
 
 @code {
     [Parameter, EditorRequired] public RouteData RouteData { get; set; } = default!;
     [Parameter] public Type? DefaultLayout { get; set; }
 
-    private bool ready;
+    [Parameter] public RenderFragment? NotAuthorized { get; set; }
+    [Parameter] public RenderFragment? Authorizing { get; set; }
+
+    private bool checking = true;
     private bool isAuthenticated;
     private bool allowAnonymous;
 
     protected override async Task OnParametersSetAsync()
     {
-        allowAnonymous = Attribute.IsDefined(RouteData.PageType, typeof(AllowAnonymousAttribute));
+        checking = true;
+
+        var pageType = RouteData.PageType;
+
+        allowAnonymous = Attribute.IsDefined(pageType, typeof(AllowAnonymousAttribute), inherit: true);
 
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
-        isAuthenticated = state.User.Identity?.IsAuthenticated == true;
+        isAuthenticated = state.User?.Identity?.IsAuthenticated == true;
 
-        ready = true;
+        checking = false;
     }
 }
