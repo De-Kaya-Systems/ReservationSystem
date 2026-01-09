@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Domain.Abstractions;
+using DeKayaServer.Domain.LoginTokens;
 using DeKayaServer.Domain.Users;
 using GenericRepository;
 using Microsoft.AspNetCore.Http;
@@ -17,6 +18,7 @@ internal sealed class ApplicationDbContext : DbContext, IUnitOfWork
     }
 
     public DbSet<User> Users { get; set; }
+    public DbSet<LoginToken> LoginTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
