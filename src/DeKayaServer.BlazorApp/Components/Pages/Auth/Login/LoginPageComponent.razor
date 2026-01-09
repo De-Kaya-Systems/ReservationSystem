@@ -3,7 +3,7 @@
 
 @inject IAuthService AuthService;
 @inject NavigationManager NavigationManager;
-@inject AuthenticationStateProvider AuthStateProvider;
+@inject TokenAuthenticationStateProvider AuthState
 @inject ToastService ToastService
 @attribute [AllowAnonymous]
 
@@ -165,10 +165,20 @@
 
     private ForgotPasswordViewModel forgotPasswordViewModel = new();
     private LoginViewModel loginViewModel = new();
+
     private bool isSubmitting;
     private bool isForgotPasswordSubmitting;
     private bool showPassword;
     private bool rememberMe;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+        {
+            NavigationManager.NavigateTo(GetSafeReturnUrl(ReturnUrl) ?? EndpointConstants.Dashboard, replace: true);
+        }
+    }
 
     private async Task HandleLoginAsync()
     {
@@ -176,28 +186,29 @@
             return;
 
         isSubmitting = true;
-        StateHasChanged();
-
         try
         {
             await AuthService.LoginAsync(
                 new(loginViewModel.EmailOrUserName, loginViewModel.Password),
                 onSuccess: async (token) =>
                 {
-                    if (AuthStateProvider is TokenAuthenticationStateProvider tokenProvider
-                        && !string.IsNullOrWhiteSpace(token))
+                    if (string.IsNullOrWhiteSpace(token))
                     {
-                        await tokenProvider.MarkUserAsAuthenticatedAsync(token);
+                        ToastService.ShowError("Giriş tokenı boş döndü. Lütfen tekrar deneyin.");
+                        return;
                     }
 
-                    var targetUrl = string.IsNullOrWhiteSpace(ReturnUrl)
-                        ? EndpointConstants.Dashboard
-                        : "/" + ReturnUrl.TrimStart('/');
+                    await AuthState.MarkUserAsAuthenticatedAsync(token);
 
-                    NavigationManager.NavigateTo(targetUrl);
+                    var target = GetSafeReturnUrl(ReturnUrl) ?? EndpointConstants.Dashboard;
+                    NavigationManager.NavigateTo(target, replace: true);
                 },
                 onError: (result) =>
                 {
+                    // Hata mesajları AuthService içinde ToastService ile gösteriliyor fakat ben burada ekstra bir kontrol ekliyorum
+                    // EN : Error messages are shown with ToastService inside AuthService, but I add an extra check here
+                    var message = (result?.ErrorMessages?.FirstOrDefault()) ?? "Giriş başarısız. Lütfen bilgilerinizi kontrol edin.";
+                    ToastService.ShowError(message);
                 }
             );
         }
@@ -227,6 +238,10 @@
                  },
                 onError: (result) =>
                 {
+                    // Hata mesajları AuthService içinde ToastService ile gösteriliyor fakat ben burada ekstra bir kontrol ekliyorum
+                    // EN : Error messages are shown with ToastService inside AuthService, but I add an extra check here
+                    var message = (result?.ErrorMessages?.FirstOrDefault()) ?? "Şifre sıfırlama isteği gönderilemedi.";
+                    ToastService.ShowError(message);
                 }
              );        
         }
@@ -238,4 +253,26 @@
     }
 
     private void TogglePasswordVisibility() => showPassword = !showPassword;
+
+    private static string? GetSafeReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl))
+            return null;
+
+        // Bazı durumlarda decode edilmemiş gelebilir; garantiye al
+        // In some cases, it may come undecoded; take it for granted
+        returnUrl = Uri.UnescapeDataString(returnUrl);
+
+        // Open redirect engelleme için mutlak URL'leri reddet
+        // EN: To prevent open redirect, reject absolute URLs
+        if (Uri.TryCreate(returnUrl, UriKind.Absolute, out _))
+            return null;
+
+        // "/cooling-rooms/new?x=1" bekliyoruz burada ama "cooling-rooms/new?x=1" gelirse başına "/" ekle
+        // EN: We expect "/cooling-rooms/new?x=1" here, but if "cooling-rooms/new?x=1" comes, add "/" to the beginning
+        if (!returnUrl.StartsWith("/"))
+            return "/" + returnUrl;
+
+        return returnUrl;
+    }
 }
