@@ -40,7 +40,7 @@ public sealed class LoginCommandHandler(
             return Result<string>.Failure("Invalid password / Şifre Hatalı!");
         }
 
-        var token = jwtProvider.CreateToken(user);
+        var token = await jwtProvider.CreateTokenAsync(user, cancellationToken);
         return token;
     }
 }

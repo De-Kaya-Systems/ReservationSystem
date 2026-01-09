@@ -9,13 +9,13 @@ public sealed class User : Entity
 
     public User(FirstName firstName, LastName lastName, Email email, UserName userName, Password password)
     {
-        FirstName = firstName;
-        LastName = lastName;
-        Email = email;
-        UserName = userName;
-        Password = password;
-        FullName = new(FirstName.Value + " " + LastName.Value + " (" + Email.Value + ")");
-        IsForgotPasswordCompleted = new(true);
+        SetFirstName(firstName);
+        SetLastName(lastName);
+        SetLastName(lastName);
+        SetUserName(userName);
+        SetPassword(password);
+        SetFullName();
+        SetIsForgotPasswordCompleted(new(true));
     }
 
     public FirstName FirstName { get; private set; } = default!;
@@ -27,6 +27,8 @@ public sealed class User : Entity
     public ForgotPasswordCode? ForgotPasswordCode { get; private set; }
     public ForgotPasswordDate? ForgotPasswordDate { get; private set; }
     public IsForgotPasswordCompleted IsForgotPasswordCompleted { get; private set; } = default!;
+
+    #region Behaviors
     public bool VerifyPasswordHash(string password)
     {
         using var hmac = new System.Security.Cryptography.HMACSHA512(Password.PasswordSalt);
@@ -40,9 +42,39 @@ public sealed class User : Entity
         ForgotPasswordDate = new(DateTimeOffset.Now);
         IsForgotPasswordCompleted = new(false);
     }
+    public void SetFirstName(FirstName firstName)
+    {
+        FirstName = firstName;
+    }
+
+    public void SetLastName(LastName lastName)
+    {
+        LastName = lastName;
+    }
+
+    public void SetFullName()
+    {
+        FullName = new(FirstName.Value + " " + LastName.Value + " (" + Email.Value + ")");
+    }
+
+    public void SetEmail(Email email)
+    {
+        Email = email;
+    }
+
+    public void SetUserName(UserName userName)
+    {
+        UserName = userName;
+    }
 
     public void SetPassword(Password newPassword)
     {
         Password = newPassword;
     }
+
+    public void SetIsForgotPasswordCompleted(IsForgotPasswordCompleted isForgotPasswordCompleted)
+    {
+        IsForgotPasswordCompleted = isForgotPasswordCompleted;
+    }
+    #endregion
 }
