@@ -1,8 +1,10 @@
 ﻿@page "/login"
+@using DeKayaServer.BlazorApp.Models
 @layout LoginLayout
 
-@inject IAuthService AuthService;
-@inject NavigationManager NavigationManager;
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ApiExecutor ApiExecutor
 @inject TokenAuthenticationStateProvider AuthState
 @inject ToastService ToastService
 @attribute [AllowAnonymous]
@@ -188,29 +190,30 @@
         isSubmitting = true;
         try
         {
-            await AuthService.LoginAsync(
-                new(loginViewModel.EmailOrUserName, loginViewModel.Password),
-                onSuccess: async (token) =>
-                {
-                    if (string.IsNullOrWhiteSpace(token))
-                    {
-                        ToastService.ShowError("Giriş tokenı boş döndü. Lütfen tekrar deneyin.");
-                        return;
-                    }
+            var result = await ApiExecutor.ExecuteAsync(
+            () => AuthService.LoginAsync(new(loginViewModel.EmailOrUserName, loginViewModel.Password)),
+            new ApiPresentationOptions
+            {
+                ShowError = true,
+                ShowSuccess = false,
+                ErrorTitle = "Giriş başarısız"
+            });
 
-                    await AuthState.MarkUserAsAuthenticatedAsync(token);
+            if (!result.IsSuccessful)
+                return;
 
-                    var target = GetSafeReturnUrl(ReturnUrl) ?? EndpointConstants.Dashboard;
-                    NavigationManager.NavigateTo(target, replace: true);
-                },
-                onError: (result) =>
-                {
-                    // Hata mesajları AuthService içinde ToastService ile gösteriliyor fakat ben burada ekstra bir kontrol ekliyorum
-                    // EN : Error messages are shown with ToastService inside AuthService, but I add an extra check here
-                    var message = (result?.ErrorMessages?.FirstOrDefault()) ?? "Giriş başarısız. Lütfen bilgilerinizi kontrol edin.";
-                    ToastService.ShowError(message);
-                }
-            );
+            var token = result.Data;
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                ToastService.ShowError("Giriş tokenı boş döndü. Lütfen tekrar deneyin.");
+                return;
+            }
+
+            await AuthState.MarkUserAsAuthenticatedAsync(token);
+
+            var target = GetSafeReturnUrl(ReturnUrl) ?? EndpointConstants.Dashboard;
+            NavigationManager.NavigateTo(target, replace: true);
         }
         finally
         {
@@ -229,21 +232,17 @@
 
         try
         {
-            await AuthService.ForgotPasswordAsync(
-                 forgotPasswordViewModel.Email,
-                 onSuccess: (message) =>
-                 {
-                     ToastService.ShowSuccess(message);
-                     forgotPasswordViewModel = new(); 
-                 },
-                onError: (result) =>
-                {
-                    // Hata mesajları AuthService içinde ToastService ile gösteriliyor fakat ben burada ekstra bir kontrol ekliyorum
-                    // EN : Error messages are shown with ToastService inside AuthService, but I add an extra check here
-                    var message = (result?.ErrorMessages?.FirstOrDefault()) ?? "Şifre sıfırlama isteği gönderilemedi.";
-                    ToastService.ShowError(message);
-                }
-             );        
+            var result = await ApiExecutor.ExecuteAsync(
+            () => AuthService.ForgotPasswordAsync(forgotPasswordViewModel.Email),
+            new ApiPresentationOptions
+            {
+                ShowError = true,
+                ShowSuccess = true,
+                ErrorTitle = "Şifre sıfırlama"
+            });
+
+            if (result.IsSuccessful)
+                forgotPasswordViewModel = new();
         }
         finally
         {

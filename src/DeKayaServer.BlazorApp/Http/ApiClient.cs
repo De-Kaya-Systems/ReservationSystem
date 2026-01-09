@@ -1,5 +1,4 @@
 ﻿using DeKayaServer.BlazorApp.Models;
-using DeKayaServer.BlazorApp.Services;
 using System.Text.Json;
 
 namespace DeKayaServer.BlazorApp.Http;
@@ -10,35 +9,9 @@ public interface IApiClient
     Task<Result<T>> PostAsync<TReq, T>(string url, TReq req, CancellationToken ct = default);
     Task<Result<T>> PutAsync<TReq, T>(string url, TReq req, CancellationToken ct = default);
     Task<Result<T>> DeleteAsync<T>(string url, CancellationToken ct = default);
-
-    Task GetAsync<T>(
-       string url,
-       Action<T> onSuccess,
-       Action<Result<T>>? onError = null,
-       CancellationToken ct = default);
-
-    Task PostAsync<TReq, T>(
-        string url,
-        TReq req,
-        Action<T> onSuccess,
-        Action<Result<T>>? onError = null,
-        CancellationToken ct = default);
-
-    Task PutAsync<TReq, T>(
-        string url,
-        TReq req,
-        Action<T> onSuccess,
-        Action<Result<T>>? onError = null,
-        CancellationToken ct = default);
-
-    Task DeleteAsync<T>(
-        string url,
-        Action<T> onSuccess,
-        Action<Result<T>>? onError = null,
-        CancellationToken ct = default);
 }
 
-public sealed class ApiClient(HttpClient http, ToastService toast) : IApiClient
+public sealed class ApiClient(HttpClient http) : IApiClient
 {
     private static readonly JsonSerializerOptions _opt = new() { PropertyNameCaseInsensitive = true };
     #region Old methods
@@ -129,81 +102,32 @@ public sealed class ApiClient(HttpClient http, ToastService toast) : IApiClient
     }
     private async Task<Result<T>> SendAsync<T>(HttpRequestMessage request, CancellationToken ct)
     {
-        HttpResponseMessage response;
+        using var req = request;
 
         try
         {
-            response = await http.SendAsync(request, ct);
+            using var response = await http.SendAsync(req, ct);
+
+            var body = response.Content is null
+                ? null
+                : await response.Content.ReadAsStringAsync(ct);
+
+            var result = Deserialize<Result<T>>(body) ?? new Result<T>
+            {
+                IsSuccessful = false,
+                StatusCode = (int)response.StatusCode,
+                ErrorMessages = ["Empty response from server."]
+            };
+            return result;
         }
         catch (TaskCanceledException)
         {
-            toast.ShowError("İstek zaman aşımına uğradı (timeout).");
-            return Failure<T>(408, "Timeout");
+            return Failure<T>(408, "İstek zaman aşımına uğradı (timeout).");
         }
         catch (HttpRequestException)
         {
-            toast.ShowError("Sunucuya ulaşılamadı. Bağlantını kontrol et.");
-            return Failure<T>(503, "Connection error");
+            return Failure<T>(503, "Sunucuya ulaşılamadı. Bağlantını kontrol et.");
         }
-
-        var body = response.Content is null
-            ? null
-            : await response.Content.ReadAsStringAsync(ct);
-
-        var result = Deserialize<Result<T>>(body) ?? new Result<T>
-        {
-            IsSuccessful = false,
-            StatusCode = (int)response.StatusCode,
-            ErrorMessages = ["Empty response from server."]
-        };
-
-        if (!result.IsSuccessful)
-        {
-            HandleErrorToast(result);
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Hata durumunda kullanıcıya toast mesajı gösterir.
-    /// Önce backend'den gelen mesajı kontrol eder, yoksa status code'a göre genel mesaj gösterir.
-    /// EN: Shows toast message to user on error.
-    /// First checks backend message, if not available shows general message based on status code.
-    /// </summary>
-    private void HandleErrorToast<T>(Result<T> result)
-    {
-        //Backendden gelen hata mesajları
-        //EN: Error messages from backend
-        var errorMessages = result.ErrorMessages?
-            .Where(m => !string.IsNullOrWhiteSpace(m))
-            .ToList();
-
-        // Backend de mesaj varsa goster
-        // EN: If backend has message, show it
-        if (errorMessages is { Count: > 0 })
-        {
-            //Sadece ilk mesajı göster
-            //EN: Show only the first message
-            toast.ShowError(errorMessages.First());
-            return;
-        }
-
-        // Backend mesajı yoksa status code'a göre genel mesaj göster
-        // EN: If no backend message, show general message based on status code
-        var fallbackMessage = result.StatusCode switch
-        {
-            400 => "Geçersiz istek yapıldı.", // Bad Request
-            401 => "Yetkisiz erişim. Lütfen giriş yapın.", // Unauthorized
-            403 => "Erişim engellendi.", // Forbidden
-            404 => "İstenen kaynak bulunamadı.", // Not Found
-            408 => "İstek zaman aşımına uğradı.", // Request Timeout
-            422 => "İstek tamamlanmadı. Girdiğiniz verileri kontrol edin", // Unprocessable Entity
-            500 => "Sunucu hatası oluştu.", // Internal Server Error
-            503 => "Sunucu hizmet veremiyor.", // Service Unavailable
-            _ => $"Bir hata oluştu. Hata kodu : {result.StatusCode}" // Unknown error
-        };
-        toast.ShowError(fallbackMessage);
     }
 
     #endregion
