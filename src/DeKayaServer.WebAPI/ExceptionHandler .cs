@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Application.Behaviors;
+using DeKayaServer.WebAPI.Middelwares;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using TS.Result;
@@ -32,6 +33,7 @@ public sealed class ExceptionHandler : IExceptionHandler
         var exceptionType = actualException.GetType();
         var validationExceptionType = typeof(ValidationException);
         var authorizationExceptionType = typeof(AuthorizationException);
+        var tokenException = typeof(TokenException);
 
         ///<summary>
         ///ValidationException durumunda, HTTP 422 (Unprocessable Entity) durumu döndürülür ve hatalar liste halinde kullanıcıya iletilir.
@@ -56,6 +58,18 @@ public sealed class ExceptionHandler : IExceptionHandler
         {
             httpContext.Response.StatusCode = 403;
             errorResult = Result<string>.Failure(403, "Bu işlem için yetkiniz yok");
+            await httpContext.Response.WriteAsJsonAsync(errorResult);
+            return true;
+        }
+
+        ///<summary>
+        /// TokenException durumunda, HTTP 401 (Unauthorized) durumu döndürülür ve kullanıcıya geçersiz token mesajı iletilir.
+        /// EN: In case of TokenException, HTTP 401 (Unauthorized) status is returned and an invalid token message is communicated to the user.
+        ///</summary>
+        if (exceptionType == tokenException)
+        {
+            httpContext.Response.StatusCode = 401;
+            errorResult = Result<string>.Failure(401, "Token geçersiz");
             await httpContext.Response.WriteAsJsonAsync(errorResult);
             return true;
         }

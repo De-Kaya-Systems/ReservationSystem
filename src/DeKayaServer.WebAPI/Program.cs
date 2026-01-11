@@ -1,7 +1,7 @@
 ﻿using DeKayaServer.Application;
-using DeKayaServer.Application.Services;
 using DeKayaServer.Infrastructure;
 using DeKayaServer.WebAPI;
+using DeKayaServer.WebAPI.Middelwares;
 using DeKayaServer.WebAPI.Modules;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.RateLimiting;
@@ -72,6 +72,7 @@ builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
 });
+builder.Services.AddTransient<CheckTokenMiddleware>();
 
 var app = builder.Build();
 app.MapOpenApi();
@@ -86,15 +87,12 @@ app.UseCors(policy => policy
 app.UseResponseCompression();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRateLimiter();
 app.UseExceptionHandler();
+app.UseMiddleware<CheckTokenMiddleware>();
+app.UseRateLimiter();
 app.MapControllers().RequireRateLimiting("fixed").RequireAuthorization();
 app.MapAuth();
-app.MapGet("/", async (IMailService mailService) =>
-{
-    await mailService.SendAsync("kerdem@live.com", "Test", "<h1><b>This is a test mail</b></h1>", default);
-    return Results.Ok();
-});
+app.MapGet("/", () => "Test Token").RequireAuthorization();
 app.MapDefaultEndpoints();
 //await app.CreateFirstUser();
 app.Run();
