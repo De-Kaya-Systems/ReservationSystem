@@ -27,3 +27,4 @@ public sealed class ApiExecutor(IApiResultPresenter presenter)
         return result;
     }
 }
+

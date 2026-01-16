@@ -1,33 +1,34 @@
-﻿@using DeKayaServer.BlazorApp.Components.Pages
+﻿@using DeKayaServer.BlazorApp.Components.Common.Auth
+@using DeKayaServer.BlazorApp.Components.Pages
 @using DeKayaServer.BlazorApp.Components.Shared
 
-<CascadingAuthenticationState>
-    <Router AppAssembly="typeof(Program).Assembly">
-        <Found Context="routeData">
-            <AppRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
-                <Authorizing>
-                    <LoadingOverlay />
-                </Authorizing>
+<TokenInitializer />
 
-                <NotAuthorized>
-                    <RedirectToLogin />
-                </NotAuthorized>
-            </AppRouteView>
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AppRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <Authorizing>
+                <LoadingOverlay />
+            </Authorizing>
 
-            <FocusOnNavigate RouteData="routeData" Selector="h1" />
-        </Found>
+            <NotAuthorized>
+                <RedirectToLogin />
+            </NotAuthorized>
+        </AppRouteView>
 
-        <NotFound>
-            <AuthorizeView>
-                <Authorized>
-                    <LayoutView Layout="typeof(Layout.MainLayout)">
-                        <NotFound />
-                    </LayoutView>
-                </Authorized>
-                <NotAuthorized>
-                    <RedirectToLogin />
-                </NotAuthorized>
-            </AuthorizeView>
-        </NotFound>
-    </Router>
-</CascadingAuthenticationState>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+
+    <NotFound>
+        <AuthorizeView>
+            <Authorized>
+                <LayoutView Layout="typeof(Layout.MainLayout)">
+                    <NotFound />
+                </LayoutView>
+            </Authorized>
+            <NotAuthorized>
+                <RedirectToLogin />
+            </NotAuthorized>
+        </AuthorizeView>
+    </NotFound>
+</Router>

@@ -1,0 +1,21 @@
+﻿@using DeKayaServer.BlazorApp.Http.TokenProcess
+@using DeKayaServer.BlazorApp.Interfaces
+@using DeKayaServer.BlazorApp.Services
+@inject IAccessTokenStoreService TokenStore
+@inject CurrentAccessToken CurrentAccessToken
+
+@code {
+    private bool _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _initialized)
+            return;
+
+        _initialized = true;
+
+        var token = await TokenStore.GetAsync();
+        if (!string.IsNullOrWhiteSpace(token))
+            CurrentAccessToken.Value = token;
+    }
+}

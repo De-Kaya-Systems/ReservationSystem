@@ -1,4 +1,6 @@
-﻿using DeKayaServer.BlazorApp.Models;
+﻿using DeKayaServer.BlazorApp.Http.TokenProcess;
+using DeKayaServer.BlazorApp.Models;
+using System.Net;
 using System.Text.Json;
 
 namespace DeKayaServer.BlazorApp.Http;
@@ -11,10 +13,14 @@ public interface IApiClient
     Task<Result<T>> DeleteAsync<T>(string url, CancellationToken ct = default);
 }
 
-public sealed class ApiClient(HttpClient http) : IApiClient
+public sealed class ApiClient(
+    HttpClient http,
+    CircuitIdProvider circuitIdProvider,
+    IForceLogoutService forceLogoutService) : IApiClient
 {
+    private const string CircuitHeaderName = "X-Circuit-Id";
     private static readonly JsonSerializerOptions _opt = new() { PropertyNameCaseInsensitive = true };
-    #region Old methods
+
     public Task<Result<T>> GetAsync<T>(string url, CancellationToken ct = default)
         => SendAsync<T>(new HttpRequestMessage(HttpMethod.Get, url), ct);
 
@@ -26,71 +32,7 @@ public sealed class ApiClient(HttpClient http) : IApiClient
 
     public Task<Result<T>> PutAsync<TReq, T>(string url, TReq req, CancellationToken ct = default)
         => SendWithJsonAsync<TReq, T>(HttpMethod.Put, url, req, ct);
-    #endregion
 
-    #region CallBack methods
-    public async Task GetAsync<T>(
-        string url,
-        Action<T> onSuccess,
-        Action<Result<T>>? onError = null,
-        CancellationToken ct = default)
-    {
-        var result = await GetAsync<T>(url, ct);
-        HandleCallbacks(result, onSuccess, onError);
-    }
-
-    public async Task PostAsync<TReq, T>(
-        string url,
-        TReq req,
-        Action<T> onSuccess,
-        Action<Result<T>>? onError = null,
-        CancellationToken ct = default)
-    {
-        var result = await PostAsync<TReq, T>(url, req, ct);
-        HandleCallbacks(result, onSuccess, onError);
-    }
-
-    public async Task PutAsync<TReq, T>(
-        string url,
-        TReq req,
-        Action<T> onSuccess,
-        Action<Result<T>>? onError = null,
-        CancellationToken ct = default)
-    {
-        var result = await PutAsync<TReq, T>(url, req, ct);
-        HandleCallbacks(result, onSuccess, onError);
-    }
-
-    public async Task DeleteAsync<T>(
-        string url,
-        Action<T> onSuccess,
-        Action<Result<T>>? onError = null,
-        CancellationToken ct = default)
-    {
-        var result = await DeleteAsync<T>(url, ct);
-        HandleCallbacks(result, onSuccess, onError);
-    }
-
-
-    /// <summary>
-    /// Callbackleri yönetir
-    /// EN: Handles the callbacks
-    /// </summary>
-
-    private void HandleCallbacks<T>(Result<T> result, Action<T> onSuccess, Action<Result<T>>? onError)
-    {
-        if (result.IsSuccessful && result.Data is not null)
-        {
-            onSuccess(result.Data);
-        }
-        else if (!result.IsSuccessful && onError is not null)
-        {
-            onError(result);
-        }
-    }
-    #endregion
-
-    #region Core Http Logic
     private Task<Result<T>> SendWithJsonAsync<TReq, T>(HttpMethod method, string url, TReq req, CancellationToken ct)
     {
         var request = new HttpRequestMessage(method, url)
@@ -100,13 +42,28 @@ public sealed class ApiClient(HttpClient http) : IApiClient
 
         return SendAsync<T>(request, ct);
     }
+
     private async Task<Result<T>> SendAsync<T>(HttpRequestMessage request, CancellationToken ct)
     {
         using var req = request;
 
+        var circuitId = circuitIdProvider.CircuitId;
+        if (!string.IsNullOrWhiteSpace(circuitId))
+        {
+            req.Headers.Remove(CircuitHeaderName);
+            req.Headers.Add(CircuitHeaderName, circuitId);
+        }
+
         try
         {
             using var response = await http.SendAsync(req, ct);
+
+            //Buna daha sonra role hanteringde bakacagim.
+            //EN: I must check this later in role handling.
+            if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+            {
+                await forceLogoutService.ForceLogoutAsync();
+            }
 
             var body = response.Content is null
                 ? null
@@ -130,9 +87,6 @@ public sealed class ApiClient(HttpClient http) : IApiClient
         }
     }
 
-    #endregion
-
-    #region Helper Methods
     private static TObj? Deserialize<TObj>(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return default;
@@ -146,5 +100,4 @@ public sealed class ApiClient(HttpClient http) : IApiClient
         StatusCode = status,
         ErrorMessages = [message]
     };
-    #endregion
 }

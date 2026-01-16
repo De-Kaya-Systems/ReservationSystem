@@ -1,4 +1,6 @@
 ﻿@page "/"
+@using DeKayaServer.BlazorApp.Models
+@inject ApiExecutor apiExecutor
 
 <PageHeader
     Icon="bi-speedometer2"
@@ -20,5 +22,53 @@
         <button type="button" class="btn btn-primary">
             <i class="bi bi-download me-1"></i>Rapor İndir
         </button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="CheckAuthAsync" disabled="@isCheckingAuth">
+            @if (isCheckingAuth)
+            {
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <span>Kontrol ediliyor...</span>
+            }
+            else
+            {
+                <i class="bi bi-shield-check me-1"></i>
+                <span>Auth Test</span>
+            }
+        </button>
+
     </Actions>
 </PageHeader>
+
+@code {
+    [Inject]
+    private IAuthProbeService AuthProbeService { get; set; } = default!;
+
+    private bool isCheckingAuth;
+
+    private async Task CheckAuthAsync()
+    {
+        if (isCheckingAuth)
+            return;
+
+        isCheckingAuth = true;
+        try
+        {
+            await apiExecutor.ExecuteAsync(
+                async () =>
+                {
+                    var r = await AuthProbeService.PingAuthorizedAsync();
+                    return (Result)r;
+                },
+                new ApiPresentationOptions
+                {
+                    ShowError = true,
+                    ShowSuccess = true,
+                    SuccessMessage = "Token geçerli (API authorized).",
+                    ErrorTitle = "Auth kontrol"
+                });
+        }
+        finally
+        {
+            isCheckingAuth = false;
+        }
+    }
+}

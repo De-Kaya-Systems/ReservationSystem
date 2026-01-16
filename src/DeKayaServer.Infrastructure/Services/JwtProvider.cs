@@ -32,13 +32,13 @@ internal sealed class JwtProvider(
         SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(options.Value.SecretKey));
         SigningCredentials signingCredentials = new(securityKey, SecurityAlgorithms.HmacSha512);
 
-        var ExpiresDate = DateTime.Now.AddDays(1);
+        var ExpiresDate = DateTime.UtcNow.AddDays(1);
 
         JwtSecurityToken securityToken = new(
             issuer: options.Value.Issuer,
             audience: options.Value.Audience,
             claims: claims,
-            notBefore: DateTime.Now,
+            notBefore: DateTime.UtcNow,
             expires: ExpiresDate,
             signingCredentials: signingCredentials);
 
@@ -57,13 +57,13 @@ internal sealed class JwtProvider(
         var loginTokens = await loginTokenRepository
             .Where(x => x.UserId == user.Id && x.IsActive.Value == true)
             .ToListAsync(cancellationToken);
+        loginTokenRepository.UpdateRange(loginTokens);
 
         foreach (var item in loginTokens)
         {
             item.SetIsActive(new(false));
         }
 
-        loginTokenRepository.UpdateRange(loginTokens);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return token;
