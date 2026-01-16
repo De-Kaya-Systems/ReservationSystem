@@ -11,7 +11,8 @@ namespace DeKayaServer.Application.Auth;
 
 public sealed record ResetPasswordCommand(
     Guid ForgotPasswordCode,
-    string NewPassword) : IRequest<Result<string>>;
+    string NewPassword,
+    bool LogoutAllDevices) : IRequest<Result<string>>;
 
 public sealed class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordCommand>
 {
@@ -52,16 +53,19 @@ internal sealed class ResetPasswordCommandHandler(
 
         // Kullanıcı aktif bir oturumu varken şifre sıfırlama işlemi yaptıysa, tokenlarını pasif yap. Böylece UI da oturum kapanır.
         // EN : If the user resets the password while having an active session, make the tokens inactive. Thus, the UI session will be closed.   
-        var loginTokens = await loginTokenRepository
-            .Where(u => u.UserId == user.Id && u.IsActive.Value == true)
-            .ToListAsync(cancellationToken);
 
-        foreach (var token in loginTokens)
+        if (request.LogoutAllDevices)
         {
-            token.SetIsActive(new(false));
-        }
-        loginTokenRepository.UpdateRange(loginTokens);
+            var loginTokens = await loginTokenRepository
+                .Where(u => u.UserId == user.Id && u.IsActive.Value == true)
+                .ToListAsync(cancellationToken);
+            loginTokenRepository.UpdateRange(loginTokens);
 
+            foreach (var token in loginTokens)
+            {
+                token.SetIsActive(new(false));
+            }
+        }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
