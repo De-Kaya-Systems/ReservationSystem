@@ -30,10 +30,10 @@ public sealed class AuthService(
             new { },
             ct);
 
-    public Task<Result<string>> ResetPasswordAsync(string forgotPasswordCode, string newPassword, CancellationToken ct = default)
+    public Task<Result<string>> ResetPasswordAsync(string forgotPasswordCode, string newPassword, bool logoutAllDevices, CancellationToken ct = default)
         => apiClient.PostAsync<object, string>(
             EndpointConstants.ResetPasswordEndpoint,
-            new { forgotPasswordCode, newPassword },
+            new { forgotPasswordCode, newPassword, logoutAllDevices },
             ct);
 
     public Task<Result<bool>> CheckForgotPasswordCodeAsync(string forgotPasswordCode, CancellationToken ct = default)
