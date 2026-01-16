@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.RateLimiting;
 using Scalar.AspNetCore;
 using System.Threading.RateLimiting;
+using TS.Result;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,12 +88,19 @@ app.UseCors(policy => policy
 app.UseResponseCompression();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseExceptionHandler();
 app.UseMiddleware<CheckTokenMiddleware>();
+app.UseExceptionHandler();
 app.UseRateLimiter();
 app.MapControllers().RequireRateLimiting("fixed").RequireAuthorization();
 app.MapAuth();
-app.MapGet("/", () => "Test Token").RequireAuthorization();
+
+// root endpoint anonymous kalsın
+app.MapGet("/", () => Results.Ok(Result<string>.Succeed("OK")));
+
+// authorized probe endpoint
+app.MapGet("/auth/probe", () => Results.Ok(Result<string>.Succeed("Authorized OK")))
+   .RequireAuthorization();
+
 app.MapDefaultEndpoints();
 //await app.CreateFirstUser();
 app.Run();

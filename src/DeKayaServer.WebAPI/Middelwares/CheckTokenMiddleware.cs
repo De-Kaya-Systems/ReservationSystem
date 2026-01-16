@@ -12,7 +12,8 @@ public sealed class CheckTokenMiddleware(
 {
     public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
     {
-        var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var authorizationHeader = httpContext.Request.Headers.Authorization.ToString();
+        var token = authorizationHeader.Replace("Bearer ", "");
         if (string.IsNullOrWhiteSpace(token))
         {
             await next(httpContext);
@@ -22,18 +23,22 @@ public sealed class CheckTokenMiddleware(
         var userId = httpContext.User.Claims
             .FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?
             .Value;
-        if (userId is null)
+
+        if (string.IsNullOrWhiteSpace(userId))
         {
-            throw new TokenException();
+            httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
         }
 
         var isTokenAvailable = await loginTokenRepository.AnyAsync(p =>
             p.UserId == userId
             && p.Token.Value == token
             && p.IsActive.Value == true);
+
         if (!isTokenAvailable)
         {
-            throw new TokenException();
+            httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
         }
 
         await next(httpContext);

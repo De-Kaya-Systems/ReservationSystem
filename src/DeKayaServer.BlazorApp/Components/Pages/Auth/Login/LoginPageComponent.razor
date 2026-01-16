@@ -1,4 +1,5 @@
 ﻿@page "/login"
+@using DeKayaServer.BlazorApp.Http.TokenProcess
 @using DeKayaServer.BlazorApp.Models
 @layout LoginLayout
 
@@ -191,27 +192,18 @@
         try
         {
             var result = await ApiExecutor.ExecuteAsync(
-            () => AuthService.LoginAsync(new(loginViewModel.EmailOrUserName, loginViewModel.Password)),
-            new ApiPresentationOptions
-            {
-                ShowError = true,
-                ShowSuccess = false,
-                ErrorTitle = "Giriş başarısız"
-            });
+                 () => AuthService.LoginAsync(new(loginViewModel.EmailOrUserName, loginViewModel.Password)),
+                 new ApiPresentationOptions
+                 {
+                     ShowError = true,
+                     ShowSuccess = false,
+                     ErrorTitle = "Giriş başarısız"
+                 });
 
             if (!result.IsSuccessful)
                 return;
 
-            var token = result.Data;
-
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                ToastService.ShowError("Giriş tokenı boş döndü. Lütfen tekrar deneyin.");
-                return;
-            }
-
-            await AuthState.MarkUserAsAuthenticatedAsync(token);
-
+            // Token set + auth notify artık AuthService içinde yapılıyor.
             var target = GetSafeReturnUrl(ReturnUrl) ?? EndpointConstants.Dashboard;
             NavigationManager.NavigateTo(target, replace: true);
         }

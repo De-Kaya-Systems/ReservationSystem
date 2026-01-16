@@ -1,4 +1,5 @@
 ﻿@using DeKayaServer.BlazorApp.Components.Common.UserContext
+@using DeKayaServer.BlazorApp.Http.TokenProcess
 
 @inject IAuthService AuthService
 @inject NavigationManager Nav
@@ -78,7 +79,6 @@
     private async Task ClickLogOutAsync()
     {
         await AuthService.LogOutAsync();
-        await AuthState.MarkUserAsLoggedOutAsync();
         Nav.NavigateTo(EndpointConstants.LoginPage, forceLoad: true);
     }
 }
