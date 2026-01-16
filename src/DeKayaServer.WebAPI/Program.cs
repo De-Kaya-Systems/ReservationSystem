@@ -1,6 +1,7 @@
 ﻿using DeKayaServer.Application;
 using DeKayaServer.Infrastructure;
 using DeKayaServer.WebAPI;
+using DeKayaServer.WebAPI.Helper;
 using DeKayaServer.WebAPI.Middelwares;
 using DeKayaServer.WebAPI.Modules;
 using Microsoft.AspNetCore.OData;
@@ -74,6 +75,8 @@ builder.Services.AddResponseCompression(options =>
     options.EnableForHttps = true;
 });
 builder.Services.AddTransient<CheckTokenMiddleware>();
+builder.Services.AddHostedService<CheckLoginTokenBackgroundService>();
+builder.Services.AddHostedService<TokenDatabaseCleaner>();
 
 var app = builder.Build();
 app.MapOpenApi();
