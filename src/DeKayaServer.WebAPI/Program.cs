@@ -1,6 +1,7 @@
 ﻿using DeKayaServer.Application;
 using DeKayaServer.Infrastructure;
 using DeKayaServer.WebAPI;
+using DeKayaServer.WebAPI.Controllers;
 using DeKayaServer.WebAPI.Helper;
 using DeKayaServer.WebAPI.Middelwares;
 using DeKayaServer.WebAPI.Modules;
@@ -64,12 +65,14 @@ builder.Services
             .Count()
             .Expand()
             .OrderBy()
-            .SetMaxTop(null));
+            .SetMaxTop(null)
+            .AddRouteComponents("odata", MainODataController.GetEdmModel()));
 
 builder.Services.AddCors();
 builder.Services.AddOpenApi();
 builder.Services.AddExceptionHandler<ExceptionHandler>().AddProblemDetails();
 //Response compression kullaniyoruz cunku veriyi sıkıştırarak ağ üzerinden iletimini optimize eder.
+//En: We use response compression because it optimizes the transmission of data over the network by compressing it.
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -96,6 +99,7 @@ app.UseExceptionHandler();
 app.UseRateLimiter();
 app.MapControllers().RequireRateLimiting("fixed").RequireAuthorization();
 app.MapAuth();
+app.MapRole();
 
 // root endpoint anonymous kalsın
 app.MapGet("/", () => Results.Ok(Result<string>.Succeed("OK")));

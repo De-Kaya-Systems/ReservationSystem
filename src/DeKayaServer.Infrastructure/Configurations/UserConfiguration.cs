@@ -8,6 +8,7 @@ internal class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> builder)
     {
+        builder.ToTable("Users");
         builder.HasKey(u => u.Id);
         builder.OwnsOne(u => u.FirstName);
         builder.OwnsOne(u => u.LastName);
