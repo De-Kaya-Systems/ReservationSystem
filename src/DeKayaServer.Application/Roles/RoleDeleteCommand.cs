@@ -1,10 +1,12 @@
-﻿using DeKayaServer.Domain.Role;
+﻿using DeKayaServer.Application.Behaviors;
+using DeKayaServer.Domain.Role;
 using GenericRepository;
 using TS.MediatR;
 using TS.Result;
 
 namespace DeKayaServer.Application.Roles;
 
+[Permission("role:delete")]
 public sealed record RoleDeleteCommand(Guid Id) : IRequest<Result<string>>;
 
 internal sealed class RoleDeleteCommandHandler(
