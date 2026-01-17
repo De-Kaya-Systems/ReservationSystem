@@ -1,4 +1,5 @@
-﻿using DeKayaServer.Domain.Role;
+﻿using DeKayaServer.Application.Behaviors;
+using DeKayaServer.Domain.Role;
 using DeKayaServer.Domain.Shared;
 using FluentValidation;
 using GenericRepository;
@@ -7,6 +8,7 @@ using TS.Result;
 
 namespace DeKayaServer.Application.Roles;
 
+[Permission("role:edit")]
 public sealed record RoleUpdateCommand(
     Guid Id,
     string Name,
