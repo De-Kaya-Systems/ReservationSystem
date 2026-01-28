@@ -1,4 +1,4 @@
-@inject NavigationManager NavigationManager
+﻿@inject NavigationManager NavigationManager
 
 <PageTitle>De-Kaya Systems | @Title</PageTitle>
 
@@ -32,21 +32,24 @@
             </div>
         }
 
-        @if (ShowBackButton)
-        {
-            <button type="button" class="btn btn-outline-secondary" @onclick="BackButtonClicked">
-                <i class="bi bi-arrow-left me-1"></i>Back
-            </button>
-        }
-
-        @if (ShowEditButton && !string.IsNullOrWhiteSpace(EditBtnUrl))
+        @if (ShowAddButton && !string.IsNullOrWhiteSpace(AddBtnUrl))
         {
             <div class="btn-group">
-                <a href="@EditBtnUrl" class="btn btn-primary">
-                    <i class="bi bi-pencil me-1"></i>Edit
+                <a href="@AddBtnUrl" class="btn btn-outline-success">
+                    <i class="bi bi-plus-circle" />
+                    <span>Ekle</span>
                 </a>
             </div>
         }
+
+        @if (ShowBackButton)
+        {
+            <button type="button" class="btn btn-outline-secondary" @onclick="BackButtonClicked">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Geri</span>
+            </button>
+        }
+
 
         @Actions
     </div>
@@ -72,10 +75,10 @@
     public bool ShowBackButton { get; set; } = true;
 
     [Parameter]
-    public bool ShowEditButton { get; set; }
+    public bool ShowAddButton { get; set; }
 
     [Parameter]
-    public string? EditBtnUrl { get; set; }
+    public string? AddBtnUrl { get; set; }
 
     [Parameter]
     public RenderFragment? Actions { get; set; }
