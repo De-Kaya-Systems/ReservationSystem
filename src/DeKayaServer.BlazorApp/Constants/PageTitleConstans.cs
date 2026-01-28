@@ -7,5 +7,6 @@ public static class PageTitleConstans
     public const string LoginPage = "Login";
     public const string ForgotPasswordPage = "Forgot Password";
     public const string ResetPasswordPage = "Reset Password";
+    public const string RolesPage = "Role Management";
 
 }

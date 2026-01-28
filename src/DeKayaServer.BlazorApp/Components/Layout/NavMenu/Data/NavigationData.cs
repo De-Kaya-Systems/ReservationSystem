@@ -21,6 +21,12 @@ public static class NavigationData
                 new() { Title = "Yeni Araç Ekle", Url = "/cooling-rooms/new" },
                 new() { Title = "Bakım Takibi", Url = "/cooling-rooms/maintenance" },
             ]
+        },
+        new()
+        {
+            Title = "Role Yönetimi",
+            Url = "/roles",
+            Icon = "bi-shield-lock",
         }
     ];
 }
