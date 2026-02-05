@@ -1,0 +1,32 @@
+﻿@page "/dialog-test"
+@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@rendermode InteractiveServer
+
+<h3>DialogTestPage</h3>
+
+<button class="btn btn-primary" @onclick="OpenDialogAsync">Show Dialog</button>
+
+<Dialog 
+    @ref="@dialog"
+    Title="Test Dialog" 
+    ParentMethod="@CloseDialogAsync">
+    <span>Hello</span>
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+
+    private async Task OpenDialogAsync()
+    {
+        if (dialog is not null)
+        {
+            await dialog.ShowAsync();
+        }
+    }
+
+    private async Task CloseDialogAsync(DialogResultEnum dialogResult)
+    {
+        if (dialog is null) { return; }
+        await dialog.HideAsync();
+    }
+}

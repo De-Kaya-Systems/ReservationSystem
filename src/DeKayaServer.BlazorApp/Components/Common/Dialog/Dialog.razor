@@ -1,0 +1,41 @@
+﻿@rendermode InteractiveServer
+
+<dialog @onkeydown="EscapeKeyHandlerAsync"
+        @onkeydown:stopPropagation="true"
+        @ref="dialogElementReference"
+        class="@($"generic-dialog {Class}")"
+        aria-modal="true"
+        role="dialog">
+    <div class="dialog-shell">
+        <header class="dialog-header">
+            <div class="dialog-titles">
+                <h5 class="dialog-title">@Title</h5>
+                @if (!string.IsNullOrWhiteSpace( Subtitle ))
+                {
+                    <p class="dialog-subtitle">@Subtitle</p>
+                }
+            </div>
+
+            <button type="button"
+                    class="dialog-close"
+                    @onclick="( async() => {
+                    await ParentMethod.InvokeAsync( DialogResultEnum.XButton );
+                    await HideAsync();
+                                    })"
+                    aria-label="Close dialog">
+                <span aria-hidden="true">×</span>
+            </button>
+        </header>
+
+        <section class="dialog-body">
+            @ChildContent
+        </section>
+
+        @if (Footer is not null)
+        {
+            <footer class="dialog-footer">
+                @Footer
+            </footer>
+        }
+    </div>
+</dialog>
