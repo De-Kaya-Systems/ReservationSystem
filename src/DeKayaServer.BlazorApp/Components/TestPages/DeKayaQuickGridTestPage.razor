@@ -1,0 +1,133 @@
+﻿@page "/quickgrid-test"
+@using DeKayaServer.BlazorApp.Components.Common.QuickGrid
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<DeKayaQuickGrid
+    Title="Dummy Users"
+    ShowTitle="true"
+    ShowSearchInput="true"
+    ShowSearchResultCount="true"
+    TotalItemCount="@FilteredItems.Count"
+    SearchTerm="@searchTerm"
+    SearchTermChanged="OnSearchTermChanged"
+    ShowPageSizeSelector="true"
+    PageSizeOptions="@pageSizeOptions"
+    PageSize="@pageSize"
+    PageSizeChanged="OnPageSizeChanged">
+
+    <HeaderActions>
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Reseed">
+            Res
+        </button>
+    </HeaderActions>
+
+    <QuickGridContent>
+        <QuickGrid
+            Items="@GridItems"
+            Pagination="pagination"
+            Class="table table-hover mb-0 align-middle"
+            TItem="UserRow">
+            <PropertyColumn Property="@(u => u.Id)" Title="Id" Sortable="true" />
+            <PropertyColumn Property="@(u => u.FullName)" Title="Name" Sortable="true" />
+            <PropertyColumn Property="@(u => u.Email)" Title="Email" />
+            <PropertyColumn Property="@(u => u.Role)" Title="Role" Sortable="true" />
+            <PropertyColumn Property="@(u => u.IsActive)" Title="Active" Sortable="true" />
+            <PropertyColumn Property="@(u => u.CreatedAt)" Title="Created" Sortable="true" Format="yyyy-MM-dd" />
+            <TemplateColumn Title="Actions">
+                <div class="d-flex gap-2 py-1 justify-content-start">
+                    <button type="button" class="btn btn-outline-secondary">
+                        <span>Test</span>
+                    </button>
+
+                    <button type="button" class="btn btn-outline-primary">
+                        <span>Test</span>
+                    </button>
+
+                    <button type="button" class="btn btn-outline-success">
+                        <span>Test</span>
+                    </button>
+                </div>
+            </TemplateColumn>
+        </QuickGrid>
+
+        <div class="p-2">
+            <Paginator State="pagination" />
+        </div>
+    </QuickGridContent>
+</DeKayaQuickGrid>
+
+@code
+{
+    private readonly IReadOnlyList<int> pageSizeOptions = [5, 10, 20, 50];
+
+    private List<UserRow> allItems = [];
+    private string searchTerm = string.Empty;
+    private int pageSize = 10;
+    private PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private IReadOnlyList<UserRow> FilteredItems =>
+        string.IsNullOrWhiteSpace(searchTerm)
+            ? allItems
+            : allItems
+                .Where(u =>
+                    u.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    u.Role.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+    // NOTE: Sayfalama QuickGrid tarafından yapılacak => burada Take/Skip yok.
+    private IQueryable<UserRow> GridItems => FilteredItems.AsQueryable();
+
+    protected override void OnInitialized()
+    {
+        Seed();
+        pagination.ItemsPerPage = pageSize;
+    }
+
+    private async Task OnSearchTermChanged(string value)
+    {
+        searchTerm = value;
+        await pagination.SetCurrentPageIndexAsync(0);
+    }
+
+    private async Task OnPageSizeChanged(int value)
+    {
+        pageSize = value;
+        pagination.ItemsPerPage = value;
+        await pagination.SetCurrentPageIndexAsync(0);
+    }
+
+    private async void Reseed()
+    {
+        Seed();
+        searchTerm = string.Empty;
+        await pagination.SetCurrentPageIndexAsync(0);
+    }
+
+    private void Seed()
+    {
+        var roles = new[] { "Admin", "Manager", "Staff", "Guest" };
+
+        allItems = Enumerable.Range(1, 75)
+            .Select(i => new UserRow
+            {
+                Id = i,
+                FullName = $"User {i:000}",
+                Email = $"user{i:000}@example.com",
+                Role = roles[i % roles.Length],
+                IsActive = (i % 4) != 0,
+                CreatedAt = DateTime.Today.AddDays(-i)
+            })
+            .ToList();
+    }
+
+    private sealed class UserRow
+    {
+        public int Id { get; init; }
+        public string FullName { get; init; } = string.Empty;
+        public string Email { get; init; } = string.Empty;
+        public string Role { get; init; } = string.Empty;
+        public bool IsActive { get; init; }
+        public DateTime CreatedAt { get; init; }
+    }
+}
