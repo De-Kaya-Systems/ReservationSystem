@@ -75,7 +75,6 @@
                     u.Role.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-    // NOTE: Sayfalama QuickGrid tarafından yapılacak => burada Take/Skip yok.
     private IQueryable<UserRow> GridItems => FilteredItems.AsQueryable();
 
     protected override void OnInitialized()
