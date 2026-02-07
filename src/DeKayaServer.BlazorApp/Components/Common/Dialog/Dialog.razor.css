@@ -1,50 +1,49 @@
-﻿:root {
-    --dialog-surface: rgba(255, 255, 255, 0.92);
-    --dialog-border: rgba(15, 23, 42, 0.12);
-    --dialog-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
-    --dialog-radius: 16px;
-    --dialog-text: rgba(15, 23, 42, 0.92);
-    --dialog-muted: rgba(15, 23, 42, 0.62);
-}
-
-.generic-dialog {
+﻿.generic-dialog {
     position: fixed;
     inset: 50% auto auto 50%;
     transform: translate(-50%, -50%);
     margin: 0;
     width: min(720px, calc(100vw - 2rem));
-    max-height: min(80vh, 900px);
+    max-height: min(85vh, 900px);
     padding: 0;
-    border: 1px solid rgba(15, 23, 42, 0.12);
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
+    border: 1px solid var(--border-color);
+    background: var(--white);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.03), 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 20px 50px -12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
 }
 
     .generic-dialog::backdrop {
-        background: rgba(2, 6, 23, 0.55);
+        background: rgba(15, 23, 42, 0.6);
         backdrop-filter: blur(10px);
+        animation: backdrop-fade-in 200ms ease-out;
     }
 
-    /* Dialog kendisi fade alır (transform yok => merkezleme bozulmaz) */
     .generic-dialog[open] {
-        animation: dialog-fade-in 140ms ease-out;
+        animation: dialog-fade-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-        /* İçerik üstten aşağı “açılır” */
         .generic-dialog[open] .dialog-shell {
-            animation: dialog-slide-in 220ms cubic-bezier(.2, .9, .2, 1);
+            animation: dialog-scale-in 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-    /* Kapatırken içerik aşağıdan yukarı “çıkar” (reverse his) */
     .generic-dialog.is-closing {
-        animation: dialog-fade-out 140ms ease-in forwards;
+        animation: dialog-fade-out 150ms ease-in forwards;
     }
 
         .generic-dialog.is-closing .dialog-shell {
-            animation: dialog-slide-out 180ms ease-in forwards;
+            animation: dialog-scale-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
         }
+
+/* Animations */
+@keyframes backdrop-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
 
 @keyframes dialog-fade-in {
     from {
@@ -66,25 +65,27 @@
     }
 }
 
-/* Open: üstten aşağı */
-@keyframes dialog-slide-in {
+@keyframes dialog-scale-in {
     from {
-        transform: translateY(-14px) scale(0.985);
+        transform: scale(0.95) translateY(-20px);
+        opacity: 0;
     }
 
     to {
-        transform: translateY(0) scale(1);
+        transform: scale(1) translateY(0);
+        opacity: 1;
     }
 }
 
-/* Close: aşağıdan yukarı */
-@keyframes dialog-slide-out {
+@keyframes dialog-scale-out {
     from {
-        transform: translateY(0) scale(1);
+        transform: scale(1) translateY(0);
+        opacity: 1;
     }
 
     to {
-        transform: translateY(-14px) scale(0.985);
+        transform: scale(0.96) translateY(-10px);
+        opacity: 0;
     }
 }
 
@@ -97,84 +98,155 @@
 .dialog-header {
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: 10;
     display: flex;
-    align-items: start;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.96), rgba(255,255,255,0.88));
-    border-bottom: 1px solid rgba(15, 23, 42, 0.10);
+    gap: 1.25rem;
+    padding: 1.5rem 1.75rem;
+    background: var(--white);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .dialog-titles {
     min-width: 0;
+    flex: 1;
 }
 
 .dialog-title {
     margin: 0;
-    font-size: 1.05rem;
-    font-weight: 650;
-    letter-spacing: -0.01em;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-dark);
 }
 
 .dialog-subtitle {
-    margin: 0.25rem 0 0 0;
-    font-size: 0.9rem;
-    color: var(--dialog-muted);
+    margin: 0.5rem 0 0 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    line-height: 1.5;
 }
 
 .dialog-body {
-    padding: 1rem 1.25rem;
+    padding: 1.75rem;
     overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
 }
+
+    .dialog-body::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .dialog-body::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .dialog-body::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 4px;
+    }
+
+        .dialog-body::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
 
 .dialog-footer {
     position: sticky;
     bottom: 0;
-    z-index: 2;
+    z-index: 10;
     display: flex;
     justify-content: flex-end;
-    gap: 0.5rem;
-    padding: 0.9rem 1.25rem;
-    background: linear-gradient(to top, rgba(255,255,255,0.96), rgba(255,255,255,0.88));
-    border-top: 1px solid rgba(15, 23, 42, 0.10);
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.75rem;
+    background: var(--white);
+    border-top: 1px solid var(--border-color);
 }
 
 .dialog-close {
-    flex: 0 0 auto;
-    width: 40px;
-    height: 40px;
-    border: 1px solid rgba(15, 23, 42, 0.10);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.75);
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    background: var(--white);
     cursor: pointer;
     display: grid;
     place-items: center;
     padding: 0;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--text-muted);
 }
 
     .dialog-close span {
         font-size: 22px;
         line-height: 1;
-        color: rgba(15, 23, 42, 0.65);
+        transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .dialog-close:hover {
-        background: rgba(255, 255, 255, 0.95);
-        border-color: rgba(15, 23, 42, 0.16);
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: var(--white);
+        transform: scale(1.05);
+    }
+
+        .dialog-close:hover span {
+            transform: rotate(90deg);
+        }
+
+    .dialog-close:active {
+        transform: scale(0.95);
     }
 
     .dialog-close:focus-visible {
-        outline: 3px solid rgba(59, 130, 246, 0.55);
+        outline: 3px solid rgba(0, 127, 255, 0.4);
         outline-offset: 2px;
     }
 
+/* Responsive */
+@media (max-width: 640px) {
+    .generic-dialog {
+        width: calc(100vw - 1rem);
+        max-height: calc(100vh - 1rem);
+        border-radius: 12px;
+    }
+
+    .dialog-header,
+    .dialog-body,
+    .dialog-footer {
+        padding-inline: 1.25rem;
+    }
+
+    .dialog-title {
+        font-size: 1.125rem;
+    }
+}
+
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
     .generic-dialog[open],
     .generic-dialog[open] .dialog-shell,
     .generic-dialog.is-closing,
-    .generic-dialog.is-closing .dialog-shell {
+    .generic-dialog.is-closing .dialog-shell,
+    .generic-dialog::backdrop,
+    .dialog-close,
+    .dialog-close span {
         animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .generic-dialog {
+        border-width: 2px;
+    }
+
+    .dialog-close {
+        border-width: 2px;
     }
 }
