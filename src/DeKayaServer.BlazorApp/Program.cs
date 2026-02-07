@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder( args );
 
 builder.AddServiceDefaults();
 
@@ -18,14 +18,14 @@ builder.Services.AddRazorComponents()
 builder.Services.AddScoped<ProtectedLocalStorage>();
 
 builder.Services.AddScoped<AccessTokenStoreService>();
-builder.Services.AddScoped<IAccessTokenStoreService>(sp =>
-    new CachedAccessTokenStoreService(sp.GetRequiredService<AccessTokenStoreService>()));
+builder.Services.AddScoped<IAccessTokenStoreService>( sp =>
+    new CachedAccessTokenStoreService( sp.GetRequiredService<AccessTokenStoreService>() ) );
 
 builder.Services.AddScoped<CurrentAccessToken>();
 
 builder.Services.AddScoped<TokenAuthenticationStateProvider>();
-builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
-    sp.GetRequiredService<TokenAuthenticationStateProvider>());
+builder.Services.AddScoped<AuthenticationStateProvider>( sp =>
+    sp.GetRequiredService<TokenAuthenticationStateProvider>() );
 
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
@@ -34,8 +34,8 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<CircuitServicesAccessor>();
 builder.Services.AddScoped<CircuitIdProvider>();
 
-builder.Services.TryAddEnumerable(ServiceDescriptor.Scoped<CircuitHandler, CircuitServicesAccessorCircuitHandler>());
-builder.Services.TryAddEnumerable(ServiceDescriptor.Scoped<CircuitHandler, CircuitIdCircuitHandler>());
+builder.Services.TryAddEnumerable( ServiceDescriptor.Scoped<CircuitHandler, CircuitServicesAccessorCircuitHandler>() );
+builder.Services.TryAddEnumerable( ServiceDescriptor.Scoped<CircuitHandler, CircuitIdCircuitHandler>() );
 
 //All Services (DI)
 builder.Services.AddScoped<ToastService>();
@@ -44,28 +44,28 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IApiResultPresenter, ToastApiResultPresenter>();
 builder.Services.AddScoped<IForceLogoutService, ForceLogoutService>();
 builder.Services.AddScoped<ApiExecutor>();
-
+builder.Services.AddScoped<RoleService>();
 
 builder.Services.AddScoped<IAuthProbeService, AuthProbeService>();
 
 builder.Services.AddTransient<AuthHeaderHandler>();
 
-builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
+builder.Services.AddHttpClient<IApiClient, ApiClient>( client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!);
-}).AddHttpMessageHandler<AuthHeaderHandler>();
+    client.BaseAddress = new Uri( builder.Configuration[ "ApiSettings:BaseUrl" ]! );
+} ).AddHttpMessageHandler<AuthHeaderHandler>();
 
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-if (!app.Environment.IsDevelopment())
+if ( !app.Environment.IsDevelopment() )
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseExceptionHandler( "/Error", createScopeForErrors: true );
     app.UseHsts();
 }
 
-app.UseStatusCodePagesWithReExecute("/not-found");
+app.UseStatusCodePagesWithReExecute( "/not-found" );
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();

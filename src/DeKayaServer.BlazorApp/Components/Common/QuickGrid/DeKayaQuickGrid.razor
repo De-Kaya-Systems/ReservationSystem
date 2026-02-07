@@ -2,60 +2,67 @@
 
 <div class="card shadow-sm border-1">
     <div class="card-header bg-white border-0 py-3">
-        <div class="d-flex align-items-center justify-content-between gap-3">
+        <div class="d-flex flex-column flex-md-row gap-3 align-items-stretch align-items-md-center">
+
             <div class="flex-grow-1">
-                @if (ShowTitle)
+                @if ( ShowTitle )
                 {
-                    <h6 class="mb-0 fw-semibold">@Title</h6>    
+                    <h6 class="mb-0 fw-semibold">@Title</h6>
                 }
-                <div class="d-flex align-items-center gap-2 w-50 w-md-50">
-                    @if (ShowSearchResultCount)
-                    {
-                     <small class="flex-shrink-0">
-                         <span class="pr-1">Arama sonucu :</span>
-                         <span class="badge text-bg-secondary p-2 fs-200">@TotalItemCount</span>
-                     </small>   
-                    }
-                    @if (ShowSelectedItemCount)
+
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                    @if ( ShowSearchResultCount )
                     {
                         <small class="flex-shrink-0">
-                            <span class="pr-1">Arama sonucu :</span>
+                            <span class="pe-1">Arama sonucu :</span>
+                            <span class="badge text-bg-secondary p-2 fs-200">@TotalItemCount</span>
+                        </small>
+                    }
+
+                    @if ( ShowSelectedItemCount )
+                    {
+                        <small class="flex-shrink-0">
+                            <span class="pe-1">Selected :</span>
                             <span class="badge text-bg-secondary p-2 fs-200">@SelectedItemCount</span>
                         </small>
                     }
-                    @if (ShowSearchInput)
+
+                    @if ( ShowSearchInput )
                     {
-                        <div class="@SearchInputCss">
-                            <input class="form-control form-control-sm dekaya-input-group"
-                                placeholder="@SearchPlaceholder"
-                                value="@SearchTerm"
-                                @oninput="OnSearchInput"/>
+                        <div class="@SearchInputCss" style="min-width: 12rem; max-width: 28rem;">
+                            <input class="form-control form-control-sm dekaya-input-group w-100"
+                                   placeholder="@SearchPlaceholder"
+                                   value="@SearchTerm"
+                                   @oninput="OnSearchInput" />
                         </div>
                     }
                 </div>
             </div>
-            <div class="d-flex gap-3 align-items-center">
-                @if (HeaderActions is not null)
+
+            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-md-end">
+                @if ( HeaderActions is not null )
                 {
                     @HeaderActions
                 }
-                @if (ShowPageSizeSelector && DynamicSizeOptions.Count > 0)
+
+                @if ( ShowPageSizeSelector && DynamicSizeOptions.Count > 0 )
                 {
                     <select class="form-select form-select-sm dekaya-input-group"
-                        value="@PageSize"
-                        @onchange="OnPageSizeChanged">
-                            @foreach(var size in DynamicSizeOptions)
+                            value="@PageSize"
+                            @onchange="OnPageSizeChanged">
+                        @foreach ( var size in DynamicSizeOptions )
                         {
-                            <option value="@size">@size</option>                        
+                            <option value="@size">@size</option>
                         }
                     </select>
                 }
             </div>
+
         </div>
     </div>
-    
-    <div>
-        @if (QuickGridContent is not null)
+
+    <div class="card-body p-0">
+        @if ( QuickGridContent is not null )
         {
             <div class="table-responsive dekaya-grid">
                 @QuickGridContent
@@ -63,7 +70,7 @@
         }
         else
         {
-            <div class="mb-0 fw-semibol">
+            <div class="p-2 fw-semibold">
                 No results found!
             </div>
         }
@@ -72,48 +79,36 @@
 
 @code {
     [Parameter] public string? Title { get; set; }
-
     [Parameter] public bool ShowTitle { get; set; }
-
     [Parameter] public int TotalItemCount { get; set; }
-
     [Parameter] public int SelectedItemCount { get; set; }
-
     [Parameter] public bool ShowSelectedItemCount { get; set; }
-
     [Parameter] public bool ShowSearchResultCount { get; set; }
-
     [Parameter] public bool ShowSearchInput { get; set; }
 
     [Parameter] public string SearchInputCss { get; set; } = "flex-grow-1";
-
     [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
-
     [Parameter] public EventCallback<string> SearchTermChanged { get; set; }
-
     [Parameter] public string SearchTerm { get; set; } = string.Empty;
 
     [Parameter] public bool ShowPageSizeSelector { get; set; }
-
     [Parameter] public IReadOnlyList<int>? PageSizeOptions { get; set; }
-
     [Parameter] public int PageSize { get; set; } = 10;
-
     [Parameter] public EventCallback<int> PageSizeChanged { get; set; }
 
     [Parameter] public RenderFragment HeaderActions { get; set; } = default!;
-
     [Parameter] public RenderFragment QuickGridContent { get; set; } = default!;
 
     private IReadOnlyList<int> DynamicSizeOptions => PageSizeOptions ?? [];
 
-    private async Task OnPageSizeChanged(ChangeEventArgs e)
+    private async Task OnPageSizeChanged( ChangeEventArgs e )
     {
-        if (!int.TryParse(e.Value?.ToString(), out var newSize) || newSize == PageSize)
+        if ( !int.TryParse( e.Value?.ToString(), out var newSize ) || newSize == PageSize )
             return;
 
         await PageSizeChanged.InvokeAsync( newSize );
     }
 
-    private Task OnSearchInput( ChangeEventArgs e ) => SearchTermChanged.InvokeAsync( e.Value?.ToString() ?? string.Empty );
+    private Task OnSearchInput( ChangeEventArgs e )
+        => SearchTermChanged.InvokeAsync( e.Value?.ToString() ?? string.Empty );
 }

@@ -32,7 +32,6 @@
     ::deep .breadcrumb-item + .breadcrumb-item::before {
         content: "/";
         color: var(--text-muted);
-        margin: 0 0.5rem;
     }
 
 .navbar-right {

@@ -1,0 +1,114 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@inject RoleService roleService
+@inject IApiResultPresenter apiResultPresenter
+@inject ToastService toastService
+
+<Dialog
+    @ref="dialog"
+    Title="Kullanıcıya rol ekle">
+    <ChildContent>
+        <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+            <div class="mb-4">
+                <div class="form-floating">
+                    <InputText 
+                        @bind-Value="model.Name" 
+                        class="form-control"  
+                        placeholder="Rol adını girin" />
+                    <label>Rol Adı</label>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="p-3 bg-light rounded-3 border border-light">
+                    <div class="form-check form-switch d-flex align-items-center">
+                        <InputCheckbox 
+                            class="form-check-input me-3 fs-5"
+                            @bind-Value="model.IsActive"
+                            role="switch" 
+                            style="cursor: pointer;" />
+                        <label class="form-check-label fw-semibold" for="roleActive" style="cursor: pointer;">
+                            Rolü aktif etmek istiyor musun?
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 justify-content-end mt-4 pt-3 border-top">
+                <button 
+                    type="button" 
+                    class="btn btn-outline-secondary px-4 py-2 fw-semibold" 
+                    @onclick="HideAsync"
+                    disabled="@isSubmit">
+                    İptal
+                </button>
+                <button 
+                    type="submit"
+                    class="btn btn-primary px-4 py-2 fw-semibold shadow-sm"
+                    disabled="@isSubmit">
+                    Kaydet
+                </button>
+            </div>
+        </EditForm>
+    </ChildContent>
+
+</Dialog>
+@code {
+    private Dialog? dialog;
+    private bool isSubmit;
+
+    [Parameter] public EventCallback RoleAdded { get; set; }
+
+    private CreateRoleViewModel model = new() { IsActive = true };
+
+    public async Task ShowAsync()
+    {
+        if (dialog != null)
+        {
+            await dialog.ShowAsync();
+        }
+    }
+
+    public async Task HideAsync()
+    {
+        if (dialog != null)
+        {
+            await dialog.HideAsync();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            isSubmit = true;
+            var result = await roleService.CreateAsync( model.Name, model.IsActive );
+
+            apiResultPresenter.Present( result );
+            if(!result.IsSuccessful)
+            {
+                return;
+            }
+            toastService.ShowSuccess( "Rol başarıyla oluşturuldu." );
+            //Role eklendiginde ekleneni listeye ekle-sayfa yenilemeye gerek yok
+            //EN: When a role is added, add the added one to the list - no need to refresh the page
+            if ( RoleAdded.HasDelegate)
+            {
+                await RoleAdded.InvokeAsync();
+            }
+        }
+        finally        
+        {
+            isSubmit = false;
+            await HideAsync();
+        }
+    }
+
+    public sealed class CreateRoleViewModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public string CreatedBy { get; set; } = string.Empty;
+        public string CreatedFullName { get; set; } = string.Empty;
+    }
+}
