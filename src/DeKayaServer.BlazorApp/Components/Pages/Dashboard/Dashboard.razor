@@ -53,11 +53,7 @@
         try
         {
             await apiExecutor.ExecuteAsync(
-                async () =>
-                {
-                    var r = await AuthProbeService.PingAuthorizedAsync();
-                    return (Result)r;
-                },
+                () => AuthProbeService.PingAuthorizedAsync(),
                 new ApiPresentationOptions
                 {
                     ShowError = true,

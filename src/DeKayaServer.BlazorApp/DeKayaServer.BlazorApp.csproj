@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="10.0.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+    <PackageReference Include="TS.Result" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DeKayaServer.Contracts\DeKayaServer.Contracts.csproj" />
     <ProjectReference Include="..\DeKayaServer.ServiceDefaults\DeKayaServer.ServiceDefaults.csproj" />
   </ItemGroup>
 

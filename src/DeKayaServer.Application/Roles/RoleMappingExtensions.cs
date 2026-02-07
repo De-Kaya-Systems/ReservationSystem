@@ -1,20 +1,18 @@
-﻿using DeKayaServer.Domain.Abstractions;
+﻿using DeKayaServer.Contracts.Roles;
+using DeKayaServer.Domain.Abstractions;
 using DeKayaServer.Domain.Role;
 
 namespace DeKayaServer.Application.Roles;
 
-public sealed class RoleDto : EntityDto
+public static class RoleMappingExtensions
 {
-    public string Name { get; set; } = default!;
-}
-
-//Bu method, Role entity'lerini RoleDto'larına dönüştürmek için kullanılır.
-//EN: This method is used to map Role entities to RoleDto.
-public static class RoleExtensions
-{
-    public static IQueryable<RoleDto> MapTo(this IQueryable<EntityWithAuditDto<Role>> entites)
+    /// <summary>
+    /// Maps Role entities (with audit user joins) to shared RoleDto.
+    /// TR: Role varlıklarını (denetim kullanıcı birleşimleriyle) paylaşılan RoleDto'ya dönüştürür.
+    /// </summary>
+    public static IQueryable<RoleDto> MapToDto( this IQueryable<EntityWithAuditDto<Role>> entities )
     {
-        var res = entites.Select(s => new RoleDto
+        return entities.Select( s => new RoleDto
         {
             Id = s.Entity.Id,
             Name = s.Entity.Name.Value,
@@ -25,8 +23,6 @@ public static class RoleExtensions
             UpdatedAt = s.Entity.UpdatedAt,
             UpdatedBy = s.Entity.UpdatedBy != null ? s.Entity.UpdatedBy.Value : null,
             UpdatedFullName = s.UpdatedUser != null ? s.UpdatedUser.FullName.Value : null,
-        }).AsQueryable();
-
-        return res;
+        } );
     }
 }

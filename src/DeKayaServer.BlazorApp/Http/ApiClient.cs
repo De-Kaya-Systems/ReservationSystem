@@ -1,7 +1,7 @@
 ﻿using DeKayaServer.BlazorApp.Http.TokenProcess;
-using DeKayaServer.BlazorApp.Models;
 using System.Net;
 using System.Text.Json;
+using TS.Result;
 
 namespace DeKayaServer.BlazorApp.Http;
 
@@ -63,31 +63,92 @@ public sealed class ApiClient(
         {
             using var response = await http.SendAsync( req, ct );
 
-            if ( response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden )
-            {
-                await forceLogoutService.ForceLogoutAsync();
-            }
-
             var body = response.Content is null
                 ? null
                 : await response.Content.ReadAsStringAsync( ct );
 
+            // Auth errors -> logout + kullanıcı mesajı
+            if ( response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden )
+            {
+                await forceLogoutService.ForceLogoutAsync();
+
+                // Backend envelope dönüyorsa onu yakala
+                if ( !string.IsNullOrWhiteSpace( body ) )
+                {
+                    var authEnvelope = Deserialize<Result<object>>( body );
+                    if ( authEnvelope is not null && authEnvelope.ErrorMessages?.Count > 0 )
+                    {
+                        return new Result<T>
+                        {
+                            IsSuccessful = false,
+                            StatusCode = ( int )response.StatusCode,
+                            ErrorMessages = authEnvelope.ErrorMessages
+                        };
+                    }
+                }
+
+                return Failure<T>( ( int )response.StatusCode, "Oturum süren doldu veya yetkin yok. Lütfen tekrar giriş yap." );
+            }
+
             if ( !response.IsSuccessStatusCode )
             {
-                return Failure<T>( ( int )response.StatusCode, body ?? "Request failed." );
+                if ( !string.IsNullOrWhiteSpace( body ) )
+                {
+                    //T uyuşmazsa bile ErrorMessages'ı kaybetmemek için object ile dene
+                    var errorEnvelope = Deserialize<Result<object>>( body );
+                    if ( errorEnvelope is not null && errorEnvelope.ErrorMessages?.Count > 0 )
+                    {
+                        return new Result<T>
+                        {
+                            IsSuccessful = false,
+                            StatusCode = errorEnvelope.StatusCode != 0 ? errorEnvelope.StatusCode : ( int )response.StatusCode,
+                            ErrorMessages = errorEnvelope.ErrorMessages
+                        };
+                    }
+
+                    // Eğer gerçekten Result<T> dönüyorsa
+                    if ( expectResultEnvelope )
+                    {
+                        var typedEnvelope = Deserialize<Result<T>>( body );
+                        if ( typedEnvelope is not null )
+                        {
+                            typedEnvelope.IsSuccessful = false;
+                            if ( typedEnvelope.StatusCode == 0 )
+                                typedEnvelope.StatusCode = ( int )response.StatusCode;
+
+                            // boş error listesi gelirse generic doldur
+                            if ( typedEnvelope.ErrorMessages is null || typedEnvelope.ErrorMessages.Count == 0 )
+                                typedEnvelope.ErrorMessages = [ $"İstek başarısız. HTTP {( int )response.StatusCode}." ];
+
+                            return typedEnvelope;
+                        }
+                    }
+                }
+
+                // Fallback
+                return Failure<T>( ( int )response.StatusCode,
+                    string.IsNullOrWhiteSpace( body ) ? "Sunucudan boş hata cevabı geldi." : body );
             }
 
+            // Success ama body yok (204 vs.)
             if ( string.IsNullOrWhiteSpace( body ) )
             {
-                return Failure<T>( ( int )response.StatusCode, "Empty response from server." );
+                return new Result<T>
+                {
+                    IsSuccessful = true,
+                    StatusCode = ( int )response.StatusCode,
+                    Data = default!
+                };
             }
 
+            // Success + envelope bekleniyor
             if ( expectResultEnvelope )
             {
                 var envelope = Deserialize<Result<T>>( body );
                 return envelope ?? Failure<T>( ( int )response.StatusCode, "Invalid response envelope." );
             }
 
+            // Success + raw payload
             var data = Deserialize<T>( body );
             if ( data is null )
             {
@@ -101,9 +162,13 @@ public sealed class ApiClient(
                 Data = data
             };
         }
-        catch ( TaskCanceledException )
+        catch ( TaskCanceledException ) when ( !ct.IsCancellationRequested )
         {
             return Failure<T>( 408, "İstek zaman aşımına uğradı (timeout)." );
+        }
+        catch ( TaskCanceledException )
+        {
+            return Failure<T>( 499, "İstek iptal edildi." );
         }
         catch ( HttpRequestException )
         {
