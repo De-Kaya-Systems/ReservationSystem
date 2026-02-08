@@ -1,4 +1,5 @@
 ﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Models
 @inject RoleService roleService
 @inject IApiResultPresenter apiResultPresenter
 @inject ToastService toastService
@@ -83,12 +84,11 @@
             isSubmit = true;
             var result = await roleService.CreateAsync( model.Name, model.IsActive );
 
-            apiResultPresenter.Present( result );
+            apiResultPresenter.Present( result, new ApiPresentationOptions {ShowSuccess = true} );
             if(!result.IsSuccessful)
             {
                 return;
             }
-            toastService.ShowSuccess( "Rol başarıyla oluşturuldu." );
             //Role eklendiginde ekleneni listeye ekle-sayfa yenilemeye gerek yok
             //EN: When a role is added, add the added one to the list - no need to refresh the page
             if ( RoleAdded.HasDelegate)

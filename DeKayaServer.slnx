@@ -3,6 +3,7 @@
     <Project Path="src/DeKayaServer.AppHost/DeKayaServer.AppHost.csproj" Id="ffaf4ff6-23ed-47fe-a101-b87e311ae5f1" />
     <Project Path="src/DeKayaServer.Application/DeKayaServer.Application.csproj" />
     <Project Path="src/DeKayaServer.BlazorApp/DeKayaServer.BlazorApp.csproj" />
+    <Project Path="src/DeKayaServer.Contracts/DeKayaServer.Contracts.csproj" Id="dddbdda9-744a-4e7d-8e72-6bced538c486" />
     <Project Path="src/DeKayaServer.Domain/DeKayaServer.Domain.csproj" />
     <Project Path="src/DeKayaServer.Infrastructure/DeKayaServer.Infrastructure.csproj" Id="1b3b4e2f-d8a2-4654-acc2-594d6fbe6f8b" />
     <Project Path="src/DeKayaServer.ServiceDefaults/DeKayaServer.ServiceDefaults.csproj" Id="777a4b0a-575a-4776-a5bf-ab63cb62cabe" />

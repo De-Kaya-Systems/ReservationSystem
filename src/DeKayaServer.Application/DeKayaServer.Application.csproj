@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DeKayaServer.Contracts\DeKayaServer.Contracts.csproj" />
     <ProjectReference Include="..\DeKayaServer.Domain\DeKayaServer.Domain.csproj" />
   </ItemGroup>
 

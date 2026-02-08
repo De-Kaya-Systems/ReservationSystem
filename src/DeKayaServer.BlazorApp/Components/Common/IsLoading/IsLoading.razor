@@ -1,0 +1,39 @@
+﻿@rendermode InteractiveServer
+
+<div class="d-flex align-items-center justify-content-center gap-3"
+     role="status"
+     aria-live="polite"
+     aria-busy="true"
+     aria-label="@Title">
+
+    <div class="spinner-border text-primary"
+         role="presentation"
+         aria-hidden="true"></div>
+
+    <div class="text-start">
+        <div class="fw-semibold">@Title</div>
+
+        @if ( !string.IsNullOrWhiteSpace( Message ) )
+        {
+            <div class="small text-body-secondary">@Message</div>
+        }
+        else if ( ChildContent is not null )
+        {
+            <div class="small text-body-secondary">
+                @ChildContent
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Yükleniyor…";
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
+
+<style>
+    :host {
+        display: contents;
+    }
+</style>

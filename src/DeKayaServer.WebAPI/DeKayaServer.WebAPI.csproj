@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DeKayaServer.Application\DeKayaServer.Application.csproj" />
+    <ProjectReference Include="..\DeKayaServer.Contracts\DeKayaServer.Contracts.csproj" />
     <ProjectReference Include="..\DeKayaServer.Infrastructure\DeKayaServer.Infrastructure.csproj" />
     <ProjectReference Include="..\DeKayaServer.ServiceDefaults\DeKayaServer.ServiceDefaults.csproj" />
   </ItemGroup>

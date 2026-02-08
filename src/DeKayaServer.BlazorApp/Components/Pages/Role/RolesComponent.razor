@@ -1,4 +1,5 @@
 ﻿@page "/roles"
+@using DeKayaServer.BlazorApp.Components.Common.IsLoading
 @using DeKayaServer.BlazorApp.Components.Common.QuickGrid
 @using DeKayaServer.BlazorApp.Components.Pages.Role.AddRole
 @using Microsoft.AspNetCore.Components.QuickGrid
@@ -11,63 +12,70 @@
     Title="Role - Yetkilendirme yönetimi"
     Icon="bi-shield-lock"
     Description="Bu sayfada kullanıcı izinlerini yönetebilirsin."/>
+    @if ( isLoading )
+    {
+        <IsLoading Message="Roller getiriliyor, lütfen bekleyin." />
+    }
+    else
+    {
+        <DeKayaQuickGrid 
+                Title="Rol Listesi"
+                    ShowTitle="true"
+                    ShowSearchInput="true"
+                    ShowSearchResultCount="true"
+                    TotalItemCount="@FilteredItems.Count"
+                    SearchTerm="@searchTerm"
+                    SearchTermChanged="OnSearchTermChanged"
+                    ShowPageSizeSelector="true"
+                    PageSize="@pageSize"
+                    PageSizeChanged="OnPageSizeChanged">
+                <HeaderActions>
+                    <button type="button" class="btn btn-outline-success" @onclick="ShowCreateRoleDialog">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>Ekle</span>
+                    </button>
+                </HeaderActions>
+                <QuickGridContent>
+                    <QuickGrid Items="@GridItems"
+                        Pagination="pagination"
+                        Class="table table-striped table-hover table-responsive mb-0 align-middle"
+                        TItem="RoleViewModel">
+                        <PropertyColumn Property="@(u => u.Name)" Title="Rol" Sortable="true" />
+                        <TemplateColumn Title="Durum" Sortable="true" Context="u">
+                            <span class="badge @(u.IsActive ? "bg-success" : "bg-secondary") p-2">
+                                <i class="bi @(u.IsActive ? "bi-check-circle" : "bi-x-circle") me-1"></i>
+                                @(u.IsActive ? "Aktif" : "Pasif")
+                            </span>
+                        </TemplateColumn>
+                        <PropertyColumn Property="@(u => u.CreatedFullName)" Title="Oluşturan" />
+                        <PropertyColumn Property="@(u => u.CreatedAt)" Title="Oluşturulma" Format="yyyy-MM-dd" />
+                        <PropertyColumn Property="@(u => u.UpdatedAt)" Title="Güncellenme" Format="yyyy-MM-dd" />
+                        <PropertyColumn Property="@(u => u.UpdatedBy)" Title="Güncelleyen" />
+                        <TemplateColumn Title="İşlemler">
+                            <div class="d-flex gap-2 py-1 justify-content-start">
+                                <button type="button" class="btn btn-outline-primary">
+                                    <i class="bi bi-pen"></i>
+                                    <span>Değiştir</span>
+                                </button>
 
-    <DeKayaQuickGrid 
-        Title="Rol Listesi"
-            ShowTitle="true"
-            ShowSearchInput="true"
-            ShowSearchResultCount="true"
-            TotalItemCount="@FilteredItems.Count"
-            SearchTerm="@searchTerm"
-            SearchTermChanged="OnSearchTermChanged"
-            ShowPageSizeSelector="true"
-            PageSize="@pageSize"
-            PageSizeChanged="OnPageSizeChanged">
-        <HeaderActions>
-            <button type="button" class="btn btn-outline-success" @onclick="ShowCreateRoleDialog">
-                <i class="bi bi-plus-circle"></i>
-                <span>Ekle</span>
-            </button>
-        </HeaderActions>
-        <QuickGridContent>
-            <QuickGrid Items="@GridItems"
-                Pagination="pagination"
-                Class="table table-striped table-hover table-responsive mb-0 align-middle"
-                TItem="RoleViewModel">
-                <PropertyColumn Property="@(u => u.Name)" Title="Rol" Sortable="true" />
-                <TemplateColumn Title="Durum" Sortable="true" Context="u">
-                    <span class="badge @(u.IsActive ? "bg-success" : "bg-secondary") p-2">
-                        <i class="bi @(u.IsActive ? "bi-check-circle" : "bi-x-circle") me-1"></i>
-                        @(u.IsActive ? "Aktif" : "Pasif")
-                    </span>
-                </TemplateColumn>
-                <PropertyColumn Property="@(u => u.CreatedFullName)" Title="Oluşturan" />
-                <PropertyColumn Property="@(u => u.CreatedAt)" Title="Oluşturulma" Format="yyyy-MM-dd" />
-                <PropertyColumn Property="@(u => u.UpdatedAt)" Title="Güncellenme" Format="yyyy-MM-dd" />
-                <PropertyColumn Property="@(u => u.UpdatedBy)" Title="Güncelleyen" />
-                <TemplateColumn Title="İşlemler">
-                    <div class="d-flex gap-2 py-1 justify-content-start">
-                        <button type="button" class="btn btn-outline-primary">
-                            <i class="bi bi-pen"></i>
-                            <span>Değiştir</span>
-                        </button>
-
-                        <button type="button" class="btn btn-outline-danger">
-                            <i class="bi bi-trash3"></i>
-                            <span>Sil</span>
-                        </button>
+                                <button type="button" class="btn btn-outline-danger">
+                                    <i class="bi bi-trash3"></i>
+                                    <span>Sil</span>
+                                </button>
+                            </div>
+                        </TemplateColumn>
+                    </QuickGrid>
+                    <div class="p-2">
+                        <Paginator State="pagination" />
                     </div>
-                </TemplateColumn>
-            </QuickGrid>
-            <div class="p-2">
-                <Paginator State="pagination" />
-            </div>
-        </QuickGridContent>
-    </DeKayaQuickGrid>
+                </QuickGridContent>
+            </DeKayaQuickGrid>
+    }
 
     <CreateRoleDialog @ref="createRoleDialog" RoleAdded="HandleRoleAddedAsync"/>
 
 @code {
+    private bool isLoading;
     private List<RoleViewModel> allItems = [];
     private string searchTerm = string.Empty;
     private int pageSize = 10;
@@ -121,39 +129,37 @@
 
     private async Task LoadRolesAsync()
     {
-        var result = await RoleService.GetAllAsync();
-        if ( !result.IsSuccessful || result.Data is null )
+        isLoading = true;
+        try
         {
-            allItems = [];
-            return;
-        }
+            var result = await RoleService.GetAllAsync();
+            if ( !result.IsSuccessful || result.Data is null )
+            {
+                allItems = [];
+                return;
+            }
 
-        allItems = result.Data.Select( r => new RoleViewModel
+            allItems = result.Data.Select( r => new RoleViewModel
+            {
+                Id = r.Id.ToString(),
+                Name = r.Name,
+                IsActive = r.IsActive,
+                CreatedAt = r.CreatedAt,
+                UpdatedAt = r.UpdatedAt,
+                UpdatedBy = r.UpdatedBy.ToString(),
+                UpdatedFullName = r.UpdatedFullName,
+                CreatedFullName = r.CreatedFullName
+            } ).ToList();
+        }
+        finally
         {
-            Id = r.Id,
-            Name = r.Name,
-            IsActive = r.IsActive,
-            CreatedAt = r.CreatedAt,
-            UpdatedAt = r.UpdatedAt,
-            UpdatedBy = r.UpdatedBy,
-            UpdatedFullName = r.UpdatedFullName,
-            CreatedFullName = r.CreatedFullName
-        } ).ToList();
+            isLoading = false;
+            await pagination.SetCurrentPageIndexAsync( 0 );
+            await InvokeAsync( StateHasChanged );
+        }
+   
 
         
-        await pagination.SetCurrentPageIndexAsync( 0 );
-        await InvokeAsync( StateHasChanged );
-    }
-
-    public sealed class RoleViewModel
-    {
-        public string Id { get; set; } = null!;
-        public string? Name { get; set; }
-        public bool IsActive { get; set; }
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset? UpdatedAt { get; set; }
-        public string? UpdatedBy { get; set; }
-        public string? UpdatedFullName { get; set; }
-        public string? CreatedFullName { get; set; }
+        
     }
 }
