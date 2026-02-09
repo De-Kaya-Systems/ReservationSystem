@@ -2,6 +2,7 @@
 @using DeKayaServer.BlazorApp.Components.Common.IsLoading
 @using DeKayaServer.BlazorApp.Components.Common.QuickGrid
 @using DeKayaServer.BlazorApp.Components.Pages.Role.AddRole
+@using DeKayaServer.BlazorApp.Components.Pages.Role.DeleteRole
 @using Microsoft.AspNetCore.Components.QuickGrid
 @inject RoleService RoleService
 @rendermode InteractiveServer
@@ -51,14 +52,14 @@
                         <PropertyColumn Property="@(u => u.CreatedAt)" Title="Oluşturulma" Format="yyyy-MM-dd" />
                         <PropertyColumn Property="@(u => u.UpdatedAt)" Title="Güncellenme" Format="yyyy-MM-dd" />
                         <PropertyColumn Property="@(u => u.UpdatedBy)" Title="Güncelleyen" />
-                        <TemplateColumn Title="İşlemler">
+                        <TemplateColumn Title="İşlemler" Context="u">
                             <div class="d-flex gap-2 py-1 justify-content-start">
                                 <button type="button" class="btn btn-outline-primary">
                                     <i class="bi bi-pen"></i>
                                     <span>Değiştir</span>
                                 </button>
 
-                                <button type="button" class="btn btn-outline-danger">
+                                <button type="button" class="btn btn-outline-danger" @onclick="( () => ShowDeleteRoleDialog(u))">
                                     <i class="bi bi-trash3"></i>
                                     <span>Sil</span>
                                 </button>
@@ -73,6 +74,7 @@
     }
 
     <CreateRoleDialog @ref="createRoleDialog" RoleAdded="HandleRoleAddedAsync"/>
+    <DeleteRoleDialog @ref="deleteRoleDialog" RoleId="@selectedRoleId" RoleName="@selectedRoleName" RoleDeleted="HandleRoleDeletedAsync" />
 
 @code {
     private bool isLoading;
@@ -82,6 +84,9 @@
     private PaginationState pagination = new() { ItemsPerPage = 10 };
 
     private CreateRoleDialog? createRoleDialog;
+    private DeleteRoleDialog? deleteRoleDialog;
+    private string? selectedRoleId;
+    private string? selectedRoleName;
 
     private IReadOnlyList<RoleViewModel> FilteredItems =>
     ( string.IsNullOrWhiteSpace( searchTerm )
@@ -105,6 +110,14 @@
         await InvokeAsync( StateHasChanged );
     }
 
+    private async Task HandleRoleDeletedAsync()
+    {
+        await LoadRolesAsync();
+        selectedRoleId = null;
+        selectedRoleName = null;
+        await InvokeAsync( StateHasChanged );
+    }
+
     private async Task OnSearchTermChanged( string value )
     {
         searchTerm = value;
@@ -125,6 +138,17 @@
             return;
         }
         await createRoleDialog.ShowAsync();
+    }
+
+    private async Task ShowDeleteRoleDialog(RoleViewModel role)
+    {
+        selectedRoleId = role.Id;
+        selectedRoleName = role.Name;
+        if ( deleteRoleDialog is null )
+        {
+            return;
+        }
+        await deleteRoleDialog.ShowAsync();
     }
 
     private async Task LoadRolesAsync()
@@ -156,10 +180,6 @@
             isLoading = false;
             await pagination.SetCurrentPageIndexAsync( 0 );
             await InvokeAsync( StateHasChanged );
-        }
-   
-
-        
-        
+        }        
     }
 }
