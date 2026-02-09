@@ -1,0 +1,88 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Models
+@inject RoleService roleService
+@inject IApiResultPresenter apiResultPresenter
+
+<Dialog
+    @ref="dialog"
+    Title="Rol silme işlemi">
+    <ChildContent>
+        <p class="mb-0">
+            <span class="fw-bold">@RoleName</span> rolünü silmek istediğinize emin misiniz?
+        </p>
+    </ChildContent>
+    <Footer>
+        <div class="d-flex gap-2 justify-content-end">
+            <button 
+                type="button"
+                class="btn btn-outline-secondary" 
+                @onclick="HideAsync">
+                İptal
+            </button>
+            <button 
+                type="button"
+                class="btn btn-danger"
+                @onclick="HandleDeleteAsync"
+                disabled="@isDeleting">
+                @if ( isDeleting )
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                }
+                Sil
+            </button>
+        </div>
+    </Footer>
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+    private bool isDeleting;
+    [Parameter] public string? RoleId { get; set; }
+    [Parameter] public string? RoleName { get; set; }
+    [Parameter] public EventCallback RoleDeleted { get; set; }
+
+    public async Task ShowAsync()
+    {
+        if (dialog is not null)
+        {
+            await dialog.ShowAsync();
+        }
+    }
+
+    public async Task HideAsync()
+    {
+        if (dialog is not null)
+        {
+            await dialog.HideAsync();
+        }
+    }
+
+    private async Task HandleDeleteAsync()
+    {
+        if(string.IsNullOrEmpty(RoleId) || !Guid.TryParse(RoleId, out var roleGuid))
+        {
+            return;
+        }
+
+        try
+        {
+            isDeleting = true;
+            var result = await roleService.DeleteAsync( roleGuid );
+            apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = true } );
+            if(!result.IsSuccessful)
+            {
+                return;
+            }
+
+            if(RoleDeleted.HasDelegate)
+            {
+                await RoleDeleted.InvokeAsync();
+            }
+        }
+        finally
+        {
+            isDeleting = false;
+            await HideAsync();
+        }
+    }
+}

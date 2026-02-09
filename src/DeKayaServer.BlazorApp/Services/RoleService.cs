@@ -15,7 +15,7 @@ public sealed class RoleService( IApiClient apiClient )
 
     public async Task<Result<List<RoleDto>>> GetAllAsync( CancellationToken cancellationToken = default )
     {
-        var odataRes = await apiClient.GetRawAsync<ODataEnvelope<RoleDto>>( "odata/roles", cancellationToken );
+        var odataRes = await apiClient.GetRawAsync<ODataEnvelope<RoleDto>>( EndpointConstants.ODataRoles, cancellationToken );
 
         if ( !odataRes.IsSuccessful || odataRes.Data is null )
         {
@@ -34,6 +34,9 @@ public sealed class RoleService( IApiClient apiClient )
             Data = odataRes.Data.Value ?? []
         };
     }
+
+    public Task<Result<string>> DeleteAsync( Guid id, CancellationToken cancellationToken = default )
+        => apiClient.DeleteAsync<string>( $"{EndpointConstants.Roles}/{id}", cancellationToken );
 
     private sealed class ODataEnvelope<T>
     {
