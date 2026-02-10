@@ -3,6 +3,7 @@
 @using DeKayaServer.BlazorApp.Components.Common.QuickGrid
 @using DeKayaServer.BlazorApp.Components.Pages.Role.AddRole
 @using DeKayaServer.BlazorApp.Components.Pages.Role.DeleteRole
+@using DeKayaServer.BlazorApp.Components.Pages.Role.Update
 @using Microsoft.AspNetCore.Components.QuickGrid
 @inject RoleService RoleService
 @rendermode InteractiveServer
@@ -49,17 +50,23 @@
                             </span>
                         </TemplateColumn>
                         <PropertyColumn Property="@(u => u.CreatedFullName)" Title="Oluşturan" />
-                        <PropertyColumn Property="@(u => u.CreatedAt)" Title="Oluşturulma" Format="yyyy-MM-dd" />
-                        <PropertyColumn Property="@(u => u.UpdatedAt)" Title="Güncellenme" Format="yyyy-MM-dd" />
-                        <PropertyColumn Property="@(u => u.UpdatedBy)" Title="Güncelleyen" />
+                        <PropertyColumn Property="@(u => u.CreatedAt)" Title="Oluşturulma" Format="dd-MM-yyyy - HH:mm" />
+                        <PropertyColumn Property="@(u => u.UpdatedAt)" Title="Güncellenme" Format="dd-MM-yyyy - HH:mm" />
+                        <PropertyColumn Property="@(u => u.UpdatedFullName)" Title="Güncelleyen" />
                         <TemplateColumn Title="İşlemler" Context="u">
                             <div class="d-flex gap-2 py-1 justify-content-start">
-                                <button type="button" class="btn btn-outline-primary">
+                                <button 
+                                    type="button" 
+                                    class="btn btn-outline-primary"
+                                    @onclick="(() => ShowUpdateRoleDialog(u))">
                                     <i class="bi bi-pen"></i>
-                                    <span>Değiştir</span>
+                                    <span>Güncelle</span>
                                 </button>
 
-                                <button type="button" class="btn btn-outline-danger" @onclick="( () => ShowDeleteRoleDialog(u))">
+                                <button 
+                                    type="button" 
+                                    class="btn btn-outline-danger" 
+                                    @onclick="( () => ShowDeleteRoleDialog(u))">
                                     <i class="bi bi-trash3"></i>
                                     <span>Sil</span>
                                 </button>
@@ -68,13 +75,14 @@
                     </QuickGrid>
                     <div class="p-2">
                         <Paginator State="pagination" />
-                    </div>
+                    </div>             
                 </QuickGridContent>
             </DeKayaQuickGrid>
     }
 
     <CreateRoleDialog @ref="createRoleDialog" RoleAdded="HandleRoleAddedAsync"/>
     <DeleteRoleDialog @ref="deleteRoleDialog" RoleId="@selectedRoleId" RoleName="@selectedRoleName" RoleDeleted="HandleRoleDeletedAsync" />
+    <UpdateRoleDialog @ref="updateRolDialog" RoleId="@selectedRoleId" RoleName="@selectedRoleName" RoleIsActive="@selectedRoleIsActive" RoleUpdated="HandleRoleUpdatedAsync" />
 
 @code {
     private bool isLoading;
@@ -85,8 +93,11 @@
 
     private CreateRoleDialog? createRoleDialog;
     private DeleteRoleDialog? deleteRoleDialog;
+    private UpdateRoleDialog? updateRolDialog;
+
     private string? selectedRoleId;
     private string? selectedRoleName;
+    private bool selectedRoleIsActive;
 
     private IReadOnlyList<RoleViewModel> FilteredItems =>
     ( string.IsNullOrWhiteSpace( searchTerm )
@@ -118,6 +129,12 @@
         await InvokeAsync( StateHasChanged );
     }
 
+    private async Task HandleRoleUpdatedAsync()
+    {
+        await LoadRolesAsync();
+        await InvokeAsync( StateHasChanged );
+    }
+
     private async Task OnSearchTermChanged( string value )
     {
         searchTerm = value;
@@ -144,11 +161,25 @@
     {
         selectedRoleId = role.Id;
         selectedRoleName = role.Name;
+
         if ( deleteRoleDialog is null )
         {
             return;
         }
         await deleteRoleDialog.ShowAsync();
+    }
+
+    private async Task ShowUpdateRoleDialog(RoleViewModel model)
+    {
+        selectedRoleId = model.Id;
+        selectedRoleName = model.Name;
+        selectedRoleIsActive = model.IsActive;
+
+        if ( updateRolDialog is null )
+        {
+            return;
+        }
+        await updateRolDialog.ShowAsync();
     }
 
     private async Task LoadRolesAsync()
