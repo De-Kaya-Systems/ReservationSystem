@@ -7,15 +7,15 @@ public sealed class User : Entity
 {
     public User() { }
 
-    public User(FirstName firstName, LastName lastName, Email email, UserName userName, Password password)
+    public User( FirstName firstName, LastName lastName, Email email, UserName userName, Password password )
     {
-        SetFirstName(firstName);
-        SetLastName(lastName);
-        SetLastName(lastName);
-        SetUserName(userName);
-        SetPassword(password);
+        SetFirstName( firstName );
+        SetLastName( lastName );
+        SetEmail( email );
+        SetUserName( userName );
+        SetPassword( password );
         SetFullName();
-        SetIsForgotPasswordCompleted(new(true));
+        SetIsForgotPasswordCompleted( new( true ) );
     }
 
     public FirstName FirstName { get; private set; } = default!;
@@ -29,50 +29,50 @@ public sealed class User : Entity
     public IsForgotPasswordCompleted IsForgotPasswordCompleted { get; private set; } = default!;
 
     #region Behaviors
-    public bool VerifyPasswordHash(string password)
+    public bool VerifyPasswordHash( string password )
     {
-        using var hmac = new System.Security.Cryptography.HMACSHA512(Password.PasswordSalt);
-        var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-        return computedHash.SequenceEqual(Password.PasswordHash);
+        using var hmac = new System.Security.Cryptography.HMACSHA512( Password.PasswordSalt );
+        var computedHash = hmac.ComputeHash( System.Text.Encoding.UTF8.GetBytes( password ) );
+        return computedHash.SequenceEqual( Password.PasswordHash );
     }
 
     public void CreateForgotPasswordId()
     {
-        ForgotPasswordCode = new(Guid.CreateVersion7());
-        ForgotPasswordDate = new(DateTimeOffset.Now);
-        IsForgotPasswordCompleted = new(false);
+        ForgotPasswordCode = new( Guid.CreateVersion7() );
+        ForgotPasswordDate = new( DateTimeOffset.Now );
+        IsForgotPasswordCompleted = new( false );
     }
-    public void SetFirstName(FirstName firstName)
+    public void SetFirstName( FirstName firstName )
     {
         FirstName = firstName;
     }
 
-    public void SetLastName(LastName lastName)
+    public void SetLastName( LastName lastName )
     {
         LastName = lastName;
     }
 
     public void SetFullName()
     {
-        FullName = new(FirstName.Value + " " + LastName.Value + " (" + Email.Value + ")");
+        FullName = new( FirstName.Value + " " + LastName.Value + " (" + Email.Value + ")" );
     }
 
-    public void SetEmail(Email email)
+    public void SetEmail( Email email )
     {
         Email = email;
     }
 
-    public void SetUserName(UserName userName)
+    public void SetUserName( UserName userName )
     {
         UserName = userName;
     }
 
-    public void SetPassword(Password newPassword)
+    public void SetPassword( Password newPassword )
     {
         Password = newPassword;
     }
 
-    public void SetIsForgotPasswordCompleted(IsForgotPasswordCompleted isForgotPasswordCompleted)
+    public void SetIsForgotPasswordCompleted( IsForgotPasswordCompleted isForgotPasswordCompleted )
     {
         IsForgotPasswordCompleted = isForgotPasswordCompleted;
     }

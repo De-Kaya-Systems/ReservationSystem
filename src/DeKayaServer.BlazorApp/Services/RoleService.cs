@@ -13,6 +13,12 @@ public sealed class RoleService( IApiClient apiClient )
             new CreateRoleRequest( name, isActive ),
             cancellationToken );
 
+    public Task<Result<string>> UpdateAsync( Guid id, string name, bool isActive, CancellationToken cancellationToken = default )
+        => apiClient.PutAsync<UpdateRoleRequest, string>(
+            EndpointConstants.Roles,
+            new UpdateRoleRequest( id, name, isActive ),
+            cancellationToken );
+
     public async Task<Result<List<RoleDto>>> GetAllAsync( CancellationToken cancellationToken = default )
     {
         var odataRes = await apiClient.GetRawAsync<ODataEnvelope<RoleDto>>( EndpointConstants.ODataRoles, cancellationToken );
