@@ -1,0 +1,170 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Components.Common.IsLoading
+@using DeKayaServer.BlazorApp.Models.Permission
+@inject IPermissionService permissionService
+
+<Dialog
+    @ref="dialog"
+    Title="Role yetki izinleri">
+    <ChildContent>
+        @if(isLoading)
+        {
+            <IsLoading Message="İzinler getiriliyor, lütfen bekleyin." />
+        }
+        else if ( !string.IsNullOrEmpty(errorMessage) )
+        {
+            <div class="alert alert-danger" role="alert">
+                @errorMessage
+            </div>
+        }
+        else
+        {
+            <div class="accordion" id="permissionAccordion">
+                @for ( var i = 0; i < groups.Count; i++ )
+                {
+                    var group = groups[ i ];
+                    var headingId = $"perm-heading-{group.GroupKey}";
+                    var collapseId = $"perm-collapse-{group.GroupKey}";
+                    var isFirst = i == 0;
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="@headingId">
+                            <button class="@($"accordion-button {( isFirst ? "" : "collapsed" )} fw-bold")"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="@($"#{collapseId}")"
+                                    aria-expanded="@isFirst.ToString().ToLowerInvariant()"
+                                    aria-controls="@collapseId">
+                                @group.Title
+                            </button>
+                        </h2>
+
+                        <div id="@collapseId"
+                             class="@($"accordion-collapse collapse {( isFirst ? "show" : "" )}")"
+                             aria-labelledby="@headingId"
+                             data-bs-parent="#permissionAccordion">
+                            <div class="accordion-body p-0">
+                                <div class="list-group list-group-flush">
+                                    @foreach ( var action in group.Actions )
+                                    {
+                                        <label class="list-group-item d-flex align-items-center gap-2 mb-0">
+                                            <input class="form-check-input m-0"
+                                                   type="checkbox"
+                                                   @bind="action.IsSelected" />
+                                            <span class="flex-grow-1">@action.Title</span>
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        <div class="d-flex gap-2 justify-content-end">
+            <button type="button"
+                    class="btn btn-outline-secondary"
+                    @onclick="HideAsync">
+                İptal
+            </button>
+            <button type="button"
+                    class="btn btn-primary">
+                Kaydet
+            </button>
+        </div>
+    </Footer>
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+    private bool isLoading;
+    private string? errorMessage;
+
+    private List<PermissionGroup> groups = [];
+
+
+    public async Task ShowAsync()
+    {
+        if ( dialog is null )
+        {
+            return;
+        }
+
+        await LoadAsync();
+        await dialog.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        if ( dialog is not null )
+        {
+            await dialog.HideAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        groups = [];
+
+        try
+        {
+            var res = await permissionService.GetAllAsync();
+
+            if ( !res.IsSuccessful || res.Data is null )
+            {
+                errorMessage = res.ErrorMessages?.FirstOrDefault() ?? "İzinler getirilirken bir hata oluştu.";
+                isLoading = false;
+                return;
+            }
+
+            groups = BuildTreeView( res.Data );
+        }
+        finally
+        {
+            isLoading = false; 
+        }
+    }
+
+    private static List<PermissionGroup> BuildTreeView(List<string> permissions)
+    {
+        var parsed = permissions
+            .Select( p => p?.Trim() )
+            .Where( p => !string.IsNullOrWhiteSpace( p ) )
+            .Select( p =>
+            {
+                var parts = p!.Split( ':', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries );
+                var resource = parts.Length > 0 ? parts[ 0 ] : p!;
+                var action = parts.Length > 1 ? parts[ 1 ] : string.Empty;
+                return (resource, action, key: p!);
+            } )
+            .Where( x => !string.IsNullOrWhiteSpace( x.resource ) && !string.IsNullOrWhiteSpace( x.action ) );
+
+        return parsed
+            .GroupBy( x => x.resource, StringComparer.OrdinalIgnoreCase )
+            .OrderBy( g => g.Key )
+            .Select( g => new PermissionGroup
+            {
+                GroupKey = g.Key.ToLowerInvariant(),
+                Title = ToTitle( g.Key ),
+                Actions = g
+                    .OrderBy( x => x.action )
+                    .Select( x => new PermissionAction
+                    {
+                        Key = x.key,
+                        Title = ToTitle( x.action ),
+                        IsSelected = false
+                    } )
+                    .ToList()
+            } )
+            .ToList();
+    }
+
+    private static string ToTitle( string value )
+        => string.IsNullOrWhiteSpace( value )
+            ? value
+            : char.ToUpperInvariant( value[ 0 ] ) + value[ 1.. ];
+}
