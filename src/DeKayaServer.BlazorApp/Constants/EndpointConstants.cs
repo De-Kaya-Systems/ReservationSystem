@@ -14,4 +14,7 @@ public static class EndpointConstants
     //Roles
     public const string Roles = "/roles";
     public const string ODataRoles = "/odata/roles";
+
+    //Permissions
+    public const string Permissions = "/permissions";
 }

@@ -35,7 +35,7 @@
         @if (ShowAddButton && !string.IsNullOrWhiteSpace(AddBtnUrl))
         {
             <div class="btn-group">
-                <a href="@AddBtnUrl" class="btn btn-outline-success">
+                <a href="@AddBtnUrl" class="btn btn-outline-success btn-sm">
                     <i class="bi bi-plus-circle" />
                     <span>Ekle</span>
                 </a>
@@ -44,7 +44,7 @@
 
         @if (ShowBackButton)
         {
-            <button type="button" class="btn btn-outline-secondary" @onclick="BackButtonClicked">
+            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="BackButtonClicked">
                 <i class="bi bi-arrow-left me-1"></i>
                 <span>Geri</span>
             </button>
