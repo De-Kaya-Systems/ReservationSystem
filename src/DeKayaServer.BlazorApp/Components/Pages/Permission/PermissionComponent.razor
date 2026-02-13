@@ -1,11 +1,14 @@
 ﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
 @using DeKayaServer.BlazorApp.Components.Common.IsLoading
+@using DeKayaServer.BlazorApp.Models
 @using DeKayaServer.BlazorApp.Models.Permission
 @inject IPermissionService permissionService
+@inject IApiResultPresenter apiResultPresenter
+@inject RoleService roleService
 
 <Dialog
     @ref="dialog"
-    Title="Role yetki izinleri">
+    Title="@DialogTitle">
     <ChildContent>
         @if(isLoading)
         {
@@ -69,9 +72,20 @@
                     @onclick="HideAsync">
                 İptal
             </button>
-            <button type="button"
-                    class="btn btn-primary">
-                Kaydet
+            <button 
+                type="button"
+                class="btn btn-primary"
+                disabled="@isSaving"
+                @onclick="HandlePersmissionsChangedAsync">
+                @if ( isSaving )
+                {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span class="visually-hidden">Kaydediliyor...</span>
+                }
+                else
+                {
+                    <span>Kaydet</span>
+                }
             </button>
         </div>
     </Footer>
@@ -80,17 +94,29 @@
 @code {
     private Dialog? dialog;
     private bool isLoading;
+    private bool isSaving = false;
     private string? errorMessage;
+    private Guid currentRoleId;
+    private string currentRoleName = string.Empty;
+
+    [Parameter] public EventCallback PermissionsChanged { get; set; }
+
+    private string DialogTitle
+        => string.IsNullOrWhiteSpace( currentRoleName )
+            ? "Role yetki izinleri"
+            : $"Role yetki izinleri - {currentRoleName}";
 
     private List<PermissionGroup> groups = [];
 
-
-    public async Task ShowAsync()
+    public async Task ShowAsync( string roleId, string roleName )
     {
         if ( dialog is null )
         {
             return;
         }
+
+        currentRoleId = Guid.Parse(roleId);
+        currentRoleName = roleName;
 
         await LoadAsync();
         await dialog.ShowAsync();
@@ -109,7 +135,6 @@
         isLoading = true;
         errorMessage = null;
         groups = [];
-
         try
         {
             var res = await permissionService.GetAllAsync();
@@ -117,15 +142,71 @@
             if ( !res.IsSuccessful || res.Data is null )
             {
                 errorMessage = res.ErrorMessages?.FirstOrDefault() ?? "İzinler getirilirken bir hata oluştu.";
-                isLoading = false;
+                return;
+            }
+            groups = BuildTreeView( res.Data );
+            
+            var roleRes = await roleService.GetByPermissionIdAsync( currentRoleId );
+            if ( !roleRes.IsSuccessful || roleRes.Data is null )
+            {
+                errorMessage = roleRes.ErrorMessages?.FirstOrDefault() ?? "Role ait izinler getirilirken bir hata oluştu.";
                 return;
             }
 
-            groups = BuildTreeView( res.Data );
+            ApplySelectedPermissions( groups, roleRes.Data.Permissions );
         }
         finally
         {
-            isLoading = false; 
+            isLoading = false;
+            await InvokeAsync( StateHasChanged );
+        }
+    }
+
+    private static void ApplySelectedPermissions( List<PermissionGroup> groups, List<string> selectedPermissions )
+    {
+        var selectedSet = new HashSet<string>(
+            selectedPermissions
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => p.Trim()),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var action in groups.SelectMany(g => g.Actions))
+        {
+            action.IsSelected = selectedSet.Contains(action.Key);
+        }
+    }
+
+    private async Task HandlePersmissionsChangedAsync()
+    {
+        errorMessage = null;
+        isLoading = true;
+
+        try
+        {
+            var selectedPermissions = groups
+                .SelectMany( g => g.Actions )
+                .Where( a => a.IsSelected )
+                .Select( a => a.Key )
+                .Distinct( StringComparer.OrdinalIgnoreCase )
+                .ToList();
+
+            var res = await permissionService.UpdateRolePermissionsAsync( currentRoleId, selectedPermissions );
+            apiResultPresenter.Present( res, new ApiPresentationOptions { ShowSuccess = true } );
+            if ( !res.IsSuccessful )
+            {
+                errorMessage = res.ErrorMessages?.FirstOrDefault() ?? "İzinler güncellenirken bir hata oluştu.";
+                return;
+            }
+            if( PermissionsChanged.HasDelegate)
+            {
+                await PermissionsChanged.InvokeAsync();
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync( StateHasChanged );
+            await HideAsync();
         }
     }
 

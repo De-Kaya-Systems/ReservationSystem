@@ -17,7 +17,7 @@ internal sealed class RoleGetQueryHandler(
     {
         var res = await roleRepository
             .GetAllWithAudit()
-            .MapToDto()
+            .MapToGet()
             .Where( r => r.Id == request.Id )
             .FirstOrDefaultAsync( cancellationToken );
 

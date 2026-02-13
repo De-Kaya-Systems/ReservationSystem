@@ -17,4 +17,5 @@ public static class EndpointConstants
 
     //Permissions
     public const string Permissions = "/permissions";
+    public const string UpdateRolePermissions = "/roles/update-permissions";
 }
