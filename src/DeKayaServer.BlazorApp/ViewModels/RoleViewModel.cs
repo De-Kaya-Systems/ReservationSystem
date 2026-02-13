@@ -10,4 +10,5 @@ public sealed class RoleViewModel
     public string? UpdatedBy { get; set; }
     public string? UpdatedFullName { get; set; }
     public string? CreatedFullName { get; set; }
+    public int PermissionsCount { get; set; }
 }

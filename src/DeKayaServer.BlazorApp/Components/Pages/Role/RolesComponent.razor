@@ -33,7 +33,7 @@
                     PageSize="@pageSize"
                     PageSizeChanged="OnPageSizeChanged">
                 <HeaderActions>
-                <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateRoleDialog">
+                    <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateRoleDialog">
                         <i class="bi bi-plus-circle"></i>
                         <span>Ekle</span>
                     </button>
@@ -50,6 +50,7 @@
                                 @(u.IsActive ? "Aktif" : "Pasif")
                             </span>
                         </TemplateColumn>
+                        <PropertyColumn Property="@(u => u.PermissionsCount)" Title="İzin sayısı" />
                         <PropertyColumn Property="@(u => u.CreatedFullName)" Title="Oluşturan" />
                         <PropertyColumn Property="@(u => u.CreatedAt)" Title="Oluşturulma" Format="dd-MM-yyyy - HH:mm" />
                         <PropertyColumn Property="@(u => u.UpdatedAt)" Title="Güncellenme" Format="dd-MM-yyyy - HH:mm" />
@@ -59,7 +60,7 @@
                                 <button 
                                     type="button" 
                                     class="btn btn-outline-secondary btn-sm"
-                                    @onclick="ShowPermissionComponent">
+                                    @onclick="( () => ShowPermissionComponent( u ) )">
                                     <i class="bi bi-key"></i>
                                     <span>İzinler</span>
                                 </button>
@@ -71,8 +72,8 @@
                                     <span>Güncelle</span>
                                 </button>
 
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     class="btn btn-outline-danger btn-sm"
                                     @onclick="( () => ShowDeleteRoleDialog(u))">
                                     <i class="bi bi-trash3"></i>
@@ -83,7 +84,7 @@
                     </QuickGrid>
                     <div class="p-2">
                         <Paginator State="pagination" />
-                    </div>             
+                    </div>
                 </QuickGridContent>
             </DeKayaQuickGrid>
     }
@@ -91,7 +92,7 @@
     <CreateRoleDialog @ref="createRoleDialog" RoleAdded="HandleRoleAddedAsync"/>
     <DeleteRoleDialog @ref="deleteRoleDialog" RoleId="@selectedRoleId" RoleName="@selectedRoleName" RoleDeleted="HandleRoleDeletedAsync" />
     <UpdateRoleDialog @ref="updateRolDialog" RoleId="@selectedRoleId" RoleName="@selectedRoleName" RoleIsActive="@selectedRoleIsActive" RoleUpdated="HandleRoleUpdatedAsync" />
-    <PermissionComponent @ref="permissionDialog" />
+    <PermissionComponent @ref="permissionDialog" PermissionsChanged="HandlePermissionsChangedAsync" />
 
 @code {
     private bool isLoading;
@@ -131,6 +132,11 @@
         await InvokeAsync( StateHasChanged );
     }
 
+    private async Task HandlePermissionsChangedAsync()
+    {
+        await LoadRolesAsync();
+        await InvokeAsync( StateHasChanged );
+    }
     private async Task HandleRoleDeletedAsync()
     {
         await LoadRolesAsync();
@@ -192,13 +198,15 @@
         await updateRolDialog.ShowAsync();
     }
 
-    private async Task ShowPermissionComponent()
+    private async Task ShowPermissionComponent(RoleViewModel model)
     {
+        var roleId = model.Id;
+        var roleName = model.Name ?? string.Empty;
         if ( permissionDialog is null )
         {
             return;
         }
-        await permissionDialog.ShowAsync();
+        await permissionDialog.ShowAsync( roleId, roleName );
     }
 
     private async Task LoadRolesAsync()
@@ -222,7 +230,8 @@
                 UpdatedAt = r.UpdatedAt,
                 UpdatedBy = r.UpdatedBy.ToString(),
                 UpdatedFullName = r.UpdatedFullName,
-                CreatedFullName = r.CreatedFullName
+                CreatedFullName = r.CreatedFullName,
+                PermissionsCount = r.PermissionsCount
             } ).ToList();
         }
         finally
@@ -230,6 +239,6 @@
             isLoading = false;
             await pagination.SetCurrentPageIndexAsync( 0 );
             await InvokeAsync( StateHasChanged );
-        }        
+        }
     }
 }

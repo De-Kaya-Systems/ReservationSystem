@@ -13,4 +13,6 @@ public sealed class RoleDto
     public DateTimeOffset? UpdatedAt { get; set; }
     public Guid? UpdatedBy { get; set; }
     public string? UpdatedFullName { get; set; }
+    public int PermissionsCount { get; set; }
+    public List<string> Permissions { get; set; } = new();
 }
