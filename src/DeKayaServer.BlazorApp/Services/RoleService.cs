@@ -1,11 +1,12 @@
 ﻿using DeKayaServer.BlazorApp.Constants;
 using DeKayaServer.BlazorApp.Http;
+using DeKayaServer.BlazorApp.Interfaces;
 using DeKayaServer.Contracts.Roles;
 using TS.Result;
 
 namespace DeKayaServer.BlazorApp.Services;
 
-public sealed class RoleService( IApiClient apiClient )
+public sealed class RoleService( IApiClient apiClient ) : IRoleService
 {
     public Task<Result<string>> CreateAsync( string name, bool isActive, CancellationToken cancellationToken = default )
         => apiClient.PostAsync<CreateRoleRequest, string>(
