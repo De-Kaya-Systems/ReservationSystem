@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace DeKayaServer.Application.Services;
 
-internal sealed class PermissionService
+public sealed class PermissionService
 {
     public List<string> GetAll()
     {
@@ -20,13 +20,13 @@ internal sealed class PermissionService
         var types = assembly.GetTypes();
 
         // Tüm type'ları dolaş ve PermissionAttribute olanları bul
-        foreach (var type in types)
+        foreach ( var type in types )
         {
             var permissionAttributes = type.GetCustomAttribute<PermissionAttribute>();
 
-            if (permissionAttributes is not null && !string.IsNullOrEmpty(permissionAttributes.Permission))
+            if ( permissionAttributes is not null && !string.IsNullOrEmpty( permissionAttributes.Permission ) )
             {
-                permissions.Add(permissionAttributes.Permission);
+                permissions.Add( permissionAttributes.Permission );
             }
         }
 
