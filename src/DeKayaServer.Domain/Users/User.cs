@@ -7,7 +7,13 @@ public sealed class User : Entity
 {
     public User() { }
 
-    public User( FirstName firstName, LastName lastName, Email email, UserName userName, Password password )
+    public User(
+        FirstName firstName,
+        LastName lastName,
+        Email email,
+        UserName userName,
+        Password password,
+        IdentityId roleId )
     {
         SetFirstName( firstName );
         SetLastName( lastName );
@@ -16,6 +22,7 @@ public sealed class User : Entity
         SetPassword( password );
         SetFullName();
         SetIsForgotPasswordCompleted( new( true ) );
+        SetRoleId( roleId );
     }
 
     public FirstName FirstName { get; private set; } = default!;
@@ -27,6 +34,7 @@ public sealed class User : Entity
     public ForgotPasswordCode? ForgotPasswordCode { get; private set; }
     public ForgotPasswordDate? ForgotPasswordDate { get; private set; }
     public IsForgotPasswordCompleted IsForgotPasswordCompleted { get; private set; } = default!;
+    public IdentityId RoleId { get; private set; } = default!;
 
     #region Behaviors
     public bool VerifyPasswordHash( string password )
@@ -76,5 +84,11 @@ public sealed class User : Entity
     {
         IsForgotPasswordCompleted = isForgotPasswordCompleted;
     }
+
+    public void SetRoleId( IdentityId roleId )
+    {
+        RoleId = roleId;
+    }
+
     #endregion
 }
