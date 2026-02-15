@@ -96,9 +96,10 @@
                 await RoleAdded.InvokeAsync();
             }
         }
-        finally        
+        finally
         {
             isSubmit = false;
+            model = new();
             await HideAsync();
         }
     }

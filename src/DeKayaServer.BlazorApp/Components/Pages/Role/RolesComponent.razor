@@ -1,12 +1,11 @@
 ﻿@page "/roles"
-@using DeKayaServer.BlazorApp.Components.Common.IsLoading
-@using DeKayaServer.BlazorApp.Components.Common.QuickGrid
 @using DeKayaServer.BlazorApp.Components.Pages.Permission
 @using DeKayaServer.BlazorApp.Components.Pages.Role.AddRole
 @using DeKayaServer.BlazorApp.Components.Pages.Role.DeleteRole
 @using DeKayaServer.BlazorApp.Components.Pages.Role.Update
 @using Microsoft.AspNetCore.Components.QuickGrid
 @inject IRoleService RoleService
+@inherits UserContextComponent
 @rendermode InteractiveServer
 
 <PageTitle>De-Kaya Systems | @PageTitleConstans.RolesPage </PageTitle>
@@ -33,10 +32,13 @@
                     PageSize="@pageSize"
                     PageSizeChanged="OnPageSizeChanged">
                 <HeaderActions>
-                    <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateRoleDialog">
-                        <i class="bi bi-plus-circle"></i>
-                        <span>Ekle</span>
-                    </button>
+                    @if(CurrentUser.HasPermission("role:create"))
+                    {
+                        <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateRoleDialog">
+                            <i class="bi bi-plus-circle"></i>
+                            <span>Ekle</span>
+                        </button>
+                    }
                 </HeaderActions>
                 <QuickGridContent>
                     <QuickGrid Items="@GridItems"
@@ -57,28 +59,36 @@
                         <PropertyColumn Property="@(u => u.UpdatedFullName)" Title="Güncelleyen" />
                         <TemplateColumn Title="İşlemler" Context="u">
                             <div class="d-flex gap-2 py-1 justify-content-start">
-                                <button 
+                                @if ( CurrentUser.HasPermission( "permission:view" ) )
+                                {
+                                    <button 
                                     type="button" 
                                     class="btn btn-outline-secondary btn-sm"
                                     @onclick="( () => ShowPermissionComponent( u ) )">
-                                    <i class="bi bi-key"></i>
-                                    <span>İzinler</span>
-                                </button>
-                                <button 
-                                    type="button" 
-                                    class="btn btn-outline-primary btn-sm"
-                                    @onclick="(() => ShowUpdateRoleDialog(u))">
-                                    <i class="bi bi-pen"></i>
-                                    <span>Güncelle</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="btn btn-outline-danger btn-sm"
-                                    @onclick="( () => ShowDeleteRoleDialog(u))">
-                                    <i class="bi bi-trash3"></i>
-                                    <span>Sil</span>
-                                </button>
+                                        <i class="bi bi-key"></i>
+                                        <span>İzinler</span>
+                                    </button>
+                                }
+                                @if ( CurrentUser.HasPermission( "role:edit"  ) )
+                                {
+                                    <button 
+                                        type="button" 
+                                        class="btn btn-outline-primary btn-sm"
+                                        @onclick="(() => ShowUpdateRoleDialog(u))">
+                                        <i class="bi bi-pen"></i>
+                                        <span>Güncelle</span>
+                                    </button>
+                                }
+                                @if ( CurrentUser.HasPermission( "role:delete" ) )
+                                {
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-danger btn-sm"
+                                        @onclick="( () => ShowDeleteRoleDialog(u))">
+                                        <i class="bi bi-trash3"></i>
+                                        <span>Sil</span>
+                                    </button>
+                                }
                             </div>
                         </TemplateColumn>
                     </QuickGrid>
@@ -110,22 +120,26 @@
     private string? selectedRoleName;
     private bool selectedRoleIsActive;
 
+    private IEnumerable<RoleViewModel> VisibleItems =>
+        CurrentUser.IsSysAdmin
+            ? allItems
+            : allItems.Where( r => !string.Equals( r.Name?.Trim(), RoleConstants.SysAdmin, StringComparison.OrdinalIgnoreCase ) );
+
     private IReadOnlyList<RoleViewModel> FilteredItems =>
-    ( string.IsNullOrWhiteSpace( searchTerm )
-        ? allItems
-        : allItems
-            .Where( u =>
-                ( u.Name != null && u.Name.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ||
-                u.IsActive.ToString().Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) )
-            .ToList() );
+        ( string.IsNullOrWhiteSpace( searchTerm )
+            ? VisibleItems
+            : VisibleItems.Where( u =>
+                    ( u.Name != null && u.Name.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
+                    u.IsActive.ToString().Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) )
+            .ToList();
 
     private IQueryable<RoleViewModel> GridItems => FilteredItems.AsQueryable();
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
         await LoadRolesAsync();
     }
-
     private async Task HandleRoleAddedAsync()
     {
         await LoadRolesAsync();

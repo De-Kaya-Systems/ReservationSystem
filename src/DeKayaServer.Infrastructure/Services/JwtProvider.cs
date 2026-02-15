@@ -23,7 +23,15 @@ internal sealed class JwtProvider(
 {
     public async Task<string> CreateTokenAsync( User user, CancellationToken cancellationToken = default )
     {
-        var role = await roleRepository.FirstOrDefaultAsync( x => x.Id == user.RoleId, cancellationToken );
+        //var role = await roleRepository.FirstOrDefaultAsync( x => x.Id == user.RoleId, cancellationToken );
+        var role = await roleRepository
+            .Where( x => x.Id == user.RoleId )
+            .Include( x => x.Permissions )
+            .FirstOrDefaultAsync( cancellationToken );
+        if ( role is null )
+        {
+            throw new InvalidOperationException( "Role not found for user." );
+        }
         List<Claim> claims = new()
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id),
@@ -31,8 +39,8 @@ internal sealed class JwtProvider(
             new Claim("lastName", user.LastName.Value),
             new Claim("fullName", user.FullName.Value),
             new Claim("email", user.Email.Value),
-            new Claim("role", role.Name.Value ),
-            new Claim("permissions", JsonSerializer.Serialize( role.Permissions))
+            new Claim("role", role.Name.Value ?? string.Empty),
+            new Claim("permissions", role is null ? "" : JsonSerializer.Serialize( role.Permissions.Select(p => p.Value).ToArray()))
         };
 
         SymmetricSecurityKey securityKey = new( Encoding.UTF8.GetBytes( options.Value.SecretKey ) );

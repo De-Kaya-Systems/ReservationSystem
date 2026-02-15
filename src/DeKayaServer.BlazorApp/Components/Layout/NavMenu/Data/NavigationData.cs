@@ -9,7 +9,8 @@ public static class NavigationData
         {
             Title = "Dashboard",
             Url = "/",
-            Icon = "bi-speedometer2"
+            Icon = "bi-speedometer2",
+            Permission = "dashboard:view"
         },
         new()
         {
@@ -17,9 +18,16 @@ public static class NavigationData
             Icon = "bi-snow",
             Children =
             [
-                new() { Title = "Tüm Odalar", Url = "/cooling-rooms" },
-                new() { Title = "Yeni Araç Ekle", Url = "/cooling-rooms/new" },
-                new() { Title = "Bakım Takibi", Url = "/cooling-rooms/maintenance" },
+                new() {
+                    Title = "Tüm Odalar",
+                    Url = "/cooling-rooms",
+                    Permission = "seyyar-room:view"
+                },
+                new() {
+                    Title = "Bakım Takibi",
+                    Url = "/cooling-rooms/maintenance",
+                    Permission = "seyyar-room:maintenance"
+                },
             ]
         },
         new()
@@ -27,6 +35,7 @@ public static class NavigationData
             Title = "Role Yönetimi",
             Url = "/roles",
             Icon = "bi-shield-lock",
+            Permission = "role:view"
         }
     ];
 }

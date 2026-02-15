@@ -6,4 +6,5 @@ public sealed class NavigationItem
     public string? Url { get; init; }
     public string? Icon { get; init; }
     public List<NavigationItem> Children { get; init; } = [];
+    public string? Permission { get; init; }
 }

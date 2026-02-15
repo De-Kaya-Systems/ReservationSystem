@@ -5,6 +5,7 @@
 @inject IPermissionService permissionService
 @inject IApiResultPresenter apiResultPresenter
 @inject IRoleService roleService
+@inherits UserContextComponent
 
 <Dialog
     @ref="dialog"
@@ -72,21 +73,24 @@
                     @onclick="HideAsync">
                 İptal
             </button>
-            <button 
+            @if ( CurrentUser.HasPermission( "role:update_permissions" ) )
+            {
+                <button 
                 type="button"
                 class="btn btn-primary"
                 disabled="@isSaving"
                 @onclick="HandlePersmissionsChangedAsync">
-                @if ( isSaving )
-                {
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    <span class="visually-hidden">Kaydediliyor...</span>
-                }
-                else
-                {
-                    <span>Kaydet</span>
-                }
-            </button>
+                    @if ( isSaving )
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span class="visually-hidden">Kaydediliyor...</span>
+                    }
+                    else
+                    {
+                        <span>Kaydet</span>
+                    }
+                </button>
+            }
         </div>
     </Footer>
 </Dialog>
