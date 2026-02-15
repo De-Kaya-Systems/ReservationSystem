@@ -1,7 +1,7 @@
-﻿using GenericRepository;
+﻿using DeKayaServer.Domain.Abstractions;
 
 namespace DeKayaServer.Domain.Users;
 
-public interface IUserRepository : IRepository<User>
+public interface IUserRepository : IAuditableRepository<User>
 {
 }
