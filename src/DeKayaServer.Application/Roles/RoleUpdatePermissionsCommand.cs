@@ -1,10 +1,12 @@
-﻿using DeKayaServer.Domain.Role;
+﻿using DeKayaServer.Application.Behaviors;
+using DeKayaServer.Domain.Role;
 using GenericRepository;
 using TS.MediatR;
 using TS.Result;
 
 namespace DeKayaServer.Application.Roles;
 
+[Permission( "role:update_permissions" )]
 public sealed record RoleUpdatePermissionsCommand(
     Guid RoleId,
     List<string> Permissions ) : IRequest<Result<string>>;

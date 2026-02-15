@@ -26,14 +26,14 @@ public class UserContextComponent : ComponentBase, IDisposable
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
         CurrentUser = state.User.ToUserClaims() ?? CreateAnonymousUser();
     }
-    private void HandleAuthStateChanged(Task<AuthenticationState> task)
-    => _ = HandleAuthStateChangedAsync(task);
+    private void HandleAuthStateChanged( Task<AuthenticationState> task )
+    => _ = HandleAuthStateChangedAsync( task );
 
-    private async Task HandleAuthStateChangedAsync(Task<AuthenticationState> task)
+    private async Task HandleAuthStateChangedAsync( Task<AuthenticationState> task )
     {
         var state = await task;
         CurrentUser = state.User.ToUserClaims() ?? CreateAnonymousUser();
-        await InvokeAsync(StateHasChanged);
+        await InvokeAsync( StateHasChanged );
     }
     public void Dispose()
     {
@@ -42,6 +42,6 @@ public class UserContextComponent : ComponentBase, IDisposable
 
     // Bu aslında gerekli değil fakat null kontrolü için kullanılıyor. Böylece CurrentUser her zaman bir değer taşır.Ve token olmayan bir durumda sistem kullanıcıyı login sayfasına yönlendiremezse hatayı yakalamak daha kolay olur.
     // EN: This is not really necessary, but it is used for null checking. Thus, CurrentUser always holds a value. And in case the system cannot redirect the user to the login page when there is no token, it is easier to catch the error.
-    private static UserClaims CreateAnonymousUser() => new("", "Anonymous", "Anonymous User", "");
+    private static UserClaims CreateAnonymousUser() => new( "", "Anonymous", "Anonymous User", "", Role: null, Permissions: [] );
 
 }

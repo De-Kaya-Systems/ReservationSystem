@@ -15,8 +15,9 @@
 
     <div class="sidebar-content">
         <ul class="sidebar-menu">
-            @foreach (var nav in Navigations)
+            @foreach ( var nav in VisibleNavigations )
             {
+                var visibleChildren = GetVisibleChildren( nav );
                 var hasChildren = nav.Children.Count > 0;
                 var isExpanded = ExpandedItems.Contains(nav.Title);
 
@@ -42,7 +43,7 @@
                             <i class="bi bi-chevron-right menu-arrow"></i>
                         </a>
                         <ul class="submenu">
-                            @foreach (var child in nav.Children)
+                            @foreach ( var child in visibleChildren )
                             {
                                 <li>
                                     <NavLink href="@child.Url">@child.Title</NavLink>
@@ -64,7 +65,7 @@
             <div class="user-details">
                 <span class="user-name">@CurrentUser.PersonelName</span>
                 <small>@CurrentUser.Email</small>
-                <span class="user-role">Süper Admin</span>
+                <span class="user-role">@CurrentUser.Role</span>
             </div>
         </div>
     </div>
@@ -73,6 +74,11 @@
 @code 
 {
     private IReadOnlyList<NavigationItem> Navigations => NavigationData.Items;
+
+    private IReadOnlyList<NavigationItem> VisibleNavigations 
+        => Navigations
+            .Where( IsNavVisibleConsideringChildren )
+            .ToList();
 
     private HashSet<string> ExpandedItems = new();
 
@@ -88,4 +94,23 @@
         if (!ExpandedItems.Add(key))
             ExpandedItems.Remove(key);
     }
+
+    private bool IsNavVisibleConsideringChildren( NavigationItem nav )
+    {
+        //parent permission varsa ve user'da varsa göster
+        //EN: If the parent has a permission and the user has that permission, show it
+        if ( CurrentUser.HasPermission( nav.Permission ?? string.Empty ) )
+        {
+            return true;
+        }
+
+        // parent yetkisi yoksa child'lardan en az biri görünüyorsa parent'ı göster
+        //EN: If the parent doesn't have a permission, but at least one child is visible, show the parent
+        return nav.Children.Any( child => CurrentUser.HasPermission( child.Permission ?? string.Empty ) );
+    }
+
+    private List<NavigationItem> GetVisibleChildren( NavigationItem nav )
+        => nav.Children
+            .Where( c => CurrentUser.HasPermission( c.Permission ?? string.Empty ) )
+            .ToList();
 }
