@@ -101,6 +101,7 @@ app.MapControllers().RequireRateLimiting( "fixed" ).RequireAuthorization();
 app.MapAuth();
 app.MapRole();
 app.MapPermission();
+app.MapUser();
 
 // root endpoint anonymous kalsın
 app.MapGet( "/", () => Results.Ok( Result<string>.Succeed( "OK" ) ) );
