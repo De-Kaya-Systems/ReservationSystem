@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Application.Roles;
+using DeKayaServer.Application.Users;
 using DeKayaServer.Contracts.Roles;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
@@ -19,10 +20,15 @@ public class MainODataController : ODataController
         ODataConventionModelBuilder builder = new();
         builder.EnableLowerCamelCase();
         builder.EntitySet<RoleDto>( "roles" );
+        builder.EntitySet<UserDto>( "users" );
         return builder.GetEdmModel();
     }
 
     [HttpGet( "roles" )]
     public IQueryable<RoleDto> Roles( ISender sender, CancellationToken cancellationToken = default )
         => sender.Send( new RoleGetAllQuery(), cancellationToken ).Result;
+
+    [HttpGet( "users" )]
+    public IQueryable<UserDto> Users( ISender sender, CancellationToken cancellationToken = default )
+        => sender.Send( new UserGetAllQuery(), cancellationToken ).Result;
 }
