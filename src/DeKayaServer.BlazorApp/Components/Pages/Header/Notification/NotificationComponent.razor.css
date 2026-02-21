@@ -1,0 +1,72 @@
+﻿.dk-notify-menu {
+    width: min(92vw, 420px);
+}
+
+.dk-notify-card {
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.dk-notify-scroll {
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.dk-sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.dk-sticky-bottom {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+}
+
+.dk-notify-item {
+    transition: background-color .15s ease, transform .12s ease;
+}
+
+    .dk-notify-item:hover {
+        background-color: rgba(var(--bs-primary-rgb), .03);
+    }
+
+.dk-notify-item--unread {
+    background: rgba(var(--bs-primary-rgb), .06);
+    border-left: 3px solid var(--bs-primary);
+    padding-left: calc(1rem - 3px);
+}
+
+    .dk-notify-item--unread:hover {
+        background: rgba(var(--bs-primary-rgb), .10);
+    }
+
+.dk-notify-content:hover {
+    text-decoration: none;
+}
+
+.dk-notify-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--bs-primary);
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), .16);
+}
+
+.dk-notify-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.35;
+}
+
+.btn-icon {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}

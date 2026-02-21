@@ -1,0 +1,134 @@
+﻿@rendermode InteractiveServer
+
+<div class="dropdown notification-dropdown">
+    <button class="btn btn-light border shadow-sm position-relative rounded-circle d-inline-flex align-items-center justify-content-center"
+            style="width:44px; height:44px;"
+            data-bs-toggle="dropdown"
+            data-bs-auto-close="outside"
+            type="button"
+            aria-label="Bildirimler">
+        <i class="bi bi-bell fs-5"></i>
+
+        @if ( UnreadCount > 0 )
+        {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm">
+                @UnreadCount
+                <span class="visually-hidden">okunmamış bildirim</span>
+            </span>
+        }
+    </button>
+
+    <div class="dropdown-menu dropdown-menu-end mt-2 p-0 border-0 shadow-lg rounded-4 overflow-hidden dk-notify-menu">
+        <div class="card border-0 bg-body dk-notify-card">
+
+            <!-- Header -->
+            <div class="card-header bg-body-tertiary border-bottom px-3 py-2 dk-sticky-top">
+                <div class="d-flex align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2 min-w-0">
+                        <span class="fw-semibold text-truncate">Bildirimler</span>
+
+                        @if ( UnreadCount > 0 )
+                        {
+                            <span class="badge rounded-pill text-bg-primary">@UnreadCount Yeni</span>
+                        }
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary text-nowrap"
+                            @onclick="MarkAllAsReadAsync"
+                            disabled="@(UnreadCount == 0)">
+                        Tümünü okundu yap
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            @if ( isLoading )
+            {
+                <div class="px-3 py-4 text-muted small d-flex align-items-center gap-2">
+                    <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+                    <span>Yükleniyor...</span>
+                </div>
+            }
+            else if ( !Notifications.Any() )
+            {
+                <div class="px-3 py-5 text-center">
+                    <div class="mb-2">
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-body-tertiary"
+                              style="width:56px; height:56px;">
+                            <i class="bi bi-inbox fs-4 text-muted"></i>
+                        </span>
+                    </div>
+                    <div class="fw-semibold">Henüz bildirim yok</div>
+                    <div class="text-muted small">Bir işlem olduğunda burada göreceksiniz.</div>
+                </div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush dk-notify-scroll">
+                    @foreach ( var notification in Notifications.OrderByDescending( x => x.CreatedAt ).Take( 10 ) )
+                    {
+                        <div class="list-group-item border-0 px-3 py-2 dk-notify-item @(notification.IsRead ? "" : "dk-notify-item--unread")">
+                            <div class="d-flex gap-3 align-items-start">
+
+                                <!-- Icon -->
+                                <div class="flex-shrink-0 position-relative mt-1">
+                                    <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary shadow-sm"
+                                          style="width:40px; height:40px;">
+                                        <i class="bi bi-bell"></i>
+                                    </span>
+
+                                    @if ( !notification.IsRead )
+                                    {
+                                        <span class="dk-notify-dot position-absolute top-0 start-100 translate-middle"></span>
+                                    }
+                                </div>
+
+                                <!-- Main clickable area -->
+                                <button type="button"
+                                        class="btn btn-link text-decoration-none text-start text-reset p-0 flex-grow-1 dk-notify-content"
+                                        @onclick="() => MarkAsReadAsync( notification.Id )">
+
+                                    <div class="d-flex align-items-start justify-content-between gap-2">
+                                        <div class="fw-semibold text-truncate">@notification.Title</div>
+                                        <small class="text-muted flex-shrink-0">
+                                            @notification.CreatedAt.LocalDateTime.ToString( "g" )
+                                        </small>
+                                    </div>
+
+                                    <div class="text-muted small dk-notify-clamp mt-1">
+                                        @notification.Message
+                                    </div>
+                                </button>
+
+                                <!-- Remove -->
+                                <div class="flex-shrink-0">
+                                    <button type="button"
+                                            class="btn btn-sm btn-icon btn-outline-danger rounded-circle"
+                                            title="Sil"
+                                            aria-label="Sil"
+                                            @onclick="() => RemoveAsync( notification.Id )">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Footer -->
+                <div class="card-footer bg-body-tertiary border-top px-3 py-2 dk-sticky-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">@Notifications.Count bildirim</small>
+
+                        <button class="btn btn-sm btn-outline-danger"
+                                @onclick="ClearAllAsync"
+                                disabled="@(!Notifications.Any())">
+                            Temizle
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
