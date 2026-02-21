@@ -1,4 +1,5 @@
-﻿using DeKayaServer.Domain.Abstractions;
+﻿using DeKayaServer.Application.Behaviors;
+using DeKayaServer.Domain.Abstractions;
 using DeKayaServer.Domain.Users;
 using DeKayaServer.Domain.Users.ValueObjects;
 using FluentValidation;
@@ -8,6 +9,7 @@ using TS.Result;
 
 namespace DeKayaServer.Application.Users;
 
+[Permission( "user:edit" )]
 public sealed record UserUpdateCommand(
     Guid Id,
     string FirstName,
@@ -76,6 +78,7 @@ internal sealed class UserUpdateCommandHandler(
         user.SetEmail( email );
         user.SetUserName( userName );
         user.SetRoleId( roleId );
+        user.SetFullName();
 
         userRepository.Update( user );
         await unitOfWork.SaveChangesAsync( cancellationToken );

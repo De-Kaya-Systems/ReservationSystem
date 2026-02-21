@@ -41,13 +41,15 @@ public sealed class PermissionService
         public static readonly string RoleView = "role:view";
         public static readonly string SeyyarRoomView = "seyyar-room:view";
         public static readonly string SeyyarRoomMaintenance = "seyyar-room:maintenance";
+        public static readonly string UserView = "user:view";
 
         public static readonly IReadOnlyCollection<string> DefaultPermissions =
         [
             DashboardView,
             RoleView,
             SeyyarRoomView,
-            SeyyarRoomMaintenance
+            SeyyarRoomMaintenance,
+            UserView
         ];
     }
 }

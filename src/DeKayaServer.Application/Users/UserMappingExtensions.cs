@@ -1,20 +1,11 @@
-﻿using DeKayaServer.Domain.Abstractions;
+﻿using DeKayaServer.Contracts.Users;
+using DeKayaServer.Domain.Abstractions;
 using DeKayaServer.Domain.Role;
 using DeKayaServer.Domain.Users;
 
 namespace DeKayaServer.Application.Users;
 
-public sealed class UserDto : EntityDto
-{
-    public string FirstName { get; set; } = default!;
-    public string LastName { get; set; } = default!;
-    public string FullName { get; set; } = default!;
-    public string Email { get; set; } = default!;
-    public string UserName { get; set; } = default!;
-    public string RoleName { get; set; } = default!;
-}
-
-public static class UserExtensions
+public static class UserMappingExtensions
 {
     public static IQueryable<UserDto> MapTo(
         this IQueryable<EntityWithAuditDto<User>> entities,
@@ -32,6 +23,7 @@ public static class UserExtensions
                 Email = x.Entity.Email.Value,
                 UserName = x.Entity.UserName.Value,
                 RoleName = x.Role.Name.Value,
+                RoleId = x.Role.Id,
                 CreatedAt = x.Entity.CreatedAt,
                 CreatedBy = x.Entity.CreatedBy.Value,
                 CreatedFullName = x.CreatedUser.FullName.Value,

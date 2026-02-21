@@ -1,4 +1,5 @@
-﻿using DeKayaServer.Domain.Abstractions;
+﻿using DeKayaServer.Application.Behaviors;
+using DeKayaServer.Domain.Abstractions;
 using DeKayaServer.Domain.Users;
 using DeKayaServer.Domain.Users.ValueObjects;
 using FluentValidation;
@@ -8,6 +9,7 @@ using TS.Result;
 
 namespace DeKayaServer.Application.Users;
 
+[Permission( "user:create" )]
 public sealed record class UserCreateCommand(
     string FirstName,
     string LastName,
@@ -47,7 +49,7 @@ internal sealed class UserCreateCommandHandler(
         }
 
         var userNameExists = await userRepository.AnyAsync( x => x.UserName.Value == request.UserName, cancellationToken );
-        if ( emailExists )
+        if ( userNameExists )
         {
             return Result<string>.Failure( "Bu kullanıcı adı zaten kullanılıyor" );
         }

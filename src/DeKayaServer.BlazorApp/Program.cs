@@ -46,6 +46,7 @@ builder.Services.AddScoped<IForceLogoutService, ForceLogoutService>();
 builder.Services.AddScoped<ApiExecutor>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<IAuthProbeService, AuthProbeService>();
 

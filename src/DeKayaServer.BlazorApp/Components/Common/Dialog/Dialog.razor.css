@@ -10,6 +10,7 @@
     background: var(--white);
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.03), 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 20px 50px -12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
+    z-index: 999;
 }
 
     .generic-dialog::backdrop {
@@ -100,10 +101,10 @@
     top: 0;
     z-index: 10;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 1.25rem;
-    padding: 1.5rem 1.75rem;
+    padding: 1rem 1.75rem;
     background: var(--white);
     border-bottom: 1px solid var(--border-color);
 }
@@ -116,7 +117,7 @@
 .dialog-title {
     margin: 0;
     font-size: 1.25rem;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: -0.02em;
     color: var(--text-dark);
 }

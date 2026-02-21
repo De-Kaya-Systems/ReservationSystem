@@ -1,10 +1,12 @@
-﻿using DeKayaServer.Domain.Users;
+﻿using DeKayaServer.Application.Behaviors;
+using DeKayaServer.Domain.Users;
 using GenericRepository;
 using TS.MediatR;
 using TS.Result;
 
 namespace DeKayaServer.Application.Users;
 
+[Permission( "user:delete" )]
 public sealed record UserDeleteCommand(
     Guid Id ) : IRequest<Result<string>>;
 
