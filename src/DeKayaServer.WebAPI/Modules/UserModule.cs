@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Application.Users;
+using DeKayaServer.Contracts.Users;
 using TS.MediatR;
 using TS.Result;
 

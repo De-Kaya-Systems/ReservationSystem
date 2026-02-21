@@ -1,4 +1,6 @@
-﻿using DeKayaServer.Domain.Role;
+﻿using DeKayaServer.Application.Behaviors;
+using DeKayaServer.Contracts.Users;
+using DeKayaServer.Domain.Role;
 using DeKayaServer.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using TS.MediatR;
@@ -6,6 +8,7 @@ using TS.Result;
 
 namespace DeKayaServer.Application.Users;
 
+[Permission( "user:view" )]
 public sealed record UserGetQuery(
     Guid Id ) : IRequest<Result<UserDto>>;
 

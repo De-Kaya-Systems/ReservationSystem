@@ -1,9 +1,12 @@
-﻿using DeKayaServer.Domain.Role;
+﻿using DeKayaServer.Application.Behaviors;
+using DeKayaServer.Contracts.Users;
+using DeKayaServer.Domain.Role;
 using DeKayaServer.Domain.Users;
 using TS.MediatR;
 
 namespace DeKayaServer.Application.Users;
 
+[Permission( "user:view" )]
 public sealed record UserGetAllQuery : IRequest<IQueryable<UserDto>>;
 
 internal sealed class UserGetAllQueryHandler(

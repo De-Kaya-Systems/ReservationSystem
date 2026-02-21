@@ -43,8 +43,8 @@
                 <QuickGridContent>
                     <QuickGrid Items="@GridItems"
                         Pagination="pagination"
-                        Class="table table-striped table-hover table-responsive mb-0 align-middle"
-                        TItem="RoleViewModel">
+                        Class="table table-striped table-hover table-responsive mb-0 align-middle">
+
                         <PropertyColumn Property="@(u => u.Name)" Title="Rol" Sortable="true" />
                         <TemplateColumn Title="Durum" Sortable="true" Context="u">
                             <span class="badge @(u.IsActive ? "bg-success" : "bg-secondary") p-2">

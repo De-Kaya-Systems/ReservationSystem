@@ -10,7 +10,8 @@ public static class RoleMappingExtensions
     /// Maps Role entities (with audit user joins) to shared RoleDto.
     /// TR: Role varlıklarını (denetim kullanıcı birleşimleriyle) paylaşılan RoleDto'ya dönüştürür.
     /// </summary>
-    public static IQueryable<RoleDto> MapToDto( this IQueryable<EntityWithAuditDto<Role>> entities )
+    public static IQueryable<RoleDto> MapToDto(
+        this IQueryable<EntityWithAuditDto<Role>> entities )
     {
         return entities.Select( s => new RoleDto
         {

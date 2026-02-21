@@ -1,6 +1,7 @@
 ﻿using DeKayaServer.Application.Roles;
 using DeKayaServer.Application.Users;
 using DeKayaServer.Contracts.Roles;
+using DeKayaServer.Contracts.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;

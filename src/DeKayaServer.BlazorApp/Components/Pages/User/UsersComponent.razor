@@ -1,0 +1,254 @@
+﻿@page "/users"
+@using DeKayaServer.BlazorApp.Components.Pages.User.CreateUser
+@using DeKayaServer.BlazorApp.Components.Pages.User.DeleteUser
+@using DeKayaServer.BlazorApp.Components.Pages.User.UpdateUser
+@using Microsoft.AspNetCore.Components.QuickGrid
+@inherits UserContextComponent
+@inject IUserService UserService
+@rendermode InteractiveServer
+
+<PageTitle>De-Kaya Systems | @PageTitleConstans.UsersPage </PageTitle>
+
+<PageHeader
+    Title="Kullanıcı yönetimi"
+    Icon="bi bi-people"
+    Description="Bu sayfada kullanıcı işlemlerini yönetebilirsin." />
+    @if ( isLoading )
+    {
+        <IsLoading Message="Kullanıcılar getiriliyor, lütfen bekleyin." />
+    }
+    else
+    {
+        <DeKayaQuickGrid
+            Title="Kullanıcı Listesi"
+            ShowTitle="true"
+            ShowSearchInput="true"
+            ShowSearchResultCount="true"
+            TotalItemCount="@FilteredItems.Count"
+            SearchTerm="@searchTerm"
+            SearchTermChanged="OnSearchTermChanged"
+            ShowPageSizeSelector="true"
+            PageSize="@pageSize"
+            PageSizeChanged="OnPageSizeChanged">
+        <HeaderActions>
+            @if ( CurrentUser.HasPermission( "user:create" ) )
+            {
+                <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateUserDialog">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Ekle</span>
+                </button>
+            }
+        </HeaderActions>
+
+        <QuickGridContent>
+            <QuickGrid
+                Items="@GridItems"
+                Pagination="pagination"
+                Class="table table-striped table-hover table-responsive mb-0 align-middle">
+
+                    <PropertyColumn Property="@(u => u.FullName)" Title="Ad Soyad" Sortable="true"/>
+                    <PropertyColumn Property="@(u => u.UserName)" Title="Kullanıcı adı" Sortable="true" />
+                    <PropertyColumn Property="@(u => u.RoleName)" Title="Rol" Sortable="true" />
+                    <PropertyColumn Property="@(u => u.CreatedAt)" Title="Oluşturulma" Format="dd-MM-yyyy - HH:mm" Sortable="true"/>
+                    <PropertyColumn Property="@(u => u.UpdatedAt)" Title="Güncellenme" Format="dd-MM-yyyy - HH:mm"/>
+                    <PropertyColumn Property="@(u => u.UpdatedFullName)" Title="Güncelleyen" />
+
+                    <TemplateColumn Title="İşlemler" Context="u">
+                        <div class="d-flex gap-2 py-1 justify-content-start">
+                            @if ( CurrentUser.HasPermission( "user:edit" ) )
+                            {
+                                <button 
+                                    type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    @onclick="(() => ShowUpdateUserDialog(u))">
+                                    <i class="bi bi-pen"></i>
+                                    <span>Güncelle</span>
+                                </button>
+                            }
+
+                            @if ( CurrentUser.HasPermission( "user:delete" ) )
+                            {
+                                <button 
+                                    type="button" 
+                                    class="btn btn-outline-danger btn-sm"
+                                    @onclick="(() => ShowDeleteUserDialog(u))">
+                                    <i class="bi bi-trash3"></i>
+                                    <span>Sil</span>
+                                </button>
+                            }
+                        </div>
+                    </TemplateColumn>
+            </QuickGrid>
+            <div class="p-2">
+                <Paginator State="pagination" />
+            </div>
+        </QuickGridContent>
+        </DeKayaQuickGrid>
+    }
+    <CreateUserDialog 
+        @ref="createUserDialog"
+        UserAdded="HandleUserAddedAsync" />
+
+    <UpdateUserDialog 
+        @ref="updateUserDialog"
+        UserId="@selectedUserId"
+        UserUpdated="HandleUserUpdatedAsync" />
+
+    <DeleteUserDialog 
+        @ref="deleteUserDialog"
+        UserId="@selectedUserId"
+        FullName="@selectedFullName"
+        UserDeleted="HandleUserDeletedAsync" />
+
+@code {
+    private bool isLoading;
+    private List<UserViewModel> allItems = [];
+    private string searchTerm = string.Empty;
+    private int pageSize = 10;
+    private PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private CreateUserDialog? createUserDialog;
+    private UpdateUserDialog? updateUserDialog;
+    private DeleteUserDialog? deleteUserDialog;
+
+    private Guid? selectedUserId;
+    private string? selectedFullName;
+
+    private IReadOnlyList<UserViewModel> FilteredItems => 
+        (string.IsNullOrWhiteSpace(searchTerm)
+            ? allItems
+            : allItems.Where( u =>
+                    ( u.FullName != null && u.FullName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
+                    ( u.Email != null && u.Email.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
+                    ( u.UserName != null && u.UserName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
+                    ( u.RoleName != null && u.RoleName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ) )
+            .ToList();
+
+    private IQueryable<UserViewModel> GridItems => FilteredItems.AsQueryable();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadUsersAsync();
+    }
+
+    private async Task OnSearchTermChanged( string value )
+    {
+        searchTerm = value;
+        await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task OnPageSizeChanged( int value )
+    {
+        pageSize = value;
+        pagination.ItemsPerPage = value;
+        await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task ShowCreateUserDialog()
+    {
+        if(createUserDialog is null)
+        {
+            return;
+        }
+        await createUserDialog.ShowAsync();
+    }
+
+    private async Task ShowUpdateUserDialog( UserViewModel user )
+    {
+        selectedUserId = user.Id;
+
+        await InvokeAsync( StateHasChanged );
+
+        if(updateUserDialog is null)
+        {
+            return;
+        }
+        await updateUserDialog.ShowAsync();
+    }
+
+    private async Task ShowDeleteUserDialog( UserViewModel user)
+    {
+        selectedUserId = user.Id;
+        selectedFullName = user.FullName;
+
+        await InvokeAsync( StateHasChanged );
+
+        if(deleteUserDialog is null)
+        {
+            return;
+        }
+
+        await deleteUserDialog.ShowAsync();
+    }
+
+    private async Task HandleUserAddedAsync()
+    {
+        await LoadUsersAsync();
+        await InvokeAsync( StateHasChanged );
+    }
+
+    private async Task HandleUserUpdatedAsync()
+    {
+        await LoadUsersAsync();
+        await InvokeAsync( StateHasChanged );
+    }
+
+    private async Task HandleUserDeletedAsync()
+    {
+        await LoadUsersAsync();
+        await InvokeAsync( StateHasChanged );
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        isLoading = true;
+        try
+        {
+            var result = await UserService.GetAllAsync();
+            if ( !result.IsSuccessful || result.Data is null )
+            {
+                allItems = [];
+                return;
+            }
+            allItems = result.Data.Select( u => new UserViewModel
+            {
+                Id = u.Id,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                FullName = u.FullName,
+                Email = u.Email,
+                UserName = u.UserName,
+                RoleName = u.RoleName,
+                RoleId = u.RoleId,
+                CreatedAt = u.CreatedAt,
+                UpdatedAt = u.UpdatedAt,
+                CreatedFullName = u.CreatedFullName,
+                UpdatedFullName = u.UpdatedFullName
+            } ).ToList();
+        }
+        finally
+        {
+            isLoading = false;
+            await pagination.SetCurrentPageIndexAsync( 0 );
+            await InvokeAsync( StateHasChanged );
+        }
+    }
+
+    private sealed class UserViewModel
+    {
+        public Guid Id { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
+        public string? UserName { get; set; }
+        public string? RoleName { get; set; }
+        public Guid? RoleId { get; set; }
+
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
+        public string? UpdatedFullName { get; set; }
+        public string? CreatedFullName { get; set; }
+    }
+}

@@ -36,6 +36,13 @@ public static class NavigationData
             Url = "/roles",
             Icon = "bi-shield-lock",
             Permission = "role:view"
+        },
+        new()
+        {
+            Title = "Kullanıcı Yönetimi",
+            Url = "/users",
+            Icon = "bi bi-people",
+            Permission = "user:view"
         }
     ];
 }

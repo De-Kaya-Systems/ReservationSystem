@@ -27,7 +27,7 @@ public partial class Dialog( IJSRuntime js ) : IAsyncDisposable
 
     protected override Task OnAfterRenderAsync( bool firstRender )
     {
-        if (firstRender)
+        if ( firstRender )
             moduleLoadingTask = js.InvokeAsync<IJSObjectReference>( "import", "./Components/Common/Dialog/Dialog.razor.js" );
 
         return Task.CompletedTask;
@@ -35,7 +35,7 @@ public partial class Dialog( IJSRuntime js ) : IAsyncDisposable
 
     private async Task<IJSObjectReference> EnsureModuleAsync()
     {
-        if (module is not null)
+        if ( module is not null )
             return module;
 
         module = moduleLoadingTask is not null
@@ -68,7 +68,7 @@ public partial class Dialog( IJSRuntime js ) : IAsyncDisposable
 
     private async Task EscapeKeyHandlerAsync( KeyboardEventArgs args )
     {
-        if (args.Code == "Escape")
+        if ( args.Code == "Escape" )
         {
             await HideAsync();
             await ParentMethod.InvokeAsync( DialogResultEnum.Cancel );
@@ -78,7 +78,7 @@ public partial class Dialog( IJSRuntime js ) : IAsyncDisposable
     [JSInvokable]
     public async Task ClickOutsideTriggerAsync()
     {
-        if (!ClickOutsideToClose)
+        if ( !ClickOutsideToClose )
             return;
 
         await HideAsync();
@@ -87,13 +87,13 @@ public partial class Dialog( IJSRuntime js ) : IAsyncDisposable
 
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
-        if (module is not null)
+        if ( module is not null )
         {
             try
             {
                 await module.DisposeAsync();
             }
-            catch (JSDisconnectedException)
+            catch ( JSDisconnectedException )
             { }
         }
     }
