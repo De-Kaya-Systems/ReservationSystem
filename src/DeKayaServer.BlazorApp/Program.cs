@@ -38,6 +38,7 @@ builder.Services.TryAddEnumerable( ServiceDescriptor.Scoped<CircuitHandler, Circ
 builder.Services.TryAddEnumerable( ServiceDescriptor.Scoped<CircuitHandler, CircuitIdCircuitHandler>() );
 
 //All Services (DI)
+builder.Services.AddScoped<ProtectedSessionStorage>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<IBreadcrumbService, BreadcrumbService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -47,6 +48,7 @@ builder.Services.AddScoped<ApiExecutor>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<INotificationPanelService, NotificationPanelService>();
 
 builder.Services.AddScoped<IAuthProbeService, AuthProbeService>();
 

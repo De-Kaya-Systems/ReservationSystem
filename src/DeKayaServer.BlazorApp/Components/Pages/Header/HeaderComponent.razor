@@ -1,4 +1,6 @@
-﻿<header class="navbar-custom">
+﻿@using DeKayaServer.BlazorApp.Components.Pages.Header.Notification
+
+<header class="navbar-custom">
     <div class="navbar-content">
         <!-- Left Side - Breadcrumb -->
         <div class="navbar-left">
@@ -12,7 +14,7 @@
 
         <!-- Right Side - Profile & Notifications -->
         <div class="navbar-right">
-            <NotificationDropdownComponent />
+            <NotificationComponent />
 
             <ProfileDropdownComponent />
         </div>
