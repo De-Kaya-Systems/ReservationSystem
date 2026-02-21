@@ -712,6 +712,13 @@ body {
     :root {
         --navbar-height: 60px;
     }
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+        .sidebar.show {
+            transform: translateX(0);
+        }
 
     .navbar-content {
         padding: 0 1rem;
