@@ -1,5 +1,7 @@
-﻿using DeKayaServer.Application.Roles;
+﻿using DeKayaServer.Application.Customers;
+using DeKayaServer.Application.Roles;
 using DeKayaServer.Application.Users;
+using DeKayaServer.Contracts.Customers;
 using DeKayaServer.Contracts.Roles;
 using DeKayaServer.Contracts.Users;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +24,7 @@ public class MainODataController : ODataController
         builder.EnableLowerCamelCase();
         builder.EntitySet<RoleDto>( "roles" );
         builder.EntitySet<UserDto>( "users" );
+        builder.EntitySet<CustomerDto>( "customers" );
         return builder.GetEdmModel();
     }
 
@@ -32,4 +35,8 @@ public class MainODataController : ODataController
     [HttpGet( "users" )]
     public IQueryable<UserDto> Users( ISender sender, CancellationToken cancellationToken = default )
         => sender.Send( new UserGetAllQuery(), cancellationToken ).Result;
+
+    [HttpGet( "customers" )]
+    public IQueryable<CustomerDto> Customers( ISender sender, CancellationToken cancellationToken = default )
+        => sender.Send( new CustomerGetAllQuery(), cancellationToken ).Result;
 }

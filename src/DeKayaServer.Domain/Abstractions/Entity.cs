@@ -8,9 +8,10 @@ public abstract class Entity
 {
     protected Entity()
     {
-        Id = new IdentityId(Guid.CreateVersion7());
+        Id = new IdentityId( Guid.CreateVersion7() );
         IsActive = true;
     }
+
     public IdentityId Id { get; private set; }
     public bool IsActive { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
@@ -23,7 +24,7 @@ public abstract class Entity
     public DateTimeOffset? DeletedAt { get; private set; }
     public IdentityId? DeletedBy { get; private set; }
 
-    public void SetStatus(bool isActive)
+    public void SetStatus( bool isActive )
     {
         IsActive = isActive;
     }
@@ -37,7 +38,7 @@ public abstract class Entity
     {
         HttpContextAccessor httpContextAccessor = new();
         var httpContext = httpContextAccessor.HttpContext;
-        if (httpContext is null)
+        if ( httpContext is null )
         {
             return string.Empty;
         }
@@ -45,21 +46,21 @@ public abstract class Entity
         var srv = httpContext.RequestServices;
         using var scoped = srv.CreateScope();
         var userRepository = scoped.ServiceProvider.GetService<IUserRepository>();
-        if (userRepository is null) return string.Empty;
+        if ( userRepository is null ) return string.Empty;
 
-        var userFullName = userRepository.FirstOrDefault(i => i.Id == CreatedBy).FullName;
-        if (userFullName is null) return string.Empty;
+        var userFullName = userRepository.FirstOrDefault( i => i.Id == CreatedBy ).FullName;
+        if ( userFullName is null ) return string.Empty;
 
         return userFullName.Value;
     }
 
     private string? GetUpdatedFullName()
     {
-        if (UpdatedBy is not null)
+        if ( UpdatedBy is not null )
         {
             HttpContextAccessor httpContextAccessor = new();
             var httpContext = httpContextAccessor.HttpContext;
-            if (httpContext is null)
+            if ( httpContext is null )
             {
                 return string.Empty;
             }
@@ -67,10 +68,10 @@ public abstract class Entity
             var srv = httpContext.RequestServices;
             using var scoped = srv.CreateScope();
             var userRepository = scoped.ServiceProvider.GetService<IUserRepository>();
-            if (userRepository is null) return string.Empty;
+            if ( userRepository is null ) return string.Empty;
 
-            var userFullName = userRepository.FirstOrDefault(i => i.Id == UpdatedBy).FullName;
-            if (userFullName is null) return string.Empty;
+            var userFullName = userRepository.FirstOrDefault( i => i.Id == UpdatedBy ).FullName;
+            if ( userFullName is null ) return string.Empty;
 
             return userFullName.Value;
         }
@@ -79,10 +80,10 @@ public abstract class Entity
     }
 }
 
-public sealed record IdentityId(Guid Value)
+public sealed record IdentityId( Guid Value )
 {
     // Implicit conversion from Guid to IdentityId
-    public static implicit operator Guid(IdentityId id) => id.Value;
+    public static implicit operator Guid( IdentityId id ) => id.Value;
     // Implicit conversion from IdentityId to string
-    public static implicit operator string(IdentityId id) => id.Value.ToString();
+    public static implicit operator string( IdentityId id ) => id.Value.ToString();
 }
