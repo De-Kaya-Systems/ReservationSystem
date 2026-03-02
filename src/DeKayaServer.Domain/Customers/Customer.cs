@@ -12,13 +12,15 @@ public sealed class Customer : Entity
         FirstName firstName,
         LastName lastName,
         Address address,
-        Contact contact )
+        Contact contact,
+        bool isActive )
     {
         SetFirstName( firstName );
         SetLastName( lastName );
         SetFullName();
         SetAddress( address );
         SetContact( contact );
+        SetStatus( isActive );
     }
 
     public FirstName FirstName { get; private set; } = default!;
