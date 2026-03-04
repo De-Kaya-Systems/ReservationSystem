@@ -7,7 +7,7 @@ using TS.Result;
 
 namespace DeKayaServer.Application.Roles;
 
-[Permission( "role:view" )]
+[Permission( "role:get" )]
 public sealed record RoleGetQuery( Guid Id ) : IRequest<Result<RoleDto>>;
 
 internal sealed class RoleGetQueryHandler(

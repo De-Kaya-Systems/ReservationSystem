@@ -7,7 +7,7 @@ using TS.Result;
 
 namespace DeKayaServer.Application.Customers;
 
-[Permission( "customer:view" )]
+[Permission( "customer:get" )]
 public sealed record CustomerGetQuery( Guid Id ) : IRequest<Result<CustomerDto>>;
 
 internal sealed class CustomerGetQueryHandler(

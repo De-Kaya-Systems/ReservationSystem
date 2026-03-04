@@ -22,4 +22,8 @@ public static class EndpointConstants
     //Permissions
     public const string Permissions = "/permissions";
     public const string UpdateRolePermissions = "/roles/update-permissions";
+
+    //Customers
+    public const string Customers = "/customers";
+    public const string ODataCustomers = "/odata/customers";
 }

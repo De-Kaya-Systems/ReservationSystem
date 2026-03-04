@@ -15,7 +15,7 @@ public sealed record CustomerCreateCommand(
     string LastName,
     Address Address,
     Contact Contact,
-    bool isActive
+    bool IsActive
     ) : IRequest<Result<string>>;
 
 public sealed class CustomerCreateCommandValidator : AbstractValidator<CustomerCreateCommand>
@@ -60,7 +60,7 @@ internal sealed class CustomerCreateCommandHandler(
         Address address = request.Address;
         Contact contact = request.Contact;
 
-        Customer customer = new( firstName, lastName, address, contact, request.isActive );
+        Customer customer = new( firstName, lastName, address, contact, request.IsActive );
         customerRepository.Add( customer );
         await unitOfWork.SaveChangesAsync( cancellationToken );
         return "Müşteri başarıyla oluşturuldu";

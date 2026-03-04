@@ -10,7 +10,7 @@ public static class NavigationData
             Title = "Dashboard",
             Url = "/",
             Icon = "bi-speedometer2",
-            Permission = "dashboard:view"
+            Permission = "dashboard:page"
         },
         new()
         {
@@ -21,7 +21,7 @@ public static class NavigationData
                 new() {
                     Title = "Tüm Odalar",
                     Url = "/cooling-rooms",
-                    Permission = "seyyar-room:view"
+                    Permission = "seyyar-room:page"
                 },
                 new() {
                     Title = "Bakım Takibi",
@@ -32,17 +32,24 @@ public static class NavigationData
         },
         new()
         {
+            Title = "Müşteri Yönetimi",
+            Url = "/customers",
+            Icon = "bi bi-person-vcard",
+            Permission = "customer:page"
+        },
+        new()
+        {
             Title = "Role Yönetimi",
             Url = "/roles",
             Icon = "bi-shield-lock",
-            Permission = "role:view"
+            Permission = "role:page"
         },
         new()
         {
             Title = "Kullanıcı Yönetimi",
             Url = "/users",
             Icon = "bi bi-people",
-            Permission = "user:view"
+            Permission = "user:page"
         }
     ];
 }

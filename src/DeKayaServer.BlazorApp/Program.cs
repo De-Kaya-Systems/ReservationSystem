@@ -48,6 +48,7 @@ builder.Services.AddScoped<ApiExecutor>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<INotificationPanelService, NotificationPanelService>();
 
 builder.Services.AddScoped<IAuthProbeService, AuthProbeService>();

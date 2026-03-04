@@ -8,7 +8,7 @@ using TS.Result;
 
 namespace DeKayaServer.Application.Users;
 
-[Permission( "user:view" )]
+[Permission( "user:get" )]
 public sealed record UserGetQuery(
     Guid Id ) : IRequest<Result<UserDto>>;
 

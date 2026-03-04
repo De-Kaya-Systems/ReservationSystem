@@ -5,7 +5,7 @@ using TS.MediatR;
 
 namespace DeKayaServer.Application.Roles;
 
-[Permission( "role:view" )]
+[Permission( "role:getall" )]
 public sealed record RoleGetAllQuery : IRequest<IQueryable<RoleDto>>;
 
 internal sealed class RoleGetAllQueryHandler(
