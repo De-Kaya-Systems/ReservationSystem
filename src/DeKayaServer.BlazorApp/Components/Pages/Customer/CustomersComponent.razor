@@ -1,0 +1,185 @@
+﻿@page "/customers"
+@using Microsoft.AspNetCore.Components.QuickGrid
+@inherits UserContextComponent
+@inject ICustomerService customerService
+@rendermode InteractiveServer
+
+<PageTitle>De-Kaya Systems | @PageTitleConstans.CustomersPage</PageTitle>
+
+<PageHeader
+    Title="Müşteri Yönetimi"
+    Icon="bi bi-person-vcard"
+    Description="Bu sayfada müşteri işlemlerini yönetebilirsin."/>
+    @if ( isLoading )
+    {
+        <IsLoading Message="Kullanıcılar getiriliyor, lütfen bekleyin." />
+    }
+    else
+    {
+        <DeKayaQuickGrid 
+            Title="Kullanıcı Listesi"
+            ShowTitle="true"
+            ShowSearchInput="true"
+            ShowSearchResultCount="true"
+            TotalItemCount="@FilteredItems.Count"
+            SearchTerm="@searchTerm"
+            SearchTermChanged="OnSearchTermChanged"
+            ShowPageSizeSelector="true"
+            PageSize="@pageSize"
+            PageSizeChanged="OnPageSizeChanged">
+
+            <HeaderActions>
+                @if ( CurrentUser.HasPermission( "customer:create" ) )
+                {
+                    <button type="button" class="btn btn-outline-success btn-sm" >
+                        <i class="bi bi-plus-circle"></i>
+                        <span>Ekle</span>
+                    </button>
+                }
+            </HeaderActions>
+
+            <QuickGridContent>
+                <QuickGrid
+                    Items="@GridItems"
+                    Pagination="pagination"
+                    Class="table table-striped table-hover table-responsive mb-0 align-middle">
+
+                    <PropertyColumn Property="@(c => c.FullName)" Title="Adı Soyadı" Sortable="true" />
+                    <PropertyColumn Property="@(c => c.ContactPhone)" Title="Telefon numarası" Sortable="true" />
+                    <PropertyColumn Property="@(c => c.ContactEmail)" Title="E-Mail" Sortable="true" />
+                    <PropertyColumn Property="@(c => c.AddressCity)" Title="İl" Sortable="true" />
+                    <PropertyColumn Property="@(c => c.AddressDistrict)" Title="İlçe" Sortable="true" />
+                    <PropertyColumn Property="@(c => c.CreatedFullName)" Title="Oluşturan" />
+
+                    <TemplateColumn Title="İşlemler" >
+                        <div class="d-flex gap-2 py-1 justify-content-start">
+                            <button 
+                                type="button"
+                                class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-search"></i>
+                                <span>Detay</span>
+                            </button>
+                            @if ( CurrentUser.HasPermission( "customer:edit" ) )
+                            {
+                                <button type="button"
+                                        class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pen"></i>
+                                    <span>Güncelle</span>
+                                </button>
+                            }
+
+                            @if ( CurrentUser.HasPermission( "customer:delete" ) )
+                            {
+                                <button type="button"
+                                        class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash3"></i>
+                                    <span>Sil</span>
+                                </button>
+                            }
+                        </div>
+                    </TemplateColumn>
+                </QuickGrid>
+                <div class="p-2">
+                    <Paginator State="pagination" />
+                </div>
+            </QuickGridContent>
+        </DeKayaQuickGrid>
+    }
+
+@code
+{
+    private bool isLoading;
+    private List<CustomerViewModel> customers = [];
+    private string searchTerm = string.Empty;
+    private int pageSize = 25;
+    private PaginationState pagination = new() { ItemsPerPage = 25 };
+
+    private IReadOnlyList<CustomerViewModel> FilteredItems =>
+        (string.IsNullOrWhiteSpace(searchTerm)
+            ? customers
+            : customers.Where(c =>
+                (c.FullName != null && c.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                (c.AddressFull != null && c.AddressFull.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                (c.ContactPhone != null && c.ContactPhone.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                (c.ContactEmail != null && c.ContactEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+            ) )
+        .ToList();
+
+    private IQueryable<CustomerViewModel> GridItems => FilteredItems.AsQueryable();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadCustomersAsync();
+    }
+
+    private async Task OnSearchTermChanged( string value )
+    {
+        searchTerm = value;
+        await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task OnPageSizeChanged( int value )
+    {
+        pageSize = value;
+        pagination.ItemsPerPage = value;
+        await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task LoadCustomersAsync()
+    {
+        isLoading = true;
+        try
+        {
+            var result = await customerService.GetAllAsync();
+            if ( !result.IsSuccessful || result.Data is null )
+            {
+                customers = [];
+                return;
+            }
+
+            customers = result.Data.Select( c => new CustomerViewModel
+            {
+                Id = c.Id,
+                FirstName = c.FirstName,
+                LastName = c.LastName,
+                FullName = c.FullName,
+                AddressCity = c.City,
+                AddressDistrict = c.District,
+                AddressFull = c.FullAddress,
+                ContactEmail = c.Email,
+                ContactPhone = c.PhoneNumber,
+                ContactPhone2 = c.PhoneNumber2,
+                CreatedAt = c.CreatedAt,
+                UpdatedAt = c.UpdatedAt,
+                CreatedFullName = c.CreatedFullName,
+                UpdatedFullName = c.UpdatedFullName
+            } ).ToList() ;
+        }
+        finally
+        {
+            isLoading = false;
+            await pagination.SetCurrentPageIndexAsync( 0 );
+            await InvokeAsync( StateHasChanged );
+        }
+    }
+
+    private sealed class CustomerViewModel
+    {
+        public Guid Id { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? FullName { get; set; }
+        public string? AddressCity { get; set; }
+        public string? AddressDistrict { get; set; }
+        public string? AddressFull { get; set; }
+        public string? ContactPhone { get; set; }
+        public string? ContactPhone2 { get; set; }
+        public string? ContactEmail { get; set; }
+        public bool IsActive { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
+        public string? UpdatedFullName { get; set; }
+        public string? CreatedFullName { get; set; }
+    }
+}

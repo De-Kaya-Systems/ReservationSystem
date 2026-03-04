@@ -6,7 +6,7 @@ using TS.MediatR;
 
 namespace DeKayaServer.Application.Users;
 
-[Permission( "user:view" )]
+[Permission( "user:getall" )]
 public sealed record UserGetAllQuery : IRequest<IQueryable<UserDto>>;
 
 internal sealed class UserGetAllQueryHandler(

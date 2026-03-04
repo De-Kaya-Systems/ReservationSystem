@@ -37,19 +37,21 @@ public sealed class PermissionService
     {
         //View'ler sayfa linkleri icin. Sadece blazor app da
         //EN: Views are for page links. Only in Blazor app.
-        public static readonly string DashboardView = "dashboard:view";
-        public static readonly string RoleView = "role:view";
-        public static readonly string SeyyarRoomView = "seyyar-room:view";
+        public static readonly string DashboardPage = "dashboard:page";
+        public static readonly string RolePage = "role:page";
+        public static readonly string SeyyarRoomPage = "seyyar-room:page";
         public static readonly string SeyyarRoomMaintenance = "seyyar-room:maintenance";
-        public static readonly string UserView = "user:view";
+        public static readonly string UserPage = "user:page";
+        public static readonly string CustomerPage = "customer:page";
 
         public static readonly IReadOnlyCollection<string> DefaultPermissions =
         [
-            DashboardView,
-            RoleView,
-            SeyyarRoomView,
+            DashboardPage,
+            RolePage,
+            SeyyarRoomPage,
             SeyyarRoomMaintenance,
-            UserView
+            UserPage,
+            CustomerPage,
         ];
     }
 }
