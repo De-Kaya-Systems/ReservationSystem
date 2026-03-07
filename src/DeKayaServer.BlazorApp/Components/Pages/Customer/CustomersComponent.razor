@@ -1,4 +1,5 @@
 ﻿@page "/customers"
+@using DeKayaServer.BlazorApp.Components.Pages.Customer.CreateCustomer
 @using Microsoft.AspNetCore.Components.QuickGrid
 @inherits UserContextComponent
 @inject ICustomerService customerService
@@ -31,7 +32,7 @@
             <HeaderActions>
                 @if ( CurrentUser.HasPermission( "customer:create" ) )
                 {
-                    <button type="button" class="btn btn-outline-success btn-sm" >
+                    <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateUserDialog">
                         <i class="bi bi-plus-circle"></i>
                         <span>Ekle</span>
                     </button>
@@ -86,6 +87,8 @@
         </DeKayaQuickGrid>
     }
 
+<CreateCustomerDialog @ref="createCustomerDialog" CustomerAdded="HandleCustomerAddedAsync"/>
+
 @code
 {
     private bool isLoading;
@@ -93,6 +96,8 @@
     private string searchTerm = string.Empty;
     private int pageSize = 25;
     private PaginationState pagination = new() { ItemsPerPage = 25 };
+
+    private CreateCustomerDialog? createCustomerDialog;
 
     private IReadOnlyList<CustomerViewModel> FilteredItems =>
         (string.IsNullOrWhiteSpace(searchTerm)
@@ -124,6 +129,21 @@
         pageSize = value;
         pagination.ItemsPerPage = value;
         await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task ShowCreateUserDialog()
+    {
+        if(createCustomerDialog is null)
+        {
+            return;
+        }
+        await createCustomerDialog.ShowAsync();
+    }
+
+    private async Task HandleCustomerAddedAsync()
+    {
+        await LoadCustomersAsync();
+        await InvokeAsync( StateHasChanged );
     }
 
     private async Task LoadCustomersAsync()

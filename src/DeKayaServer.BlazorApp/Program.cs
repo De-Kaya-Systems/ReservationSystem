@@ -3,6 +3,7 @@ using DeKayaServer.BlazorApp.Http;
 using DeKayaServer.BlazorApp.Http.TokenProcess;
 using DeKayaServer.BlazorApp.Interfaces;
 using DeKayaServer.BlazorApp.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
@@ -14,6 +15,12 @@ builder.AddServiceDefaults();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddScoped( sp =>
+{
+    var navigationManager = sp.GetRequiredService<NavigationManager>();
+    return new HttpClient { BaseAddress = new Uri( navigationManager.BaseUri ) };
+} );
 
 builder.Services.AddScoped<ProtectedLocalStorage>();
 
