@@ -1,5 +1,6 @@
 ﻿@page "/customers"
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.CreateCustomer
+@using DeKayaServer.BlazorApp.Components.Pages.Customer.UpdateCustomer
 @using Microsoft.AspNetCore.Components.QuickGrid
 @inherits UserContextComponent
 @inject ICustomerService customerService
@@ -32,7 +33,7 @@
             <HeaderActions>
                 @if ( CurrentUser.HasPermission( "customer:create" ) )
                 {
-                    <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateUserDialog">
+                    <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateCustomerDialog">
                         <i class="bi bi-plus-circle"></i>
                         <span>Ekle</span>
                     </button>
@@ -46,28 +47,35 @@
                     Class="table table-striped table-hover table-responsive mb-0 align-middle">
 
                     <PropertyColumn Property="@(c => c.FullName)" Title="Adı Soyadı" Sortable="true" />
+                    <TemplateColumn Title="Durum" Sortable="true" Context="c">
+                        <span class="badge @(c.IsActive ? "bg-success" : "bg-secondary") p-2">
+                            <i class="bi @(c.IsActive ? "bi-check-circle" : "bi-x-circle") me-1"></i>
+                            @(c.IsActive ? "Aktif" : "Pasif")
+                        </span>
+                    </TemplateColumn>
                     <PropertyColumn Property="@(c => c.ContactPhone)" Title="Telefon numarası" Sortable="true" />
                     <PropertyColumn Property="@(c => c.ContactEmail)" Title="E-Mail" Sortable="true" />
                     <PropertyColumn Property="@(c => c.AddressCity)" Title="İl" Sortable="true" />
                     <PropertyColumn Property="@(c => c.AddressDistrict)" Title="İlçe" Sortable="true" />
                     <PropertyColumn Property="@(c => c.CreatedFullName)" Title="Oluşturan" />
 
-                    <TemplateColumn Title="İşlemler" >
-                        <div class="d-flex gap-2 py-1 justify-content-start">
-                            <button 
-                                type="button"
+                <TemplateColumn Title="İşlemler" Context="c">
+                    <div class="d-flex gap-2 py-1 justify-content-start">
+                        <button type="button"
                                 class="btn btn-outline-secondary btn-sm">
-                                <i class="bi bi-search"></i>
-                                <span>Detay</span>
+                            <i class="bi bi-search"></i>
+                            <span>Detay</span>
+                        </button>
+
+                        @if ( CurrentUser.HasPermission( "customer:edit" ) )
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    @onclick="( () => ShowUpdateCustomerDialog( c ) )">
+                                <i class="bi bi-pen"></i>
+                                <span>Güncelle</span>
                             </button>
-                            @if ( CurrentUser.HasPermission( "customer:edit" ) )
-                            {
-                                <button type="button"
-                                        class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-pen"></i>
-                                    <span>Güncelle</span>
-                                </button>
-                            }
+                        }
 
                             @if ( CurrentUser.HasPermission( "customer:delete" ) )
                             {
@@ -87,7 +95,14 @@
         </DeKayaQuickGrid>
     }
 
-<CreateCustomerDialog @ref="createCustomerDialog" CustomerAdded="HandleCustomerAddedAsync"/>
+<CreateCustomerDialog 
+    @ref="createCustomerDialog" 
+    CustomerAdded="HandleCustomerAddedAsync"/>
+
+<UpdateCustomerDialog 
+    @ref="updateCustomerDialog"
+    CustomerId="@selectedCustomerId"
+    CustomerUpdated="HandleCustomerUpdatedAsync" />
 
 @code
 {
@@ -98,6 +113,9 @@
     private PaginationState pagination = new() { ItemsPerPage = 25 };
 
     private CreateCustomerDialog? createCustomerDialog;
+    private UpdateCustomerDialog? updateCustomerDialog;
+
+    private Guid selectedCustomerId;
 
     private IReadOnlyList<CustomerViewModel> FilteredItems =>
         (string.IsNullOrWhiteSpace(searchTerm)
@@ -106,7 +124,9 @@
                 (c.FullName != null && c.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
                 (c.AddressFull != null && c.AddressFull.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
                 (c.ContactPhone != null && c.ContactPhone.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                (c.ContactEmail != null && c.ContactEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                (c.ContactEmail != null && c.ContactEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                ( c.AddressCity != null && c.AddressCity.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
+                ( c.AddressDistrict != null && c.AddressDistrict.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) )
             ) )
         .ToList();
 
@@ -131,7 +151,7 @@
         await pagination.SetCurrentPageIndexAsync( 0 );
     }
 
-    private async Task ShowCreateUserDialog()
+    private async Task ShowCreateCustomerDialog()
     {
         if(createCustomerDialog is null)
         {
@@ -140,7 +160,28 @@
         await createCustomerDialog.ShowAsync();
     }
 
+    private async Task ShowUpdateCustomerDialog( CustomerViewModel customer )
+    {
+        selectedCustomerId = customer.Id;
+
+        await InvokeAsync( StateHasChanged );
+        await Task.Yield();
+
+        if ( updateCustomerDialog is null )
+        {
+            return;
+        }
+
+        await updateCustomerDialog.ShowAsync();
+    }
+
     private async Task HandleCustomerAddedAsync()
+    {
+        await LoadCustomersAsync();
+        await InvokeAsync( StateHasChanged );
+    }
+
+    private async Task HandleCustomerUpdatedAsync()
     {
         await LoadCustomersAsync();
         await InvokeAsync( StateHasChanged );
@@ -173,7 +214,8 @@
                 CreatedAt = c.CreatedAt,
                 UpdatedAt = c.UpdatedAt,
                 CreatedFullName = c.CreatedFullName,
-                UpdatedFullName = c.UpdatedFullName
+                UpdatedFullName = c.UpdatedFullName,
+                IsActive = c.IsActive
             } ).ToList() ;
         }
         finally
