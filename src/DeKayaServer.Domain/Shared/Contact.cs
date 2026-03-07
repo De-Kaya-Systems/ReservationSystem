@@ -1,7 +1,8 @@
 ﻿namespace DeKayaServer.Domain.Shared;
 
-public sealed record Contact(
-    string PhoneNumber,
-    string PhoneNumber2,
-    string Email
-    );
+public sealed class Contact
+{
+    public string PhoneNumber { get; init; } = default!;
+    public string? PhoneNumber2 { get; init; }
+    public string? Email { get; init; }
+}

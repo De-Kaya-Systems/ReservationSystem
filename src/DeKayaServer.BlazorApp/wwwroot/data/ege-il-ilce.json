@@ -1,0 +1,1220 @@
+[
+
+  {
+    "il_adi": "Antalya",
+    "plaka_kodu": "07",
+    "alan_kodu": "242",
+    "nufus": "2.688.004",
+    "bolge": "Akdeniz",
+    "yuzolcumu": "20.177",
+    "nufus_artisi": "25,7%",
+    "erkek_nufus_yuzde": "50,37%",
+    "erkek_nufus": "1.222.086",
+    "kadin_nufus_yuzde": "49,63%",
+    "kadin_nufus": "1.204.270",
+    "nufus_yuzdesi_genel": "2,96%",
+    "ilceler": [
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1121",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "AKSEKİ",
+        "nufus": "10.575",
+        "erkek_nufus": "5.338",
+        "kadin_nufus": "5.237"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "2035",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "AKSU",
+        "nufus": "75.633",
+        "erkek_nufus": "38.689",
+        "kadin_nufus": "36.944"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1126",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "ALANYA",
+        "nufus": "350.636",
+        "erkek_nufus": "177.093",
+        "kadin_nufus": "173.543"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1811",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "DEMRE",
+        "nufus": "27.150",
+        "erkek_nufus": "13.946",
+        "kadin_nufus": "13.204"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "2036",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "DÖŞEMEALTI",
+        "nufus": "73.809",
+        "erkek_nufus": "37.710",
+        "kadin_nufus": "36.099"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1303",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "ELMALI",
+        "nufus": "40.614",
+        "erkek_nufus": "21.179",
+        "kadin_nufus": "19.435"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1333",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "FİNİKE",
+        "nufus": "49.407",
+        "erkek_nufus": "24.804",
+        "kadin_nufus": "24.603"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1337",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "GAZİPAŞA",
+        "nufus": "52.126",
+        "erkek_nufus": "26.454",
+        "kadin_nufus": "25.672"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1370",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "GÜNDOĞMUŞ",
+        "nufus": "7.170",
+        "erkek_nufus": "3.562",
+        "kadin_nufus": "3.608"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1946",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "İBRADI",
+        "nufus": "2.868",
+        "erkek_nufus": "1.464",
+        "kadin_nufus": "1.404"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1451",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "KAŞ",
+        "nufus": "61.488",
+        "erkek_nufus": "31.613",
+        "kadin_nufus": "29.875"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1959",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "KEMER",
+        "nufus": "46.615",
+        "erkek_nufus": "24.231",
+        "kadin_nufus": "22.384"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "2037",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "KEPEZ",
+        "nufus": "591.895",
+        "erkek_nufus": "300.798",
+        "kadin_nufus": "291.097"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "2038",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "KONYAALTI",
+        "nufus": "199.609",
+        "erkek_nufus": "95.179",
+        "kadin_nufus": "104.430"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1483",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "KORKUTELİ",
+        "nufus": "55.883",
+        "erkek_nufus": "28.046",
+        "kadin_nufus": "27.837"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1492",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "KUMLUCA",
+        "nufus": "72.478",
+        "erkek_nufus": "36.612",
+        "kadin_nufus": "35.866"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1512",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "MANAVGAT",
+        "nufus": "245.740",
+        "erkek_nufus": "125.368",
+        "kadin_nufus": "120.372"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "2039",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "MURATPAŞA",
+        "nufus": "521.183",
+        "erkek_nufus": "253.955",
+        "kadin_nufus": "267.228"
+      },
+      {
+        "plaka_kodu": "7",
+        "ilce_kodu": "1616",
+        "il_adi": "ANTALYA",
+        "ilce_adi": "SERİK",
+        "nufus": "134.953",
+        "erkek_nufus": "68.714",
+        "kadin_nufus": "66.239"
+      }
+    ],
+    "kisa_bilgi": "Akdeniz bölgesinin batısında ve Antalya Körfezi ile Batı Toroslar arasında yer alan Antalya, özellikle turizmin etkisiyle hızla nüfus alan ve gelişen, en güzel şehirlerimizden biridir."
+  },
+  {
+    "il_adi": "Aydın",
+    "plaka_kodu": "09",
+    "alan_kodu": "256",
+    "nufus": "1.148.241",
+    "bolge": "Ege",
+    "yuzolcumu": "8.116",
+    "nufus_artisi": "12,5%",
+    "erkek_nufus_yuzde": "49,75%",
+    "erkek_nufus": "546.092",
+    "kadin_nufus_yuzde": "50,25%",
+    "kadin_nufus": "551.654",
+    "nufus_yuzdesi_genel": "1,34%",
+    "ilceler": [
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1206",
+        "il_adi": "AYDIN",
+        "ilce_adi": "BOZDOĞAN",
+        "nufus": "32.963",
+        "erkek_nufus": "16.487",
+        "kadin_nufus": "16.476"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1781",
+        "il_adi": "AYDIN",
+        "ilce_adi": "BUHARKENT",
+        "nufus": "12.951",
+        "erkek_nufus": "6.399",
+        "kadin_nufus": "6.552"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1256",
+        "il_adi": "AYDIN",
+        "ilce_adi": "ÇİNE",
+        "nufus": "48.734",
+        "erkek_nufus": "24.164",
+        "kadin_nufus": "24.570"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "2000",
+        "il_adi": "AYDIN",
+        "ilce_adi": "DİDİM",
+        "nufus": "93.876",
+        "erkek_nufus": "47.635",
+        "kadin_nufus": "46.241"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "2076",
+        "il_adi": "AYDIN",
+        "ilce_adi": "EFELER",
+        "nufus": "300.225",
+        "erkek_nufus": "148.301",
+        "kadin_nufus": "151.924"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1348",
+        "il_adi": "AYDIN",
+        "ilce_adi": "GERMENCİK",
+        "nufus": "43.713",
+        "erkek_nufus": "21.688",
+        "kadin_nufus": "22.025"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1807",
+        "il_adi": "AYDIN",
+        "ilce_adi": "İNCİRLİOVA",
+        "nufus": "54.806",
+        "erkek_nufus": "27.228",
+        "kadin_nufus": "27.578"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1435",
+        "il_adi": "AYDIN",
+        "ilce_adi": "KARACASU",
+        "nufus": "18.003",
+        "erkek_nufus": "8.858",
+        "kadin_nufus": "9.145"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1957",
+        "il_adi": "AYDIN",
+        "ilce_adi": "KARPUZLU",
+        "nufus": "10.755",
+        "erkek_nufus": "5.316",
+        "kadin_nufus": "5.439"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1479",
+        "il_adi": "AYDIN",
+        "ilce_adi": "KOÇARLI",
+        "nufus": "22.155",
+        "erkek_nufus": "11.128",
+        "kadin_nufus": "11.027"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1968",
+        "il_adi": "AYDIN",
+        "ilce_adi": "KÖŞK",
+        "nufus": "28.101",
+        "erkek_nufus": "14.251",
+        "kadin_nufus": "13.850"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1497",
+        "il_adi": "AYDIN",
+        "ilce_adi": "KUŞADASI",
+        "nufus": "125.812",
+        "erkek_nufus": "62.595",
+        "kadin_nufus": "63.217"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1498",
+        "il_adi": "AYDIN",
+        "ilce_adi": "KUYUCAK",
+        "nufus": "26.393",
+        "erkek_nufus": "13.093",
+        "kadin_nufus": "13.300"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1542",
+        "il_adi": "AYDIN",
+        "ilce_adi": "NAZİLLİ",
+        "nufus": "160.581",
+        "erkek_nufus": "78.700",
+        "kadin_nufus": "81.881"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1637",
+        "il_adi": "AYDIN",
+        "ilce_adi": "SÖKE",
+        "nufus": "122.708",
+        "erkek_nufus": "61.466",
+        "kadin_nufus": "61.242"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1640",
+        "il_adi": "AYDIN",
+        "ilce_adi": "SULTANHİSAR",
+        "nufus": "20.272",
+        "erkek_nufus": "9.915",
+        "kadin_nufus": "10.357"
+      },
+      {
+        "plaka_kodu": "9",
+        "ilce_kodu": "1724",
+        "il_adi": "AYDIN",
+        "ilce_adi": "YENİPAZAR",
+        "nufus": "11.983",
+        "erkek_nufus": "5.813",
+        "kadin_nufus": "6.170"
+      }
+    ],
+    "kisa_bilgi": "Turizm ve tarım sektörlerinde ülkenin önemli illerinden biri olan Aydın, aynı zamanda Türkiye'nin ilk demiryolu kurulan şehridir. Kuzeyinde İzmir, Manisa, doğusunda Denizli, güneyinde Muğla ile çevrili il, çok önemli turistik mekanlara, plajlara, antik kentlere evsahipliği yapar."
+  },
+  {
+    "il_adi": "Burdur",
+    "plaka_kodu": "15",
+    "alan_kodu": "248",
+    "nufus": "273.799",
+    "bolge": "Akdeniz",
+    "yuzolcumu": "7.175",
+    "nufus_artisi": "0,3%",
+    "erkek_nufus_yuzde": "50,10%",
+    "erkek_nufus": "135.240",
+    "kadin_nufus_yuzde": "49,90%",
+    "kadin_nufus": "134.686",
+    "nufus_yuzdesi_genel": "0,33%",
+    "ilceler": [
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1215",
+        "il_adi": "BURDUR",
+        "ilce_adi": "MERKEZ",
+        "nufus": "117.189",
+        "erkek_nufus": "59.602",
+        "kadin_nufus": "57.587"
+      },
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1109",
+        "il_adi": "BURDUR",
+        "ilce_adi": "AĞLASUN",
+        "nufus": "7.652",
+        "erkek_nufus": "3.754",
+        "kadin_nufus": "3.898"
+      },
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1874",
+        "il_adi": "BURDUR",
+        "ilce_adi": "ALTINYAYLA",
+        "nufus": "5.335",
+        "erkek_nufus": "2.658",
+        "kadin_nufus": "2.677"
+      },
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1211",
+        "il_adi": "BURDUR",
+        "ilce_adi": "BUCAK",
+        "nufus": "66.156",
+        "erkek_nufus": "33.075",
+        "kadin_nufus": "33.081"
+      },
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1899",
+        "il_adi": "BURDUR",
+        "ilce_adi": "ÇAVDIR",
+        "nufus": "12.599",
+        "erkek_nufus": "6.222",
+        "kadin_nufus": "6.377"
+      },
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1903",
+        "il_adi": "BURDUR",
+        "ilce_adi": "ÇELTİKÇİ",
+        "nufus": "4.936",
+        "erkek_nufus": "2.349",
+        "kadin_nufus": "2.587"
+      },
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1357",
+        "il_adi": "BURDUR",
+        "ilce_adi": "GÖLHİSAR",
+        "nufus": "23.064",
+        "erkek_nufus": "11.551",
+        "kadin_nufus": "11.513"
+      },
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1813",
+        "il_adi": "BURDUR",
+        "ilce_adi": "KARAMANLI",
+        "nufus": "8.268",
+        "erkek_nufus": "4.181",
+        "kadin_nufus": "4.087"
+      },
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1816",
+        "il_adi": "BURDUR",
+        "ilce_adi": "KEMER",
+        "nufus": "3.000",
+        "erkek_nufus": "1.465",
+        "kadin_nufus": "1.535"
+      },
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1672",
+        "il_adi": "BURDUR",
+        "ilce_adi": "TEFENNİ",
+        "nufus": "10.744",
+        "erkek_nufus": "5.343",
+        "kadin_nufus": "5.401"
+      },
+      {
+        "plaka_kodu": "15",
+        "ilce_kodu": "1728",
+        "il_adi": "BURDUR",
+        "ilce_adi": "YEŞİLOVA",
+        "nufus": "14.773",
+        "erkek_nufus": "7.172",
+        "kadin_nufus": "7.601"
+      }
+    ],
+    "kisa_bilgi": "Akdeniz Bölgesinde, Orta ve Batı Anadolu’yu Akdeniz’e bağlayan yolların kavşağında yer alan Burdur, bu özelliğiyle tarih boyunca çeşitli uygarlıkların da kavşağı konumunda olmuştur. "
+  },
+  {
+    "il_adi": "Denizli",
+    "plaka_kodu": "20",
+    "alan_kodu": "258",
+    "nufus": "1.056.332",
+    "bolge": "Ege",
+    "yuzolcumu": "12.134",
+    "nufus_artisi": "5,0%",
+    "erkek_nufus_yuzde": "49,83%",
+    "erkek_nufus": "512.109",
+    "kadin_nufus_yuzde": "50,17%",
+    "kadin_nufus": "515.673",
+    "nufus_yuzdesi_genel": "1,25%",
+    "ilceler": [
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1102",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "ACIPAYAM",
+        "nufus": "55.141",
+        "erkek_nufus": "27.739",
+        "kadin_nufus": "27.402"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1769",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "BABADAĞ",
+        "nufus": "6.404",
+        "erkek_nufus": "3.316",
+        "kadin_nufus": "3.088"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1881",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "BAKLAN",
+        "nufus": "5.387",
+        "erkek_nufus": "2.665",
+        "kadin_nufus": "2.722"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1774",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "BEKİLLİ",
+        "nufus": "6.464",
+        "erkek_nufus": "3.119",
+        "kadin_nufus": "3.345"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1888",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "BEYAĞAÇ",
+        "nufus": "6.263",
+        "erkek_nufus": "3.191",
+        "kadin_nufus": "3.072"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1889",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "BOZKURT",
+        "nufus": "12.192",
+        "erkek_nufus": "5.447",
+        "kadin_nufus": "6.745"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1214",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "BULDAN",
+        "nufus": "26.781",
+        "erkek_nufus": "13.138",
+        "kadin_nufus": "13.643"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1224",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "ÇAL",
+        "nufus": "18.107",
+        "erkek_nufus": "8.909",
+        "kadin_nufus": "9.198"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1226",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "ÇAMELİ",
+        "nufus": "17.749",
+        "erkek_nufus": "8.940",
+        "kadin_nufus": "8.809"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1233",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "ÇARDAK",
+        "nufus": "8.578",
+        "erkek_nufus": "4.359",
+        "kadin_nufus": "4.219"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1257",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "ÇİVRİL",
+        "nufus": "60.362",
+        "erkek_nufus": "29.856",
+        "kadin_nufus": "30.506"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1371",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "GÜNEY",
+        "nufus": "9.506",
+        "erkek_nufus": "4.684",
+        "kadin_nufus": "4.822"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1803",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "HONAZ",
+        "nufus": "34.103",
+        "erkek_nufus": "19.322",
+        "kadin_nufus": "14.781"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1426",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "KALE",
+        "nufus": "19.396",
+        "erkek_nufus": "9.663",
+        "kadin_nufus": "9.733"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "2079",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "MERKEZEFENDİ",
+        "nufus": "329.451",
+        "erkek_nufus": "162.518",
+        "kadin_nufus": "166.933"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1871",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "PAMUKKALE",
+        "nufus": "347.621",
+        "erkek_nufus": "173.184",
+        "kadin_nufus": "174.437"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1597",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "SARAYKÖY",
+        "nufus": "30.696",
+        "erkek_nufus": "15.368",
+        "kadin_nufus": "15.328"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1840",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "SERİNHİSAR",
+        "nufus": "14.349",
+        "erkek_nufus": "7.123",
+        "kadin_nufus": "7.226"
+      },
+      {
+        "plaka_kodu": "20",
+        "ilce_kodu": "1670",
+        "il_adi": "DENİZLİ",
+        "ilce_adi": "TAVAS",
+        "nufus": "42.506",
+        "erkek_nufus": "20.957",
+        "kadin_nufus": "21.549"
+      }
+    ],
+    "kisa_bilgi": "Denizli ili sanayisi ve turizmi ile Türkiyenin önemli şehirlerindendir. Tekstilin başkentidir. İhracatta ülke ekonomisine önemli katkılar sağlamıştır. İhracatta Türkiye 7. sidir. Türkiye de gelen turist sayısı olarak 5. il konumundadır."
+  },
+  {
+    "il_adi": "Isparta",
+    "plaka_kodu": "32",
+    "alan_kodu": "246",
+    "nufus": "445.325",
+    "bolge": "Akdeniz",
+    "yuzolcumu": "8.946",
+    "nufus_artisi": "-0,8%",
+    "erkek_nufus_yuzde": "49,77%",
+    "erkek_nufus": "219.681",
+    "kadin_nufus_yuzde": "50,23%",
+    "kadin_nufus": "221.731",
+    "nufus_yuzdesi_genel": "0,54%",
+    "ilceler": [
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1401",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "MERKEZ",
+        "nufus": "266.982",
+        "erkek_nufus": "131.538",
+        "kadin_nufus": "135.444"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1755",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "AKSU",
+        "nufus": "4.233",
+        "erkek_nufus": "2.106",
+        "kadin_nufus": "2.127"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1154",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "ATABEY",
+        "nufus": "5.790",
+        "erkek_nufus": "2.846",
+        "kadin_nufus": "2.944"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1297",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "EĞİRDİR",
+        "nufus": "31.308",
+        "erkek_nufus": "15.794",
+        "kadin_nufus": "15.514"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1341",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "GELENDOST",
+        "nufus": "15.059",
+        "erkek_nufus": "7.437",
+        "kadin_nufus": "7.622"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1929",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "GÖNEN",
+        "nufus": "7.003",
+        "erkek_nufus": "3.522",
+        "kadin_nufus": "3.481"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1456",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "KEÇİBORLU",
+        "nufus": "13.984",
+        "erkek_nufus": "7.134",
+        "kadin_nufus": "6.850"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1615",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "SENİRKENT",
+        "nufus": "10.977",
+        "erkek_nufus": "5.347",
+        "kadin_nufus": "5.630"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1648",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "SÜTÇÜLER",
+        "nufus": "10.081",
+        "erkek_nufus": "5.077",
+        "kadin_nufus": "5.004"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1651",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "ŞARKİKARAAĞAÇ",
+        "nufus": "25.109",
+        "erkek_nufus": "12.282",
+        "kadin_nufus": "12.827"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1699",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "ULUBORLU",
+        "nufus": "6.383",
+        "erkek_nufus": "3.302",
+        "kadin_nufus": "3.081"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "1717",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "YALVAÇ",
+        "nufus": "46.177",
+        "erkek_nufus": "22.999",
+        "kadin_nufus": "23.178"
+      },
+      {
+        "plaka_kodu": "32",
+        "ilce_kodu": "2001",
+        "il_adi": "ISPARTA",
+        "ilce_adi": "YENİŞARBADEMLİ",
+        "nufus": "2.592",
+        "erkek_nufus": "1.315",
+        "kadin_nufus": "1.277"
+      }
+    ],
+    "kisa_bilgi": "Lezzetli, uzun saplı, sert meyveli kirazı, gülü ve halısıyla meşhur, ayrıca ülkemizde en çok elma üretiminin yapıldığı Isparta, Göller bölgesinde yer alıyor. "
+  },
+  {
+    "il_adi": "İzmir",
+    "plaka_kodu": "35",
+    "alan_kodu": "232",
+    "nufus": "4.462.056",
+    "bolge": "Ege",
+    "yuzolcumu": "11.891",
+    "nufus_artisi": "8,2%",
+    "erkek_nufus_yuzde": "49,82%",
+    "erkek_nufus": "2.152.585",
+    "kadin_nufus_yuzde": "50,18%",
+    "kadin_nufus": "2.167.934",
+    "nufus_yuzdesi_genel": "5,27%",
+    "ilceler": [
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1128",
+        "il_adi": "İZMİR",
+        "ilce_adi": "ALİAĞA",
+        "nufus": "103.364",
+        "erkek_nufus": "56.673",
+        "kadin_nufus": "46.691"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "2006",
+        "il_adi": "İZMİR",
+        "ilce_adi": "BALÇOVA",
+        "nufus": "80.513",
+        "erkek_nufus": "39.422",
+        "kadin_nufus": "41.091"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1178",
+        "il_adi": "İZMİR",
+        "ilce_adi": "BAYINDIR",
+        "nufus": "40.049",
+        "erkek_nufus": "19.937",
+        "kadin_nufus": "20.112"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "2056",
+        "il_adi": "İZMİR",
+        "ilce_adi": "BAYRAKLI",
+        "nufus": "296.839",
+        "erkek_nufus": "147.606",
+        "kadin_nufus": "149.233"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1181",
+        "il_adi": "İZMİR",
+        "ilce_adi": "BERGAMA",
+        "nufus": "104.980",
+        "erkek_nufus": "52.773",
+        "kadin_nufus": "52.207"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1776",
+        "il_adi": "İZMİR",
+        "ilce_adi": "BEYDAĞ",
+        "nufus": "12.197",
+        "erkek_nufus": "6.128",
+        "kadin_nufus": "6.069"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1203",
+        "il_adi": "İZMİR",
+        "ilce_adi": "BORNOVA",
+        "nufus": "452.867",
+        "erkek_nufus": "224.889",
+        "kadin_nufus": "227.978"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1780",
+        "il_adi": "İZMİR",
+        "ilce_adi": "BUCA",
+        "nufus": "517.963",
+        "erkek_nufus": "257.169",
+        "kadin_nufus": "260.794"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1251",
+        "il_adi": "İZMİR",
+        "ilce_adi": "ÇEŞME",
+        "nufus": "48.167",
+        "erkek_nufus": "24.477",
+        "kadin_nufus": "23.690"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "2007",
+        "il_adi": "İZMİR",
+        "ilce_adi": "ÇİĞLİ",
+        "nufus": "209.951",
+        "erkek_nufus": "104.609",
+        "kadin_nufus": "105.342"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1280",
+        "il_adi": "İZMİR",
+        "ilce_adi": "DİKİLİ",
+        "nufus": "46.587",
+        "erkek_nufus": "23.254",
+        "kadin_nufus": "23.333"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1334",
+        "il_adi": "İZMİR",
+        "ilce_adi": "FOÇA",
+        "nufus": "33.611",
+        "erkek_nufus": "18.642",
+        "kadin_nufus": "14.969"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "2009",
+        "il_adi": "İZMİR",
+        "ilce_adi": "GAZİEMİR",
+        "nufus": "137.856",
+        "erkek_nufus": "69.308",
+        "kadin_nufus": "68.548"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "2018",
+        "il_adi": "İZMİR",
+        "ilce_adi": "GÜZELBAHÇE",
+        "nufus": "37.572",
+        "erkek_nufus": "18.481",
+        "kadin_nufus": "19.091"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "2057",
+        "il_adi": "İZMİR",
+        "ilce_adi": "KARABAĞLAR",
+        "nufus": "478.788",
+        "erkek_nufus": "235.862",
+        "kadin_nufus": "242.926"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1432",
+        "il_adi": "İZMİR",
+        "ilce_adi": "KARABURUN",
+        "nufus": "11.927",
+        "erkek_nufus": "6.179",
+        "kadin_nufus": "5.748"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1448",
+        "il_adi": "İZMİR",
+        "ilce_adi": "KARŞIYAKA",
+        "nufus": "347.023",
+        "erkek_nufus": "162.189",
+        "kadin_nufus": "184.834"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1461",
+        "il_adi": "İZMİR",
+        "ilce_adi": "KEMALPAŞA",
+        "nufus": "112.049",
+        "erkek_nufus": "56.978",
+        "kadin_nufus": "55.071"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1467",
+        "il_adi": "İZMİR",
+        "ilce_adi": "KINIK",
+        "nufus": "28.513",
+        "erkek_nufus": "14.191",
+        "kadin_nufus": "14.322"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1477",
+        "il_adi": "İZMİR",
+        "ilce_adi": "KİRAZ",
+        "nufus": "43.674",
+        "erkek_nufus": "22.172",
+        "kadin_nufus": "21.502"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1819",
+        "il_adi": "İZMİR",
+        "ilce_adi": "KONAK",
+        "nufus": "336.545",
+        "erkek_nufus": "164.439",
+        "kadin_nufus": "172.106"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1826",
+        "il_adi": "İZMİR",
+        "ilce_adi": "MENDERES",
+        "nufus": "104.147",
+        "erkek_nufus": "52.432",
+        "kadin_nufus": "51.715"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1521",
+        "il_adi": "İZMİR",
+        "ilce_adi": "MENEMEN",
+        "nufus": "193.229",
+        "erkek_nufus": "98.451",
+        "kadin_nufus": "94.778"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "2013",
+        "il_adi": "İZMİR",
+        "ilce_adi": "NARLIDERE",
+        "nufus": "63.438",
+        "erkek_nufus": "31.253",
+        "kadin_nufus": "32.185"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1563",
+        "il_adi": "İZMİR",
+        "ilce_adi": "ÖDEMİŞ",
+        "nufus": "132.769",
+        "erkek_nufus": "66.077",
+        "kadin_nufus": "66.692"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1611",
+        "il_adi": "İZMİR",
+        "ilce_adi": "SEFERİHİSAR",
+        "nufus": "52.507",
+        "erkek_nufus": "26.270",
+        "kadin_nufus": "26.237"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1612",
+        "il_adi": "İZMİR",
+        "ilce_adi": "SELÇUK",
+        "nufus": "37.689",
+        "erkek_nufus": "18.771",
+        "kadin_nufus": "18.918"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1677",
+        "il_adi": "İZMİR",
+        "ilce_adi": "TİRE",
+        "nufus": "86.758",
+        "erkek_nufus": "42.773",
+        "kadin_nufus": "43.985"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1682",
+        "il_adi": "İZMİR",
+        "ilce_adi": "TORBALI",
+        "nufus": "201.476",
+        "erkek_nufus": "101.543",
+        "kadin_nufus": "99.933"
+      },
+      {
+        "plaka_kodu": "35",
+        "ilce_kodu": "1703",
+        "il_adi": "İZMİR",
+        "ilce_adi": "URLA",
+        "nufus": "72.741",
+        "erkek_nufus": "36.339",
+        "kadin_nufus": "36.402"
+      }
+    ],
+    "kisa_bilgi": "Latince adı Smyrna olan İzmir, Ege Bölgesi'nin ortasında ve İzmir Körfezi çevresinde yer alır. Konak, kentin merkez ilçesidir ve burada gezilecek, görülecek çok şey vardır."
+  },
+  {
+    "il_adi": "Muğla",
+    "plaka_kodu": "48",
+    "alan_kodu": "252",
+    "nufus": "1.048.185",
+    "bolge": "Ege",
+    "yuzolcumu": "12654",
+    "nufus_artisi": "26,1%",
+    "erkek_nufus_yuzde": "50,97%",
+    "erkek_nufus": "493.140",
+    "kadin_nufus_yuzde": "49,03%",
+    "kadin_nufus": "474.347",
+    "nufus_yuzdesi_genel": "1,18%",
+    "ilceler": [
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1197",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "BODRUM",
+        "nufus": "187.284",
+        "erkek_nufus": "95.069",
+        "kadin_nufus": "92.215"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1742",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "DALAMAN",
+        "nufus": "44.386",
+        "erkek_nufus": "22.882",
+        "kadin_nufus": "21.504"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1266",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "DATÇA",
+        "nufus": "24.519",
+        "erkek_nufus": "12.438",
+        "kadin_nufus": "12.081"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1331",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "FETHİYE",
+        "nufus": "170.379",
+        "erkek_nufus": "85.266",
+        "kadin_nufus": "85.113"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1958",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "KAVAKLIDERE",
+        "nufus": "10.842",
+        "erkek_nufus": "5.485",
+        "kadin_nufus": "5.357"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1488",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "KÖYCEĞİZ",
+        "nufus": "38.425",
+        "erkek_nufus": "19.419",
+        "kadin_nufus": "19.006"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1517",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "MARMARİS",
+        "nufus": "95.849",
+        "erkek_nufus": "49.920",
+        "kadin_nufus": "45.929"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "2089",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "MENTEŞE",
+        "nufus": "118.443",
+        "erkek_nufus": "59.506",
+        "kadin_nufus": "58.937"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1528",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "MİLAS",
+        "nufus": "145.275",
+        "erkek_nufus": "73.628",
+        "kadin_nufus": "71.647"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1831",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "ORTACA",
+        "nufus": "52.929",
+        "erkek_nufus": "26.452",
+        "kadin_nufus": "26.477"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "2090",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "SEYDİKEMER",
+        "nufus": "61.427",
+        "erkek_nufus": "31.975",
+        "kadin_nufus": "29.452"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1695",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "ULA",
+        "nufus": "26.306",
+        "erkek_nufus": "13.265",
+        "kadin_nufus": "13.041"
+      },
+      {
+        "plaka_kodu": "48",
+        "ilce_kodu": "1719",
+        "il_adi": "MUĞLA",
+        "ilce_adi": "YATAĞAN",
+        "nufus": "45.077",
+        "erkek_nufus": "22.656",
+        "kadin_nufus": "22.421"
+      }
+    ],
+    "kisa_bilgi": "Fethiye, Bodrum, Marmaris gibi turistik beldeleriyle meşhur ilin topraklarının büyük kısmı Ege’de, küçük bir kısmı ise Akdeniz’de yer alıyor."
+  }
+]

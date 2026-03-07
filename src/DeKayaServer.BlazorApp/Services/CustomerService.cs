@@ -8,14 +8,7 @@ namespace DeKayaServer.BlazorApp.Services;
 public interface ICustomerService
 {
     Task<Result<string>> CreateAsync(
-        string firstName,
-        string lastName,
-        string city,
-        string district,
-        string fullAddress,
-        string phoneNumber,
-        string phoneNumber2,
-        string email,
+        CreateCustomerRequest request,
         CancellationToken cancellationToken = default );
 
     Task<Result<CustomerDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default );
@@ -26,26 +19,11 @@ public interface ICustomerService
 public class CustomerService( IApiClient apiClient ) : ICustomerService
 {
     public Task<Result<string>> CreateAsync(
-        string firstName,
-        string lastName,
-        string city,
-        string district,
-        string fullAddress,
-        string phoneNumber,
-        string phoneNumber2,
-        string email,
+        CreateCustomerRequest request,
         CancellationToken cancellationToken = default )
         => apiClient.PostAsync<CreateCustomerRequest, string>(
             EndpointConstants.Customers,
-            new CreateCustomerRequest(
-                firstName,
-                lastName,
-                city,
-                district,
-                fullAddress,
-                phoneNumber,
-                phoneNumber2,
-                email ),
+            request,
             cancellationToken );
 
     public Task<Result<CustomerDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default )

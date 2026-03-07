@@ -13,6 +13,6 @@ public sealed class CustomerDto : EntityDto
     public string FullAddress { get; set; } = default!;
 
     public string PhoneNumber { get; set; } = default!;
-    public string PhoneNumber2 { get; set; } = default!;
-    public string Email { get; set; } = default!;
+    public string? PhoneNumber2 { get; set; }
+    public string? Email { get; set; }
 }
