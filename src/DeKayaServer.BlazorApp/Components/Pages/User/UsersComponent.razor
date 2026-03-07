@@ -159,6 +159,7 @@
         selectedUserId = user.Id;
 
         await InvokeAsync( StateHasChanged );
+        await Task.Yield();
 
         if(updateUserDialog is null)
         {
