@@ -11,6 +11,7 @@ public interface ICustomerService
     Task<Result<string>> UpdateAsync( Guid Id, UpdateCustomerRequest request, CancellationToken cancellationToken = default );
     Task<Result<CustomerDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default );
     Task<Result<List<CustomerDto>>> GetAllAsync( CancellationToken cancellationToken = default );
+    Task<Result<string>> DeleteAsync( Guid id, CancellationToken cancellationToken = default );
 }
 
 public class CustomerService( IApiClient apiClient ) : ICustomerService
@@ -50,6 +51,9 @@ public class CustomerService( IApiClient apiClient ) : ICustomerService
             Data = odataRes.Data.Value ?? []
         };
     }
+
+    public Task<Result<string>> DeleteAsync( Guid id, CancellationToken cancellationToken = default )
+        => apiClient.DeleteAsync<string>( $"{EndpointConstants.Customers}/{id}", cancellationToken );
 
     private sealed class ODataEnvelope<T>
     {

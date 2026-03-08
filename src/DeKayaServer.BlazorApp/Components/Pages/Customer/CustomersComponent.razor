@@ -1,5 +1,6 @@
 ﻿@page "/customers"
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.CreateCustomer
+@using DeKayaServer.BlazorApp.Components.Pages.Customer.DeleteCustomer
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.UpdateCustomer
 @using Microsoft.AspNetCore.Components.QuickGrid
 @inherits UserContextComponent
@@ -80,7 +81,8 @@
                             @if ( CurrentUser.HasPermission( "customer:delete" ) )
                             {
                                 <button type="button"
-                                        class="btn btn-outline-danger btn-sm">
+                                        class="btn btn-outline-danger btn-sm"
+                                        @onclick="(() => ShowDeleteCustomerDialog(c))">
                                     <i class="bi bi-trash3"></i>
                                     <span>Sil</span>
                                 </button>
@@ -97,12 +99,18 @@
 
 <CreateCustomerDialog 
     @ref="createCustomerDialog" 
-    CustomerAdded="HandleCustomerAddedAsync"/>
+    CustomerAdded="HandleCustomerPageAsync"/>
 
 <UpdateCustomerDialog 
     @ref="updateCustomerDialog"
     CustomerId="@selectedCustomerId"
-    CustomerUpdated="HandleCustomerUpdatedAsync" />
+    CustomerUpdated="HandleCustomerPageAsync" />
+
+<DeleteCustomerDialog 
+    @ref="deleteCustomerDialog"
+    CustomerId="@selectedCustomerId"
+    FullName="@selectedFullName"
+    CustomerDeleted="HandleCustomerPageAsync" />
 
 @code
 {
@@ -114,8 +122,10 @@
 
     private CreateCustomerDialog? createCustomerDialog;
     private UpdateCustomerDialog? updateCustomerDialog;
+    private DeleteCustomerDialog? deleteCustomerDialog;
 
     private Guid selectedCustomerId;
+    private string? selectedFullName;
 
     private IReadOnlyList<CustomerViewModel> FilteredItems =>
         (string.IsNullOrWhiteSpace(searchTerm)
@@ -175,13 +185,19 @@
         await updateCustomerDialog.ShowAsync();
     }
 
-    private async Task HandleCustomerAddedAsync()
+    private async Task ShowDeleteCustomerDialog( CustomerViewModel customer )
     {
-        await LoadCustomersAsync();
-        await InvokeAsync( StateHasChanged );
+        selectedCustomerId = customer.Id;
+        selectedFullName = customer.FullName;
+
+        if ( deleteCustomerDialog is null )
+        {
+            return;
+        }
+        await deleteCustomerDialog.ShowAsync();
     }
 
-    private async Task HandleCustomerUpdatedAsync()
+    private async Task HandleCustomerPageAsync()
     {
         await LoadCustomersAsync();
         await InvokeAsync( StateHasChanged );
