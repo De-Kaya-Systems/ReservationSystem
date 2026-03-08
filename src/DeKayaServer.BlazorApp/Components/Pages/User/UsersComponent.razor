@@ -87,18 +87,18 @@
     }
     <CreateUserDialog 
         @ref="createUserDialog"
-        UserAdded="HandleUserAddedAsync" />
+        UserAdded="HandleUserPageAsync" />
 
     <UpdateUserDialog 
         @ref="updateUserDialog"
         UserId="@selectedUserId"
-        UserUpdated="HandleUserUpdatedAsync" />
+        UserUpdated="HandleUserPageAsync" />
 
     <DeleteUserDialog 
         @ref="deleteUserDialog"
         UserId="@selectedUserId"
         FullName="@selectedFullName"
-        UserDeleted="HandleUserDeletedAsync" />
+        UserDeleted="HandleUserPageAsync" />
 
 @code {
     private bool isLoading;
@@ -183,19 +183,7 @@
         await deleteUserDialog.ShowAsync();
     }
 
-    private async Task HandleUserAddedAsync()
-    {
-        await LoadUsersAsync();
-        await InvokeAsync( StateHasChanged );
-    }
-
-    private async Task HandleUserUpdatedAsync()
-    {
-        await LoadUsersAsync();
-        await InvokeAsync( StateHasChanged );
-    }
-
-    private async Task HandleUserDeletedAsync()
+    private async Task HandleUserPageAsync()
     {
         await LoadUsersAsync();
         await InvokeAsync( StateHasChanged );
