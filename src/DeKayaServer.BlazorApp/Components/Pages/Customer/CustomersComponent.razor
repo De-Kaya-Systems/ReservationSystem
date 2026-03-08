@@ -1,6 +1,7 @@
 ﻿@page "/customers"
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.CreateCustomer
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.DeleteCustomer
+@using DeKayaServer.BlazorApp.Components.Pages.Customer.DetailCustomer
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.UpdateCustomer
 @using Microsoft.AspNetCore.Components.QuickGrid
 @inherits UserContextComponent
@@ -63,7 +64,8 @@
                 <TemplateColumn Title="İşlemler" Context="c">
                     <div class="d-flex gap-2 py-1 justify-content-start">
                         <button type="button"
-                                class="btn btn-outline-secondary btn-sm">
+                                class="btn btn-outline-secondary btn-sm"
+                                @onclick="(() => ShowCustomerDetailDialog(c))">
                             <i class="bi bi-search"></i>
                             <span>Detay</span>
                         </button>
@@ -78,16 +80,16 @@
                             </button>
                         }
 
-                            @if ( CurrentUser.HasPermission( "customer:delete" ) )
-                            {
-                                <button type="button"
-                                        class="btn btn-outline-danger btn-sm"
-                                        @onclick="(() => ShowDeleteCustomerDialog(c))">
-                                    <i class="bi bi-trash3"></i>
-                                    <span>Sil</span>
-                                </button>
-                            }
-                        </div>
+                        @if ( CurrentUser.HasPermission( "customer:delete" ) )
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-danger btn-sm"
+                                    @onclick="(() => ShowDeleteCustomerDialog(c))">
+                                <i class="bi bi-trash3"></i>
+                                <span>Sil</span>
+                            </button>
+                        }
+                    </div>
                     </TemplateColumn>
                 </QuickGrid>
                 <div class="p-2">
@@ -96,6 +98,10 @@
             </QuickGridContent>
         </DeKayaQuickGrid>
     }
+
+<CustomerDetailsDialog 
+    @ref="customerDetailsDialog" 
+    CustomerId="@selectedCustomerId" />
 
 <CreateCustomerDialog 
     @ref="createCustomerDialog" 
@@ -123,6 +129,7 @@
     private CreateCustomerDialog? createCustomerDialog;
     private UpdateCustomerDialog? updateCustomerDialog;
     private DeleteCustomerDialog? deleteCustomerDialog;
+    private CustomerDetailsDialog? customerDetailsDialog;
 
     private Guid selectedCustomerId;
     private string? selectedFullName;
@@ -159,6 +166,20 @@
         pageSize = value;
         pagination.ItemsPerPage = value;
         await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task ShowCustomerDetailDialog( CustomerViewModel customer)
+    {
+        selectedCustomerId = customer.Id;
+
+        await InvokeAsync( StateHasChanged );
+        await Task.Yield();
+
+        if(customerDetailsDialog is null)
+        {
+            return;
+        }
+        await customerDetailsDialog.ShowAsync();
     }
 
     private async Task ShowCreateCustomerDialog()
@@ -218,19 +239,12 @@
             customers = result.Data.Select( c => new CustomerViewModel
             {
                 Id = c.Id,
-                FirstName = c.FirstName,
-                LastName = c.LastName,
                 FullName = c.FullName,
                 AddressCity = c.City,
                 AddressDistrict = c.District,
-                AddressFull = c.FullAddress,
                 ContactEmail = c.Email,
                 ContactPhone = c.PhoneNumber,
-                ContactPhone2 = c.PhoneNumber2,
-                CreatedAt = c.CreatedAt,
-                UpdatedAt = c.UpdatedAt,
                 CreatedFullName = c.CreatedFullName,
-                UpdatedFullName = c.UpdatedFullName,
                 IsActive = c.IsActive
             } ).ToList() ;
         }
@@ -240,24 +254,5 @@
             await pagination.SetCurrentPageIndexAsync( 0 );
             await InvokeAsync( StateHasChanged );
         }
-    }
-
-    private sealed class CustomerViewModel
-    {
-        public Guid Id { get; set; }
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-        public string? FullName { get; set; }
-        public string? AddressCity { get; set; }
-        public string? AddressDistrict { get; set; }
-        public string? AddressFull { get; set; }
-        public string? ContactPhone { get; set; }
-        public string? ContactPhone2 { get; set; }
-        public string? ContactEmail { get; set; }
-        public bool IsActive { get; set; }
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset? UpdatedAt { get; set; }
-        public string? UpdatedFullName { get; set; }
-        public string? CreatedFullName { get; set; }
     }
 }

@@ -3,7 +3,7 @@
     inset: 50% auto auto 50%;
     transform: translate(-50%, -50%);
     margin: 0;
-    width: min(720px, calc(100vw - 2rem));
+    width: min(800px, calc(100vw - 2rem));
     max-height: min(85vh, 900px);
     padding: 0;
     border: 1px solid var(--border-color);

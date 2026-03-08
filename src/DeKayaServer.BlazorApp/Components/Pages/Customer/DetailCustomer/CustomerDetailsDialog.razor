@@ -1,0 +1,232 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Models
+@using DeKayaServer.BlazorApp.ViewModels
+@inject ICustomerService customerService
+@inject IApiResultPresenter apiResultPresenter
+@inject ToastService toastService
+@inherits UserContextComponent
+
+<Dialog @ref="dialog"
+        Title="Müşteri Detayı">
+    <ChildContent>
+        @if ( isLoading )
+        {
+            <IsLoading Message="Müşteri bilgileri getiriliyor, lütfen bekleyin." />
+        }
+        else if ( hasLoaded && customer is null )
+        {
+            <div class="alert alert-warning mb-0">
+                Müşteri bulunamadı.
+            </div>
+        }
+        else if ( customer is not null )
+        {
+            <div class="d-flex align-items-start justify-content-between gap-3">
+                <div class="min-w-0">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h5 class="mb-0 text-truncate">@Display( customer.FullName )</h5>
+
+                        <span class="badge p-2 @(customer.IsActive ? "bg-success" : "bg-secondary")">
+                            <i class="bi @(customer.IsActive ? "bi-check-circle" : "bi-x-circle") me-1"></i>
+                            @(customer.IsActive ? "Aktif" : "Pasif")
+                        </span>
+                    </div>
+
+                    @if ( CurrentUser.HasPermission( RoleConstants.SysAdmin ) )
+                    {
+                        <div class="text-muted small mt-1">
+                            Müşteri Id: <span class="font-monospace">@customer.Id</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <hr class="my-3" />
+
+            <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-body d-flex align-items-center gap-2">
+                            <i class="bi bi-telephone"></i>
+                            <span class="fw-semibold">İletişim</span>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-4 text-muted fw-normal">Telefon</dt>
+                                <dd class="col-8 mb-2">@Display( customer.ContactPhone )</dd>
+
+                                <dt class="col-4 text-muted fw-normal">Telefon - 2</dt>
+                                <dd class="col-8 mb-2">@Display( customer.ContactPhone2 )</dd>
+
+                                <dt class="col-4 text-muted fw-normal">E-Posta</dt>
+                                <dd class="col-8 mb-0">
+                                    @if ( !string.IsNullOrWhiteSpace( customer.ContactEmail ) )
+                                    {
+                                        <a href="@($"mailto:{customer.ContactEmail}")" class="link-underline link-underline-opacity-0">
+                                            @customer.ContactEmail
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-body d-flex align-items-center gap-2">
+                        <i class="bi bi-geo-alt"></i>
+                        <span class="fw-semibold">Adres</span>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-4 text-muted fw-normal">İl</dt>
+                            <dd class="col-8 mb-2">@Display( customer.AddressCity )</dd>
+
+                            <dt class="col-4 text-muted fw-normal">İlçe</dt>
+                            <dd class="col-8 mb-2">@Display( customer.AddressDistrict )</dd>
+
+                            <dt class="col-4 text-muted fw-normal">Açık Adres</dt>
+                            <dd class="col-8 mb-0">@Display( customer.AddressFull )</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-body d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle"></i>
+                        <span class="fw-semibold">Müşteri Hareketleri</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <div class="p-3 rounded-3 bg-body-tertiary border">
+                                    <div class="text-muted small">Müşteri Finans Hareketi</div>
+                                    <div class="fw-semibold">TODO : Müşteri borç bilgisi</div>
+                                    <div class="fw-semibold">TODO : Müşteri yıllık bakiye</div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <div class="p-3 rounded-3 bg-body-tertiary border">
+                                    <div class="text-muted small">Rezervasyon Hareketi</div>
+                                    <div class="fw-semibold">TODO : Toplam rezervasyon bilgisi</div>
+                                    <div class="fw-semibold">TODO : Aktif rezervasyon bilgisi</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-body d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history"></i>
+                        <span class="fw-semibold">Sistem Bilgileri</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <div class="p-3 rounded-3 bg-body-tertiary border">
+                                    <div class="text-muted small">Oluşturan</div>
+                                    <div class="fw-semibold">@Display( customer.CreatedFullName )</div>
+                                    <div class="text-muted small mt-1">@customer.CreatedAt.ToString( "dd.MM.yyyy HH:mm" )</div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <div class="p-3 rounded-3 bg-body-tertiary border">
+                                    <div class="text-muted small">Güncelleyen</div>
+                                    <div class="fw-semibold">@Display( customer.UpdatedFullName )</div>
+                                    <div class="text-muted small mt-1">
+                                        @( customer.UpdatedAt.HasValue
+                                                                                ? customer.UpdatedAt.Value.ToString( "dd.MM.yyyy HH:mm" )
+                                                                                : "—" )
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </ChildContent>
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+
+    private bool isLoading;
+    private bool hasLoaded;
+    private CustomerViewModel? customer;
+
+    [Parameter] public Guid? CustomerId { get; set; }
+
+    public async Task ShowAsync()
+    {
+        if ( dialog is null || CustomerId is null )
+            return;
+
+        customer = null;
+        hasLoaded = false;
+
+        isLoading = true;
+        await InvokeAsync( StateHasChanged );
+
+        await LoadAsync( CustomerId.Value );
+
+        isLoading = false;
+        hasLoaded = true;
+
+        await InvokeAsync( StateHasChanged );
+        await dialog.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        if ( dialog is not null )
+            await dialog.HideAsync();
+    }
+
+    private async Task LoadAsync( Guid id )
+    {
+        var result = await customerService.GetByIdAsync( id );
+        apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = false } );
+
+        if ( !result.IsSuccessful || result.Data is null )
+        {
+            customer = null;
+            return;
+        }
+
+        customer = new CustomerViewModel
+        {
+            Id = result.Data.Id,
+            FirstName = result.Data.FirstName,
+            LastName = result.Data.LastName,
+            FullName = result.Data.FullName,
+            AddressCity = result.Data.City,
+            AddressDistrict = result.Data.District,
+            AddressFull = result.Data.FullAddress,
+            ContactPhone = result.Data.PhoneNumber,
+            ContactPhone2 = result.Data.PhoneNumber2,
+            ContactEmail = result.Data.Email,
+            IsActive = result.Data.IsActive,
+            CreatedAt = result.Data.CreatedAt,
+            UpdatedAt = result.Data.UpdatedAt,
+            CreatedFullName = result.Data.CreatedFullName,
+            UpdatedFullName = result.Data.UpdatedFullName
+        };
+    }
+
+    private static string Display( string? value )
+        => string.IsNullOrWhiteSpace( value ) ? "—" : value;
+}
