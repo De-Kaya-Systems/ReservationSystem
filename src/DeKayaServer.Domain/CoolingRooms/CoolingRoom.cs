@@ -11,12 +11,14 @@ public sealed class CoolingRoom : Entity
         RoomName name,
         DailyPrice dailyPrice,
         Shelf shelf,
+        IdentityId roomStatusId,
         bool isActive
         )
     {
         SetName( name );
         SetDailyPrice( dailyPrice );
         SetShelf( shelf );
+        SetRoomStatusId( roomStatusId );
         SetStatus( isActive );
     }
 

@@ -1,6 +1,8 @@
-﻿using DeKayaServer.Application.Customers;
+﻿using DeKayaServer.Application.CoolingRooms;
+using DeKayaServer.Application.Customers;
 using DeKayaServer.Application.Roles;
 using DeKayaServer.Application.Users;
+using DeKayaServer.Contracts.CoolingRooms;
 using DeKayaServer.Contracts.Customers;
 using DeKayaServer.Contracts.Roles;
 using DeKayaServer.Contracts.Users;
@@ -25,6 +27,7 @@ public class MainODataController : ODataController
         builder.EntitySet<RoleDto>( "roles" );
         builder.EntitySet<UserDto>( "users" );
         builder.EntitySet<CustomerDto>( "customers" );
+        builder.EntitySet<CoolingRoomDto>( "coolingrooms" );
         return builder.GetEdmModel();
     }
 
@@ -39,4 +42,8 @@ public class MainODataController : ODataController
     [HttpGet( "customers" )]
     public IQueryable<CustomerDto> Customers( ISender sender, CancellationToken cancellationToken = default )
         => sender.Send( new CustomerGetAllQuery(), cancellationToken ).Result;
+
+    [HttpGet( "coolingrooms" )]
+    public IQueryable<CoolingRoomDto> CoolingRooms( ISender sender, CancellationToken cancellationToken = default )
+        => sender.Send( new CoolingRoomGetAllQuery(), cancellationToken ).Result;
 }
