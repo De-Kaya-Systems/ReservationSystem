@@ -26,4 +26,9 @@ public static class EndpointConstants
     //Customers
     public const string Customers = "/customers";
     public const string ODataCustomers = "/odata/customers";
+
+    //CoolingRooms
+    public const string CoolingRooms = "/coolingrooms";
+    public const string ODataCoolingRooms = "/odata/coolingrooms";
+
 }

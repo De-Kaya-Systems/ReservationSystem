@@ -1,0 +1,204 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Models
+@using DeKayaServer.Contracts.CoolingRooms
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject ICoolingRoomService coolingRoomService
+@inject IApiResultPresenter apiResultPresenter
+@inject ToastService toastService
+
+<Dialog
+    @ref="dialog"
+    Title="Seyyar Oda Ekle">
+    <ChildContent>
+        <EditForm EditContext="@editContext"
+                  OnValidSubmit="HandleValidSubmit"
+                  OnInvalidSubmit="HandleInvalidSubmit">
+            <DataAnnotationsValidator />
+
+            <div class="row g-3 mb-3">
+                <div class="col-12">
+                    <div class="form-floating">
+                        <InputText @bind-Value="model.RoomName"
+                                   class="form-control"
+                                   placeholder="Seyyar oda adı" />
+                        <label>Seyyar oda adı</label>
+                    </div>
+                    <ValidationMessage For="@(() => model.RoomName)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">Günlük fiyat</label>
+
+                    <div class="input-group">
+                        <InputNumber @bind-Value="model.DailyPrice"
+                                     class="form-control"
+                                     placeholder="Günlük fiyat" />
+                        <span class="input-group-text">₺</span>
+                    </div>
+
+                    <ValidationMessage For="@(() => model.DailyPrice)"class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="p-3 bg-light rounded-3 border border-light">
+                    <div class="form-check form-switch d-flex align-items-center">
+                        <InputCheckbox class="form-check-input me-3 fs-5"
+                                       @bind-Value="model.Shelf"
+                                       role="switch"/>
+                        <label class="form-check-label fw-semibold">
+                            Raflı
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="p-3 bg-light rounded-3 border border-light">
+                    <div class="form-check form-switch d-flex align-items-center">
+                        <InputCheckbox class="form-check-input me-3 fs-5"
+                                       @bind-Value="model.IsActive"
+                                       role="switch"/>
+                        <label class="form-check-label fw-semibold">
+                            Odayı aktif etmek istiyor musun?
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 justify-content-end mt-4 pt-3 border-top">
+                <button type="button"
+                        class="btn btn-outline-secondary px-4 py-2 fw-semibold"
+                        @onclick="HideAsync"
+                        disabled="@isSubmit">
+                    İptal
+                </button>
+
+                <button type="submit"
+                        class="btn btn-primary px-4 py-2 fw-semibold shadow-sm"
+                        disabled="@SubmitDisabled">
+                    Kaydet
+                </button>
+            </div>
+        </EditForm>
+    </ChildContent>
+
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+    private bool isSubmit;
+
+    private CreateCoolingRoomViewModel model = new();
+
+    private EditContext editContext = default!;
+    private bool submitAttempted;
+
+    private bool SubmitDisabled =>
+        isSubmit || ( submitAttempted && editContext.GetValidationMessages().Any() );
+
+    [Parameter] public EventCallback CoolingRoomAdded { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        InitForm();
+        await base.OnInitializedAsync();
+    }
+
+    public async Task ShowAsync()
+    {
+        if ( dialog is null )
+        {
+            return;
+        }
+
+        submitAttempted = false;
+        InitForm();
+
+        await InvokeAsync( StateHasChanged );
+        await dialog.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        if ( dialog is null )
+        {
+            return;
+        }
+
+        submitAttempted = false;
+        InitForm();
+
+        await InvokeAsync( StateHasChanged );
+        await dialog.HideAsync();
+    }
+
+    private void InitForm()
+    {
+        model = new();
+        editContext = new EditContext( model );
+        editContext.OnValidationStateChanged += OnValidationStateChanged;
+    }
+
+    private void OnValidationStateChanged( object? sender, ValidationStateChangedEventArgs e )
+        => _ = InvokeAsync( StateHasChanged );
+
+    private void HandleInvalidSubmit()
+    {
+        submitAttempted = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            isSubmit = true;
+
+            var request = new CreateCoolingRoomRequest
+            {
+                RoomName = model.RoomName,
+                DailyPrice = model.DailyPrice,
+                Shelf = model.Shelf,
+                IsActive = model.IsActive,
+            };
+
+            var result = await coolingRoomService.CreateAsync( request );
+
+            apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = true } );
+
+            if ( !result.IsSuccessful )
+            {
+                return;
+            }
+
+            if ( CoolingRoomAdded.HasDelegate )
+            {
+                await CoolingRoomAdded.InvokeAsync();
+            }
+        }
+        finally
+        {
+            isSubmit = false;
+            submitAttempted = false;
+            InitForm();
+            await HideAsync();
+        }
+    }
+
+    public sealed class CreateCoolingRoomViewModel
+    {
+        [Required( ErrorMessage = "Oda adı giriniz!" )]
+        public string RoomName { get; set; } = string.Empty;
+
+        [Range( 0.01d, double.MaxValue, ErrorMessage = "Günlük fiyat sıfırdan büyük olmalıdır" )]
+        public decimal DailyPrice { get; set; }
+
+        public bool Shelf { get; set; }
+
+        public bool IsActive { get; set; } = true;
+    }
+}
