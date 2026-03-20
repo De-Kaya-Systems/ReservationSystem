@@ -57,6 +57,7 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<INotificationPanelService, NotificationPanelService>();
+builder.Services.AddScoped<ICoolingRoomService, CoolingRoomService>();
 
 builder.Services.AddScoped<IAuthProbeService, AuthProbeService>();
 

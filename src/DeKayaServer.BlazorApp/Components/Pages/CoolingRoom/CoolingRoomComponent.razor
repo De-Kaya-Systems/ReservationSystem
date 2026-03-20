@@ -1,0 +1,393 @@
+﻿@page "/cooling-rooms"
+@using DeKayaServer.BlazorApp.Components.Pages.CoolingRoom.CreateCoolingRoom
+@using DeKayaServer.BlazorApp.Models
+@using DeKayaServer.BlazorApp.Services
+@using DeKayaServer.Contracts.CoolingRooms
+
+@inject ICoolingRoomService coolingRoomService
+@inject IApiResultPresenter apiResultPresenter
+
+<PageTitle>De-Kaya Systems | @PageTitleConstans.CoolingRoomPage</PageTitle>
+
+<PageHeader Icon="bi-snow"
+            Title="Seyyar Soğuk Odalar"
+            Description="Bu sayfa tüm seyyar soğuk odaları listeler."
+            ShowBackButton="true" />
+
+<div class="d-flex align-items-end justify-content-between mt-3">
+    <div class="small text-body-secondary">
+        Toplam: <span class="fw-semibold">@FilteredRooms.Count</span>
+
+        @if ( isLoading )
+        {
+            <span class="ms-2 spinner-border spinner-border-sm align-middle" role="status" aria-hidden="true"></span>
+        }
+    </div>
+
+    <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateCoolingRoomDialog">
+        <i class="bi bi-plus-circle"></i>
+        <span>Ekle</span>
+    </button>
+</div>
+
+<div class="card border-1 shadow-sm rounded-4 mt-2 cr-filters">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-4 col-lg-3">
+                <label class="form-label small text-body-secondary">Arama</label>
+                <input class="form-control form-control-sm cr-control"
+                       placeholder="Oda adı..."
+                       @bind="searchText"
+                       @bind:event="oninput" />
+            </div>
+
+            <div class="col-12 col-md-4 col-lg-3">
+                <label class="form-label small text-body-secondary">Raf</label>
+                <select class="form-select form-select-sm cr-control" @bind="shelfFilter">
+                    <option value="@ShelfFilter.All">Tümü</option>
+                    <option value="@ShelfFilter.Shelf">Raflı</option>
+                    <option value="@ShelfFilter.NoShelf">Rafsız</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-4 col-lg-3">
+                <label class="form-label small text-body-secondary">Durum</label>
+                <select class="form-select form-select-sm cr-control" @bind="statusFilter">
+                    <option value="">Tümü</option>
+                    @foreach ( var s in StatusOptions )
+                    {
+                        <option value="@s">@GetStatusText( s )</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="form-check form-switch cr-switch">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           role="switch"
+                           id="showInactive"
+                           @bind="showInactive" />
+                    <label class="form-check-label small px-2" for="showInactive">
+                        Pasif odaları göster
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" type="button" @onclick="ClearFilters">
+                    Temizle
+                </button>
+
+                <button class="btn btn-outline-primary btn-sm" type="button" @onclick="ShowOnlyAvailable">
+                    Sadece uygun
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-2">
+    @foreach ( var room in FilteredRooms )
+    {
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div class="card shadow-sm border-1 h-100 rounded-4">
+                <div class="card-body">
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            @switch ( room.Status )
+                            {
+                                case CoolingRoomStatus.Available:
+                                    <span class="badge text-bg-success rounded-pill">
+                                        <i class="bi bi-check2-circle me-1"></i>Uygun
+                                    </span>
+                                    break;
+
+                                case CoolingRoomStatus.Occupied:
+                                    <span class="badge text-bg-warning rounded-pill">
+                                        <i class="bi bi-hourglass-split me-1"></i>Müşteride
+                                    </span>
+                                    break;
+
+                                case CoolingRoomStatus.Faulty:
+                                    <span class="badge text-bg-danger rounded-pill">
+                                        <i class="bi bi-exclamation-octagon me-1"></i>Arıza/Bakım
+                                    </span>
+                                    break;
+
+                                case CoolingRoomStatus.Reserved:
+                                    <span class="badge text-bg-primary rounded-pill">
+                                        <i class="bi bi-bookmark-check me-1"></i>Rezerve
+                                    </span>
+                                    break;
+                            }
+
+                            @if ( room.Shelf )
+                            {
+                                <span class="badge text-bg-light border rounded-pill">
+                                    <i class="bi bi-inboxes me-1"></i>Raflı Oda
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-light border rounded-pill">
+                                    <i class="bi bi-box me-1"></i>Rafsız Oda
+                                </span>
+                            }
+
+                            @if ( !room.IsActive )
+                            {
+                                <span class="badge text-bg-secondary rounded-pill">
+                                    Pasif
+                                </span>
+                            }
+                        </div>
+
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light border dropdown-toggle"
+                                    type="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item">Detay</a></li>
+                                <li><a class="dropdown-item">Güncelle</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger">Sil</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <div class="fw-semibold">@room.Name</div>
+                        <div class="small text-body-secondary mt-1">@FormatMoney( room.DailyPrice ) / gün</div>
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-3">
+                        <div class="cr-ring" style="--p:@GetProgress( room ); --accent:@GetAccent( room );">
+                            <div class="cr-ring__center text-center px-2">
+                                @if ( room.Status == CoolingRoomStatus.Available )
+                                {
+                                    <div class="fw-semibold">Müsait</div>
+                                    <div class="small text-body-secondary">Rezervasyon yok</div>
+                                }
+                                else if ( room.Status == CoolingRoomStatus.Faulty )
+                                {
+                                    <div class="fw-semibold text-danger">Arıza/Bakım</div>
+                                    <div class="small text-body-secondary">Servis kaydı var</div>
+                                }
+                                else
+                                {
+                                    <div class="fw-semibold">Rezervasyon</div>
+                                    <div class="small text-body-secondary">Detay yakında</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 small">
+                        <div class="d-flex justify-content-between gap-3">
+                            <span class="text-body-secondary">Durum</span>
+                            <span class="fw-medium">@(!string.IsNullOrWhiteSpace( room.StatusName ) ? room.StatusName : "-")</span>
+                        </div>
+                        <div class="d-flex justify-content-between gap-3 mt-2">
+                            <span class="text-body-secondary">Günlük Fiyat</span>
+                            <span class="fw-medium">@FormatMoney( room.DailyPrice )</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<CreateCoolingRoomDialog @ref="createCoolingRoomDialog" CoolingRoomAdded="ReloadAsync" />
+
+@code {
+    private CreateCoolingRoomDialog? createCoolingRoomDialog;
+
+    private bool isLoading;
+
+    private List<CoolingRoomViewModel> rooms = [];
+
+    // Filters
+    private string searchText = string.Empty;
+    private ShelfFilter shelfFilter = ShelfFilter.All;
+    private CoolingRoomStatus? statusFilter = null;
+    private bool showInactive = true;
+
+    private static readonly CoolingRoomStatus[] StatusOptions =
+    [
+        CoolingRoomStatus.Available,
+        CoolingRoomStatus.Reserved,
+        CoolingRoomStatus.Occupied,
+        CoolingRoomStatus.Faulty
+    ];
+
+    private List<CoolingRoomViewModel> FilteredRooms
+        => rooms
+            .Where( r => showInactive || r.IsActive )
+            .Where( r => shelfFilter == ShelfFilter.All
+                || ( shelfFilter == ShelfFilter.Shelf && r.Shelf )
+                || ( shelfFilter == ShelfFilter.NoShelf && !r.Shelf ) )
+            .Where( r => statusFilter is null || r.Status == statusFilter.Value )
+            .Where( r => string.IsNullOrWhiteSpace( searchText )
+                || r.Name.Contains( searchText.Trim(), StringComparison.OrdinalIgnoreCase ) )
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        try
+        {
+            isLoading = true;
+
+            var res = await coolingRoomService.GetAllAsync();
+            apiResultPresenter.Present( res, new ApiPresentationOptions { ShowSuccess = false } );
+
+            if ( !res.IsSuccessful || res.Data is null )
+            {
+                rooms = [];
+                return;
+            }
+
+            rooms = res.Data
+                .Select( MapToViewModel )
+                .OrderBy( x => x.Name )
+                .ToList();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ClearFilters()
+    {
+        searchText = string.Empty;
+        shelfFilter = ShelfFilter.All;
+        statusFilter = null;
+        showInactive = true;
+    }
+
+    private void ShowOnlyAvailable()
+        => statusFilter = CoolingRoomStatus.Available;
+
+    private async Task ShowCreateCoolingRoomDialog()
+    {
+        if ( createCoolingRoomDialog is null )
+        {
+            return;
+        }
+
+        await createCoolingRoomDialog.ShowAsync();
+    }
+
+    private static CoolingRoomViewModel MapToViewModel( CoolingRoomDto dto )
+        => new()
+        {
+            Id = dto.Id,
+            Name = dto.RoomName,
+            DailyPrice = dto.DailyPrice,
+            Shelf = dto.Shelf,
+            StatusId = dto.StatusId,
+            StatusName = dto.StatusName,
+            Status = MapStatus( dto.StatusName ),
+            MaintenanceId = dto.MaintenanceId,
+            IsActive = dto.IsActive,
+        };
+
+    private static CoolingRoomStatus MapStatus( string? statusName )
+    {
+        var key = ( statusName ?? string.Empty ).Trim().ToLowerInvariant();
+
+        return key switch
+        {
+            "uygun" => CoolingRoomStatus.Available,
+            "reserve" or "rezerve" => CoolingRoomStatus.Reserved,
+            "booked" => CoolingRoomStatus.Occupied,
+            "arıza/bakım" or "ariza/bakim" or "arıza" or "ariza" or "bakım" or "bakim" => CoolingRoomStatus.Faulty,
+            _ => CoolingRoomStatus.Available
+        };
+    }
+
+    private static string GetStatusText( CoolingRoomStatus status )
+        => status switch
+        {
+            CoolingRoomStatus.Available => "Uygun",
+            CoolingRoomStatus.Occupied => "Müşteride",
+            CoolingRoomStatus.Reserved => "Rezerve",
+            CoolingRoomStatus.Faulty => "Arıza/Bakım",
+            _ => status.ToString()
+        };
+
+    private static string FormatMoney( decimal value )
+        => value.ToString( "N2" ) + " ₺";
+
+    private static int GetProgress( CoolingRoomViewModel room )
+        => room.Status == CoolingRoomStatus.Occupied ? 10 : 0;
+
+    private static string GetAccent( CoolingRoomViewModel room )
+        => room.Status switch
+        {
+            CoolingRoomStatus.Available => "#27ae60",
+            CoolingRoomStatus.Occupied => "#f39c12",
+            CoolingRoomStatus.Faulty => "#e74c3c",
+            CoolingRoomStatus.Reserved => "#007fff",
+            _ => "#22c55e"
+        };
+
+    private enum CoolingRoomStatus
+    {
+        Faulty,
+        Available,
+        Occupied,
+        Reserved,
+    }
+
+    private enum ShelfFilter
+    {
+        All,
+        Shelf,
+        NoShelf
+    }
+
+    private sealed class CoolingRoomViewModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = default!;
+        public decimal DailyPrice { get; set; }
+        public bool Shelf { get; set; }
+
+        public Guid StatusId { get; set; }
+        public string? StatusName { get; set; }
+        public Guid? MaintenanceId { get; set; }
+
+        public bool IsActive { get; set; }
+
+        public CoolingRoomStatus Status { get; set; }
+    }
+}
+
+<style>
+    .cr-filters .cr-control {
+        height: calc(1.5em + .5rem + 2px); /* Bootstrap sm control height */
+        line-height: 1.5;
+    }
+
+    .cr-filters .cr-switch {
+        /* label ile aynı baseline'a gelmesi için */
+        min-height: calc(1.5em + .5rem + 2px);
+        display: flex;
+        align-items: center;
+        padding-top: 0 !important;
+    }
+</style>
