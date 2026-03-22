@@ -1,0 +1,233 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Models
+@using DeKayaServer.BlazorApp.Services
+@using DeKayaServer.Contracts.CoolingRooms
+
+@inject ICoolingRoomService coolingRoomService
+@inject IApiResultPresenter apiResultPresenter
+@inherits UserContextComponent
+
+<Dialog @ref="dialog"
+        Title="Oda Detayı">
+    <ChildContent>
+        @if ( isLoading )
+        {
+            <IsLoading Message="Oda bilgileri getiriliyor, lütfen bekleyin." />
+        }
+        else if ( hasLoaded && room is null )
+        {
+            <div class="alert alert-warning mb-0">
+                Oda bulunamadı.
+            </div>
+        }
+        else if ( room is not null )
+        {
+            <div class="d-flex align-items-start justify-content-between gap-3">
+                <div class="min-w-0">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h5 class="mb-0 text-truncate">@Display( room.RoomName )</h5>
+
+                        <span class="badge p-2 @GetStatusBadgeClass( room.StatusName )">
+                            <i class="bi @GetStatusIcon( room.StatusName ) me-1"></i>
+                            @Display( room.StatusName )
+                        </span>
+
+                        <span class="badge p-2 @(room.IsActive ? "bg-success" : "bg-secondary")">
+                            <i class="bi @(room.IsActive ? "bi-check-circle" : "bi-x-circle") me-1"></i>
+                            @(room.IsActive ? "Oda Aktif" : "Oda Pasif")
+                        </span>
+
+                        <span class="badge p-2 @(room.Shelf ? "bg-info" : "bg-light text-dark border")">
+                            <i class="bi @(room.Shelf ? "bi-inboxes" : "bi-box") me-1"></i>
+                            @(room.Shelf ? "Raflı" : "Rafsız")
+                        </span>
+                    </div>
+
+                    @if(CurrentUser.HasPermission(RoleConstants.SysAdmin))
+                    {
+                        <div class="text-muted small mt-1">
+                            Oda Id: <span class="font-monospace">@room.Id</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="text-end">
+                    <div class="text-muted small">Günlük fiyat</div>
+                    <div class="fw-semibold">@FormatMoney( room.DailyPrice )</div>
+                </div>
+            </div>
+
+            <hr class="my-3" />
+
+            <div class="row g-3">
+
+                <div class="col-12 col-lg-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-body d-flex align-items-center gap-2">
+                            <i class="bi bi-thermometer-snow"></i>
+                            <span class="fw-semibold">Oda Bilgileri</span>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-5 text-muted fw-normal">Oda Adı</dt>
+                                <dd class="col-7 mb-2">@Display( room.RoomName )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Günlük Fiyat</dt>
+                                <dd class="col-7 mb-2">@FormatMoney( room.DailyPrice )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Durum</dt>
+                                <dd class="col-7 mb-2">@Display( room.StatusName )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Raf</dt>
+                                <dd class="col-7 mb-0">@(room.Shelf ? "Raflı" : "Rafsız")</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-body d-flex align-items-center gap-2">
+                            <i class="bi bi-tools"></i>
+                            <span class="fw-semibold">Bakım/Arıza</span>
+                        </div>
+                        <div class="card-body">
+                            @if ( room.Maintenance is null )
+                            {
+                                <div class="text-muted">
+                                    Bakım kaydı yok.
+                                </div>
+                            }
+                            else
+                            {
+                                <dl class="row mb-0">
+                                    <dt class="col-5 text-muted fw-normal">Açıklama</dt>
+                                    <dd class="col-7 mb-2">@Display( room.Maintenance.Description )</dd>
+
+                                    <dt class="col-5 text-muted fw-normal">Başlangıç</dt>
+                                    <dd class="col-7 mb-2">@room.Maintenance.MaintenanceDateStart.ToString( "dd.MM.yyyy" )</dd>
+
+                                    <dt class="col-5 text-muted fw-normal">Bitiş</dt>
+                                    <dd class="col-7 mb-0">@room.Maintenance.MaintenanceDateEnd.ToString( "dd.MM.yyyy" )</dd>
+                                </dl>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-body d-flex align-items-center gap-2">
+                            <i class="bi bi-clock-history"></i>
+                            <span class="fw-semibold">Sistem Bilgileri</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <div class="p-3 rounded-3 bg-body-tertiary border">
+                                        <div class="text-muted small">Oluşturan</div>
+                                        <div class="fw-semibold">@Display( room.CreatedFullName )</div>
+                                        <div class="text-muted small mt-1">@room.CreatedAt.ToString( "dd.MM.yyyy HH:mm" )</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="p-3 rounded-3 bg-body-tertiary border">
+                                        <div class="text-muted small">Güncelleyen</div>
+                                        <div class="fw-semibold">@Display( room.UpdatedFullName )</div>
+                                        <div class="text-muted small mt-1">
+                                            @( room.UpdatedAt.HasValue ? room.UpdatedAt.Value.ToString( "dd.MM.yyyy HH:mm" ) : "—" )
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        }
+    </ChildContent>
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+
+    private bool isLoading;
+    private bool hasLoaded;
+    private CoolingRoomDto? room;
+
+    [Parameter] public Guid? CoolingRoomId { get; set; }
+
+    public async Task ShowAsync()
+    {
+        if ( dialog is null || CoolingRoomId is null )
+            return;
+
+        room = null;
+        hasLoaded = false;
+
+        isLoading = true;
+        await InvokeAsync( StateHasChanged );
+
+        await LoadAsync( CoolingRoomId.Value );
+
+        isLoading = false;
+        hasLoaded = true;
+
+        await InvokeAsync( StateHasChanged );
+        await dialog.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        if ( dialog is not null )
+            await dialog.HideAsync();
+    }
+
+    private async Task LoadAsync( Guid id )
+    {
+        var result = await coolingRoomService.GetByIdAsync( id );
+        apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = false } );
+
+        if ( !result.IsSuccessful || result.Data is null )
+        {
+            room = null;
+            return;
+        }
+
+        room = result.Data;
+    }
+
+    private static string Display( string? value )
+        => string.IsNullOrWhiteSpace( value ) ? "—" : value;
+
+    private static string FormatMoney( decimal value )
+        => value.ToString( "N2" ) + " ₺";
+
+    private static string GetStatusBadgeClass( string? statusName )
+    {
+        var key = ( statusName ?? string.Empty ).Trim().ToLowerInvariant();
+        return key switch
+        {
+            "uygun" => "bg-success",
+            "reserve" or "rezerve" => "bg-primary",
+            "booked" => "bg-warning text-dark",
+            "arıza/bakım" or "ariza/bakim" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private static string GetStatusIcon( string? statusName )
+    {
+        var key = ( statusName ?? string.Empty ).Trim().ToLowerInvariant();
+        return key switch
+        {
+            "uygun" => "bi-check-circle",
+            "reserve" or "rezerve" => "bi-bookmark-check",
+            "booked" => "bi-hourglass-split",
+            "arıza/bakım" or "ariza/bakim" => "bi-exclamation-octagon",
+            _ => "bi-info-circle"
+        };
+    }
+}
