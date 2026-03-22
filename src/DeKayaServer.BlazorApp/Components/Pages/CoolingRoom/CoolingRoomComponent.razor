@@ -1,6 +1,7 @@
 ﻿@page "/cooling-rooms"
 @using DeKayaServer.BlazorApp.Components.Pages.CoolingRoom.CreateCoolingRoom
 @using DeKayaServer.BlazorApp.Components.Pages.CoolingRoom.UpdateCoolingRoom
+@using DeKayaServer.BlazorApp.Components.Pages.CoolingRoom.DeleteCoolingRoom
 @using DeKayaServer.BlazorApp.Models
 @using DeKayaServer.BlazorApp.Services
 @using DeKayaServer.Contracts.CoolingRooms
@@ -154,9 +155,19 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li class="cp"><a class="dropdown-item">Detay</a></li>
-                                <li class="cp"><a class="dropdown-item" @onclick="() => ShowUpdateCoolingRoomDialog(room.Id)">Güncelle</a></li>
+                                <li class="cp">
+                                    <a class="dropdown-item"
+                                            @onclick="() => ShowUpdateCoolingRoomDialog(room.Id)">
+                                        Güncelle
+                                    </a>
+                                </li>
                                 <li class="cp"><hr class="dropdown-divider"></li>
-                                <li class="cp"><a class="dropdown-item text-danger">Sil</a></li>
+                                <li class="cp">
+                                    <a class="dropdown-item text-danger"
+                                           @onclick="() => ShowDeleteCoolingRoomDialog( room.Id, room.Name )">
+                                        Sil
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -205,13 +216,22 @@
     }
 </div>
 
-<CreateCoolingRoomDialog @ref="createCoolingRoomDialog" CoolingRoomAdded="ReloadAsync" />
+<CreateCoolingRoomDialog
+    @ref="createCoolingRoomDialog"
+    CoolingRoomAdded="ReloadAsync" />
 
-<UpdateCoolingRoomDialog @ref="updateCoolingRoomDialog" CoolingRoomUpdated="ReloadAsync" />
+<UpdateCoolingRoomDialog
+    @ref="updateCoolingRoomDialog"
+    CoolingRoomUpdated="ReloadAsync" />
+
+<DeleteCoolingRoomDialog
+    @ref="deleteCoolingRoomDialog"
+    CoolingRoomDeleted="ReloadAsync" />
 
 @code {
     private CreateCoolingRoomDialog? createCoolingRoomDialog;
     private UpdateCoolingRoomDialog? updateCoolingRoomDialog;
+    private DeleteCoolingRoomDialog? deleteCoolingRoomDialog;
 
     private bool isLoading;
 
@@ -302,6 +322,15 @@
         }
 
         await updateCoolingRoomDialog.ShowAsync( id );
+    }
+
+
+    private async Task ShowDeleteCoolingRoomDialog( Guid id, string name )
+    {
+        if ( deleteCoolingRoomDialog is null )
+            return;
+
+        await deleteCoolingRoomDialog.ShowAsync( id, name );
     }
 
     private static CoolingRoomViewModel MapToViewModel( CoolingRoomDto dto )
