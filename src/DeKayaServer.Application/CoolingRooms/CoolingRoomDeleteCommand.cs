@@ -23,6 +23,6 @@ internal sealed class CoolingRoomDeleteCommandHandler(
 
         coolingRoom.Delete();
         await unitOfWork.SaveChangesAsync( cancellationToken );
-        return "Oda silindi";
+        return "Oda başarıyla silindi.";
     }
 }

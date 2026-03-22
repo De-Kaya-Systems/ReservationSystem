@@ -1,0 +1,86 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Models
+@using DeKayaServer.BlazorApp.Services
+
+@inject ICoolingRoomService coolingRoomService
+@inject IApiResultPresenter apiResultPresenter
+
+<Dialog @ref="dialog"
+        Title="Odayı sil">
+    <ChildContent>
+        <div class="py-3">
+            <p>
+                Bu odayı ( <span class="fw-bolder">@roomName</span> ) silmek istediğinize emin misiniz?
+            </p>
+        </div>
+
+        <div class="d-flex gap-3 justify-content-end mt-4 pt-3 border-top">
+            <button type="button"
+                    class="btn btn-outline-secondary px-4 py-2 fw-semibold"
+                    @onclick="HideAsync"
+                    disabled="@isSubmit">
+                İptal
+            </button>
+
+            <button type="button"
+                    class="btn btn-danger px-4 py-2 fw-semibold shadow-sm"
+                    @onclick="HandleDeleteAsync"
+                    disabled="@isSubmit">
+                Sil
+            </button>
+        </div>
+    </ChildContent>
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+    private bool isSubmit;
+
+    private Guid? coolingRoomId;
+    private string? roomName;
+
+    [Parameter] public EventCallback CoolingRoomDeleted { get; set; }
+
+    public async Task ShowAsync( Guid id, string name )
+    {
+        if ( dialog is null )
+            return;
+
+        coolingRoomId = id;
+        roomName = name;
+
+        await InvokeAsync( StateHasChanged );
+        await dialog.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        if ( dialog is not null )
+            await dialog.HideAsync();
+    }
+
+    private async Task HandleDeleteAsync()
+    {
+        if ( coolingRoomId is null )
+            return;
+
+        try
+        {
+            isSubmit = true;
+
+            var result = await coolingRoomService.DeleteAsync( coolingRoomId.Value );
+            apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = true } );
+
+            if ( !result.IsSuccessful )
+                return;
+
+            if ( CoolingRoomDeleted.HasDelegate )
+                await CoolingRoomDeleted.InvokeAsync();
+        }
+        finally
+        {
+            isSubmit = false;
+            await HideAsync();
+        }
+    }
+}
