@@ -1,0 +1,351 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Models
+@using DeKayaServer.Contracts.CoolingRooms
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+
+@inject ICoolingRoomService coolingRoomService
+@inject IApiResultPresenter apiResultPresenter
+
+<Dialog @ref="dialog"
+        Title="Seyyar odayı güncelle">
+    <ChildContent>
+        @if ( isLoading )
+        {
+            <IsLoading Message="Oda bilgileri yükleniyor, lütfen bekleyin." />
+        }
+        else
+        {
+            <EditForm EditContext="@editContext"
+                      OnValidSubmit="HandleValidSubmit"
+                      OnInvalidSubmit="HandleInvalidSubmit">
+                <DataAnnotationsValidator />
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <div class="form-floating">
+                            <InputText class="form-control"
+                                       @bind-Value="model.RoomName"
+                                       placeholder="Oda adı" />
+                            <label>Oda adı</label>
+                        </div>
+                        <ValidationMessage For="@(() => model.RoomName)"
+                                           class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Günlük fiyat</label>
+
+                        <div class="input-group">
+                            <InputNumber class="form-control"
+                                         @bind-Value="model.DailyPrice"
+                                         placeholder="Günlük fiyat" />
+                            <span class="input-group-text">₺</span>
+                        </div>
+
+                        <ValidationMessage For="@(() => model.DailyPrice)"
+                                           class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <div class="p-3 bg-light rounded-3 border border-light h-100 d-flex align-items-center">
+                            <div class="form-check form-switch d-flex align-items-center">
+                                <InputCheckbox class="form-check-input me-3 fs-5"
+                                               @bind-Value="model.Shelf"
+                                               role="switch" />
+                                <label class="form-check-label fw-semibold">
+                                    Raflı
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="p-3 bg-light rounded-3 border border-light">
+                        <div class="form-check form-switch d-flex align-items-center">
+                            <InputCheckbox class="form-check-input me-3 fs-5"
+                                           @bind-Value="model.IsActive"
+                                           role="switch" />
+                            <label class="form-check-label fw-semibold">
+                                Odayı aktif etmek istiyor musun?
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="p-3 bg-light rounded-3 border border-light">
+                        <div class="form-check form-switch d-flex align-items-center">
+                            <InputCheckbox class="form-check-input me-3 fs-5"
+                                           @bind-Value="maintenanceEnabled"
+                                           @bind-Value:after="OnMaintenanceToggled"
+                                           role="switch" />
+                            <label class="form-check-label fw-semibold">
+                                Arıza/Bakım moduna al
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                @if ( maintenanceEnabled )
+                {
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <InputText class="form-control"
+                                           @bind-Value="maintenance.Description"
+                                           placeholder="Açıklama" />
+                                <label>Bakım açıklaması</label>
+                            </div>
+                            <ValidationMessage For="@(() => maintenance.Description)"
+                                               class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Bakım başlangıç</label>
+                            <InputDate class="form-control"
+                                       @bind-Value="maintenance.MaintenanceDateStart" />
+                            <ValidationMessage For="@(() => maintenance.MaintenanceDateStart)"
+                                               class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Bakım bitiş</label>
+                            <InputDate class="form-control"
+                                       @bind-Value="maintenance.MaintenanceDateEnd" />
+                            <ValidationMessage For="@(() => maintenance.MaintenanceDateEnd)"
+                                               class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                        </div>
+                    </div>
+                }
+
+                <div class="d-flex gap-3 justify-content-end mt-4 pt-3 border-top">
+                    <button type="button"
+                            class="btn btn-outline-secondary px-4 py-2 fw-semibold"
+                            @onclick="HideAsync"
+                            disabled="@isSubmit">
+                        İptal
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary px-4 py-2 fw-semibold shadow-sm"
+                            disabled="@SubmitDisabled">
+                        Güncelle
+                    </button>
+                </div>
+            </EditForm>
+        }
+    </ChildContent>
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+    private Guid? coolingRoomId;
+    private bool isSubmit;
+    private bool isLoading;
+
+    private UpdateCoolingRoomViewModel model = new();
+    private MaintenanceViewModel maintenance = new();
+
+    private bool maintenanceEnabled;
+    private bool hadMaintenanceOnLoad;
+
+    private EditContext editContext = default!;
+    private bool submitAttempted;
+
+    private bool SubmitDisabled
+        => isSubmit || isLoading || coolingRoomId is null || ( submitAttempted && editContext.GetValidationMessages().Any() );
+
+    [Parameter] public EventCallback CoolingRoomUpdated { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        InitForm();
+        return base.OnInitializedAsync();
+    }
+
+    public async Task ShowAsync(Guid id)
+    {
+        if ( dialog is null )
+            return;
+
+        coolingRoomId = id;
+        isLoading = true;
+        submitAttempted = false;
+        await InvokeAsync( StateHasChanged );
+
+        await LoadCoolingRoomAsync( coolingRoomId.Value );
+
+        isLoading = false;
+        await InvokeAsync( StateHasChanged );
+        await dialog.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        if ( dialog is null )
+            return;
+
+        submitAttempted = false;
+        await dialog.HideAsync();
+    }
+
+    private void InitForm()
+    {
+        model = new();
+        maintenance = new();
+
+        maintenanceEnabled = false;
+        hadMaintenanceOnLoad = false;
+
+        editContext = new EditContext( model );
+        editContext.OnValidationStateChanged += ( _, _ ) => _ = InvokeAsync( StateHasChanged );
+    }
+
+    private async Task LoadCoolingRoomAsync( Guid id )
+    {
+        var res = await coolingRoomService.GetByIdAsync( id );
+        apiResultPresenter.Present( res, new ApiPresentationOptions { ShowSuccess = false } );
+
+        if ( !res.IsSuccessful || res.Data is null )
+        {
+            InitForm();
+            return;
+        }
+
+        model = new UpdateCoolingRoomViewModel
+        {
+            Id = res.Data.Id,
+            RoomName = res.Data.RoomName,
+            DailyPrice = res.Data.DailyPrice,
+            Shelf = res.Data.Shelf,
+            IsActive = res.Data.IsActive
+        };
+
+        hadMaintenanceOnLoad = res.Data.MaintenanceId is not null;
+        maintenanceEnabled = hadMaintenanceOnLoad;
+
+        if ( res.Data.Maintenance is not null )
+        {
+            maintenance = new MaintenanceViewModel
+            {
+                Description = res.Data.Maintenance.Description,
+                MaintenanceDateStart = res.Data.Maintenance.MaintenanceDateStart.ToDateTime( TimeOnly.MinValue ),
+                MaintenanceDateEnd = res.Data.Maintenance.MaintenanceDateEnd.ToDateTime( TimeOnly.MinValue )
+            };
+        }
+        else
+        {
+            maintenance = new MaintenanceViewModel
+            {
+                MaintenanceDateStart = DateTime.Today,
+                MaintenanceDateEnd = DateTime.Today
+            };
+        }
+
+        editContext = new EditContext( model );
+        editContext.OnValidationStateChanged += ( _, _ ) => _ = InvokeAsync( StateHasChanged );
+    }
+
+    private void OnMaintenanceToggled()
+    {
+        if ( maintenanceEnabled )
+        {
+            if ( maintenance.MaintenanceDateStart == default ) maintenance.MaintenanceDateStart = DateTime.Today;
+            if ( maintenance.MaintenanceDateEnd == default ) maintenance.MaintenanceDateEnd = DateTime.Today;
+        }
+    }
+
+    private void HandleInvalidSubmit()
+        => submitAttempted = true;
+
+    private async Task HandleValidSubmit()
+    {
+        if ( coolingRoomId is null )
+            return;
+
+        try
+        {
+            isSubmit = true;
+
+            var request = new UpdateCoolingRoomRequest
+            {
+                Id = model.Id,
+                RoomName = model.RoomName,
+                DailyPrice = model.DailyPrice,
+                Shelf = model.Shelf,
+                IsActive = model.IsActive,
+                Maintenance = BuildMaintenanceRequest()
+            };
+
+            var res = await coolingRoomService.UpdateAsync( model.Id, request );
+            apiResultPresenter.Present( res, new ApiPresentationOptions { ShowSuccess = true } );
+
+            if ( !res.IsSuccessful )
+                return;
+
+            if ( CoolingRoomUpdated.HasDelegate )
+                await CoolingRoomUpdated.InvokeAsync();
+
+            await HideAsync();
+        }
+        finally
+        {
+            isSubmit = false;
+            submitAttempted = false;
+        }
+    }
+
+    private CoolingRoomMaintenanceUpdateRequest? BuildMaintenanceRequest()
+    {
+        if ( maintenanceEnabled )
+        {
+            return new CoolingRoomMaintenanceUpdateRequest
+            {
+                Remove = false,
+                Description = maintenance.Description,
+                MaintenanceDateStart = maintenance.MaintenanceDateStart,
+                MaintenanceDateEnd = maintenance.MaintenanceDateEnd
+            };
+        }
+
+        if ( hadMaintenanceOnLoad )
+        {
+            return new CoolingRoomMaintenanceUpdateRequest
+            {
+                Remove = true,
+                Description = null,
+                MaintenanceDateStart = DateTime.Today,
+                MaintenanceDateEnd = DateTime.Today
+            };
+        }
+
+        return null;
+    }
+
+    public sealed class UpdateCoolingRoomViewModel
+    {
+        public Guid Id { get; set; }
+
+        [Required( ErrorMessage = "Oda adı giriniz!" )]
+        public string RoomName { get; set; } = string.Empty;
+
+        [Range( 0.01d, double.MaxValue, ErrorMessage = "Günlük fiyat sıfırdan büyük olmalıdır" )]
+        public decimal DailyPrice { get; set; }
+
+        public bool Shelf { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public sealed class MaintenanceViewModel
+    {
+        [Required( ErrorMessage = "Geçerli bir bakım/açıklama girin" )]
+        public string? Description { get; set; }
+
+        public DateTime MaintenanceDateStart { get; set; } = DateTime.Today;
+        public DateTime MaintenanceDateEnd { get; set; } = DateTime.Today;
+    }
+}

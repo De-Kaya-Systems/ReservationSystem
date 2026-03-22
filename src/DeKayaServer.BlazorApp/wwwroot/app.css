@@ -33,6 +33,10 @@
     --admin-text-muted: #7f8c8d;
 }
 
+.cp {
+    cursor: pointer;
+}
+
 /* ===== SHARED LOADING OVERLAY ===== */
 .loading-overlay,
 .reset-loading-overlay {
