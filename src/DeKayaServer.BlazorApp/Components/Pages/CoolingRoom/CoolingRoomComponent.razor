@@ -2,6 +2,7 @@
 @using DeKayaServer.BlazorApp.Components.Pages.CoolingRoom.CreateCoolingRoom
 @using DeKayaServer.BlazorApp.Components.Pages.CoolingRoom.UpdateCoolingRoom
 @using DeKayaServer.BlazorApp.Components.Pages.CoolingRoom.DeleteCoolingRoom
+@using DeKayaServer.BlazorApp.Components.Pages.CoolingRoom.DetailCoolingRoom
 @using DeKayaServer.BlazorApp.Models
 @using DeKayaServer.BlazorApp.Services
 @using DeKayaServer.Contracts.CoolingRooms
@@ -154,7 +155,12 @@
                                 <i class="bi bi-three-dots"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li class="cp"><a class="dropdown-item">Detay</a></li>
+                                <li class="cp">
+                                    <a class="dropdown-item"
+                                           @onclick="() => ShowDetailCoolingRoomDialog( room.Id )">
+                                        Detay
+                                    </a>
+                                </li>
                                 <li class="cp">
                                     <a class="dropdown-item"
                                             @onclick="() => ShowUpdateCoolingRoomDialog(room.Id)">
@@ -228,11 +234,17 @@
     @ref="deleteCoolingRoomDialog"
     CoolingRoomDeleted="ReloadAsync" />
 
+<DetailCoolingRoomDialog
+    @ref="detailCoolingRoomDialog"
+    CoolingRoomId="selectedCoolingRoomId" />
+
 @code {
     private CreateCoolingRoomDialog? createCoolingRoomDialog;
     private UpdateCoolingRoomDialog? updateCoolingRoomDialog;
     private DeleteCoolingRoomDialog? deleteCoolingRoomDialog;
+    private DetailCoolingRoomDialog? detailCoolingRoomDialog;
 
+    private Guid? selectedCoolingRoomId;
     private bool isLoading;
 
     private List<CoolingRoomViewModel> rooms = [];
@@ -322,6 +334,19 @@
         }
 
         await updateCoolingRoomDialog.ShowAsync( id );
+    }
+
+    private async Task ShowDetailCoolingRoomDialog( Guid id )
+    {
+        selectedCoolingRoomId = id;
+
+        await InvokeAsync( StateHasChanged );
+        await Task.Yield();
+
+        if ( detailCoolingRoomDialog is null )
+            return;
+
+        await detailCoolingRoomDialog.ShowAsync();
     }
 
 
