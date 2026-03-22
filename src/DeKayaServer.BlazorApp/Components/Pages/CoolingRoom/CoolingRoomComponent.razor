@@ -1,5 +1,6 @@
 ﻿@page "/cooling-rooms"
 @using DeKayaServer.BlazorApp.Components.Pages.CoolingRoom.CreateCoolingRoom
+@using DeKayaServer.BlazorApp.Components.Pages.CoolingRoom.UpdateCoolingRoom
 @using DeKayaServer.BlazorApp.Models
 @using DeKayaServer.BlazorApp.Services
 @using DeKayaServer.Contracts.CoolingRooms
@@ -152,10 +153,10 @@
                                 <i class="bi bi-three-dots"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item">Detay</a></li>
-                                <li><a class="dropdown-item">Güncelle</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger">Sil</a></li>
+                                <li class="cp"><a class="dropdown-item">Detay</a></li>
+                                <li class="cp"><a class="dropdown-item" @onclick="() => ShowUpdateCoolingRoomDialog(room.Id)">Güncelle</a></li>
+                                <li class="cp"><hr class="dropdown-divider"></li>
+                                <li class="cp"><a class="dropdown-item text-danger">Sil</a></li>
                             </ul>
                         </div>
                     </div>
@@ -206,14 +207,16 @@
 
 <CreateCoolingRoomDialog @ref="createCoolingRoomDialog" CoolingRoomAdded="ReloadAsync" />
 
+<UpdateCoolingRoomDialog @ref="updateCoolingRoomDialog" CoolingRoomUpdated="ReloadAsync" />
+
 @code {
     private CreateCoolingRoomDialog? createCoolingRoomDialog;
+    private UpdateCoolingRoomDialog? updateCoolingRoomDialog;
 
     private bool isLoading;
 
     private List<CoolingRoomViewModel> rooms = [];
 
-    // Filters
     private string searchText = string.Empty;
     private ShelfFilter shelfFilter = ShelfFilter.All;
     private CoolingRoomStatus? statusFilter = null;
@@ -289,6 +292,16 @@
         }
 
         await createCoolingRoomDialog.ShowAsync();
+    }
+
+    private async Task ShowUpdateCoolingRoomDialog( Guid id )
+    {
+        if ( updateCoolingRoomDialog is null )
+        {
+            return;
+        }
+
+        await updateCoolingRoomDialog.ShowAsync( id );
     }
 
     private static CoolingRoomViewModel MapToViewModel( CoolingRoomDto dto )
@@ -376,18 +389,3 @@
         public CoolingRoomStatus Status { get; set; }
     }
 }
-
-<style>
-    .cr-filters .cr-control {
-        height: calc(1.5em + .5rem + 2px); /* Bootstrap sm control height */
-        line-height: 1.5;
-    }
-
-    .cr-filters .cr-switch {
-        /* label ile aynı baseline'a gelmesi için */
-        min-height: calc(1.5em + .5rem + 2px);
-        display: flex;
-        align-items: center;
-        padding-top: 0 !important;
-    }
-</style>

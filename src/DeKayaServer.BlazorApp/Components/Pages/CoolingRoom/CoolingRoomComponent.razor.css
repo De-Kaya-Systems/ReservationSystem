@@ -23,3 +23,15 @@
     position: relative;
     z-index: 1;
 }
+
+.cr-filters .cr-control {
+    height: calc(1.5em + .5rem + 2px);
+    line-height: 1.5;
+}
+
+.cr-filters .cr-switch {
+    min-height: calc(1.5em + .5rem + 2px);
+    display: flex;
+    align-items: center;
+    padding-top: 0 !important;
+}

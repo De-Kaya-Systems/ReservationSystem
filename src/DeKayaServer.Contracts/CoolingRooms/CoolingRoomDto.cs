@@ -10,4 +10,5 @@ public sealed class CoolingRoomDto : EntityDto
     public Guid StatusId { get; set; }
     public string? StatusName { get; set; }
     public Guid? MaintenanceId { get; set; }
+    public CoolingRoomMaintenanceDto? Maintenance { get; set; }
 }

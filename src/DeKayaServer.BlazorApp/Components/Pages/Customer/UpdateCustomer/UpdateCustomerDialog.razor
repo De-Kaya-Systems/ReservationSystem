@@ -188,7 +188,6 @@
         isLoading = true;
         submitAttempted = false;
         await InvokeAsync( StateHasChanged );
-
         await LoadCustomerAsync( CustomerId.Value );
         RefreshDistricts();
 
