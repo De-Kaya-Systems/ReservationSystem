@@ -128,7 +128,12 @@ internal sealed class CoolingRoomUpdateCommandHandler(
 
                 if ( coolingRoom.MaintenanceId is null )
                 {
-                    var maintenance = new CoolingRoomMaintenance( description, maintenanceDateStart, maintenanceDateEnd, maintenanceStatusId );
+                    var maintenance = new CoolingRoomMaintenance(
+                        coolingRoom.Id,
+                        description,
+                        maintenanceDateStart,
+                        maintenanceDateEnd,
+                        maintenanceStatusId );
                     await coolingRoomMaintenanceRepository.AddAsync( maintenance, cancellationToken );
                     coolingRoom.SetMaintenanceId( maintenance.Id );
                 }
@@ -142,6 +147,7 @@ internal sealed class CoolingRoomUpdateCommandHandler(
                         return Result<string>.Failure( "Bakım kaydı bulunamadı" );
                     }
 
+                    maintenance.SetCoolingRoomId( coolingRoom.Id );
                     maintenance.SetDescription( description );
                     maintenance.SetMaintenanceDateStart( maintenanceDateStart );
                     maintenance.SetMaintenanceDateEnd( maintenanceDateEnd );

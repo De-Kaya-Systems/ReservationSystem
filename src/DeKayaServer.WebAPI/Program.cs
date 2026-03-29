@@ -104,6 +104,7 @@ app.MapPermission();
 app.MapUser();
 app.MapCustomer();
 app.MapCoolingRoom();
+app.MapCoolingRoomMaintenance();
 
 // root endpoint anonymous kalsın
 app.MapGet( "/", () => Results.Ok( Result<string>.Succeed( "OK" ) ) );
