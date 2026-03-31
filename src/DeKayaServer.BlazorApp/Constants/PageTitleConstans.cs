@@ -11,4 +11,5 @@ public static class PageTitleConstans
     public const string UsersPage = "User Management";
     public const string CustomersPage = "Customer Management";
     public const string CoolingRoomPage = "Cooling Room Management";
+    public const string MaintenancePage = "Bakım Takibi";
 }
