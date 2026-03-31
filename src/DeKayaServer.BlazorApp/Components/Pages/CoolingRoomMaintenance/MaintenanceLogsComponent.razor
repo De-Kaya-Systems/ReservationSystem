@@ -1,0 +1,273 @@
+﻿@page "/cooling-rooms/maintenance"
+@using DeKayaServer.Contracts.CoolingRooms
+@using Microsoft.AspNetCore.Components.QuickGrid
+@inherits UserContextComponent
+@inject ICoolingRoomMaintenanceService CoolingRoomMaintenanceService
+@rendermode InteractiveServer
+
+<PageTitle>De-Kaya Systems | @PageTitleConstans.MaintenancePage</PageTitle>
+
+<PageHeader
+    Title="Bakım Takibi"
+    Icon="bi bi-tools"
+    Description="Soğuk oda bakım geçmişini (silinen kayıtlar dahil) bu sayfadan takip edebilirsin." />
+
+@if ( isLoading )
+{
+    <IsLoading Message="Bakım kayıtları getiriliyor, lütfen bekleyin." />
+}
+else
+{
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-body-secondary">Toplam Kayıt</div>
+                    <div class="d-flex align-items-center justify-content-between mt-1">
+                        <h4 class="mb-0 fw-bold">@TotalCount</h4>
+                        <i class="bi bi-journal-text text-primary fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-body-secondary">Aktif Arıza/Bakım</div>
+                    <div class="d-flex align-items-center justify-content-between mt-1">
+                        <h4 class="mb-0 fw-bold">@ActiveMaintenanceCount</h4>
+                        <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-body-secondary">Kapanan (Soft Delete)</div>
+                    <div class="d-flex align-items-center justify-content-between mt-1">
+                        <h4 class="mb-0 fw-bold">@DeletedCount</h4>
+                        <i class="bi bi-archive text-secondary fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-body-secondary">En Çok Arızalanan Oda</div>
+                    <div class="d-flex align-items-center justify-content-between mt-1">
+                        <h6 class="mb-0 fw-bold text-truncate pe-2">@MostFaultyRoomText</h6>
+                        <i class="bi bi-bar-chart text-danger fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <DeKayaQuickGrid
+        Title="Bakım Kayıt Listesi"
+        ShowTitle="true"
+        ShowSearchInput="true"
+        ShowSearchResultCount="true"
+        TotalItemCount="@FilteredItems.Count"
+        SearchTerm="@searchTerm"
+        SearchTermChanged="OnSearchTermChanged"
+        ShowPageSizeSelector="true"
+        PageSize="@pageSize"
+        PageSizeChanged="OnPageSizeChanged">
+
+        <HeaderActions>
+            <select class="form-select form-select-sm dekaya-input-group"
+                    style="min-width: 12rem;"
+                    @bind="deletionFilter">
+                <option value="@DeletionFilter.All">Tümü</option>
+                <option value="@DeletionFilter.ActiveOnly">Sadece aktif bakım</option>
+                <option value="@DeletionFilter.DeletedOnly">Sadece kapananlar</option>
+            </select>
+        </HeaderActions>
+
+        <QuickGridContent>
+            <QuickGrid
+                Items="@GridItems"
+                Pagination="pagination"
+                Class="table table-striped table-hover table-responsive mb-0 align-middle">
+
+                <PropertyColumn Property="@(x => x.RoomName)" Title="Oda" Sortable="true" />
+                <PropertyColumn Property="@(x => x.Description)" Title="Açıklama" Sortable="true" />
+
+                <TemplateColumn Title="Başlangıç" Sortable="true" Context="x">
+                    @x.MaintenanceDateStart.ToString("dd.MM.yyyy")
+                </TemplateColumn>
+
+                <TemplateColumn Title="Bitiş" Sortable="true" Context="x">
+                    @x.MaintenanceDateEnd.ToString("dd.MM.yyyy")
+                </TemplateColumn>
+
+                <PropertyColumn Property="@(x => x.DurationDays)" Title="Süre (gün)" Sortable="true" />
+                <PropertyColumn Property="@(x => x.StatusName)" Title="Durum" Sortable="true" />
+
+                <TemplateColumn Title="Kayıt Durumu" Sortable="true" Context="x">
+                    <span class="badge @(x.IsDeleted ? "bg-secondary" : "bg-success") p-2">
+                        @(x.IsDeleted ? "Kapanmış" : "Aktif")
+                    </span>
+                </TemplateColumn>
+
+                <PropertyColumn Property="@(x => x.CreatedAt)" Title="Oluşturulma" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
+                <PropertyColumn Property="@(x => x.CreatedFullName)" Title="Oluşturan" />
+                <PropertyColumn Property="@(x => x.DeletedAt)" Title="Kapanma" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
+            </QuickGrid>
+
+            <div class="p-2">
+                <Paginator State="pagination" />
+            </div>
+        </QuickGridContent>
+    </DeKayaQuickGrid>
+}
+
+@code {
+    private bool isLoading;
+    private List<MaintenanceLogViewModel> allItems = [];
+    private string searchTerm = string.Empty;
+    private int pageSize = 25;
+    private PaginationState pagination = new() { ItemsPerPage = 25 };
+
+    private DeletionFilter deletionFilter = DeletionFilter.All;
+
+    private int TotalCount => allItems.Count;
+    private int DeletedCount => allItems.Count( x => x.IsDeleted );
+    private int ActiveMaintenanceCount => allItems.Count( x => !x.IsDeleted );
+
+    private string MostFaultyRoomText
+    {
+        get
+        {
+            var top = allItems
+                .GroupBy( x => x.RoomName )
+                .Select( g => new { RoomName = g.Key, Count = g.Count() } )
+                .OrderByDescending( x => x.Count )
+                .ThenBy( x => x.RoomName )
+                .FirstOrDefault();
+
+            return top is null ? "-" : $"{top.RoomName} ({top.Count})";
+        }
+    }
+
+    private IReadOnlyList<MaintenanceLogViewModel> FilteredItems =>
+        allItems
+            .Where( ApplyDeletionFilter )
+            .Where( x => string.IsNullOrWhiteSpace( searchTerm )
+                || x.RoomName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase )
+                || x.Description.Contains( searchTerm, StringComparison.OrdinalIgnoreCase )
+                || x.StatusName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) )
+            .ToList();
+
+    private IQueryable<MaintenanceLogViewModel> GridItems => FilteredItems.AsQueryable();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadMaintenanceLogsAsync();
+    }
+
+    private bool ApplyDeletionFilter( MaintenanceLogViewModel item ) => deletionFilter switch
+    {
+        DeletionFilter.ActiveOnly => !item.IsDeleted,
+        DeletionFilter.DeletedOnly => item.IsDeleted,
+        _ => true
+    };
+
+    private async Task OnSearchTermChanged( string value )
+    {
+        searchTerm = value;
+        await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task OnPageSizeChanged( int value )
+    {
+        pageSize = value;
+        pagination.ItemsPerPage = value;
+        await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task LoadMaintenanceLogsAsync()
+    {
+        isLoading = true;
+
+        try
+        {
+            var result = await CoolingRoomMaintenanceService.GetAllAsync();
+            if ( !result.IsSuccessful || result.Data is null )
+            {
+                allItems = [];
+                return;
+            }
+
+            allItems = result.Data
+                .Select( x => new MaintenanceLogViewModel
+                {
+                    MaintenanceId = x.MaintenanceId,
+                    CoolingRoomId = x.CoolingRoomId,
+                    RoomName = x.RoomName,
+                    Description = x.Description,
+                    StatusId = x.StatusId,
+                    StatusName = x.StatusName,
+                    MaintenanceDateStart = x.MaintenanceDateStart,
+                    MaintenanceDateEnd = x.MaintenanceDateEnd,
+                    IsDeleted = x.IsDeleted,
+                    DeletedAt = x.DeletedAt,
+                    DeletedBy = x.DeletedBy,
+                    CreatedAt = x.CreatedAt,
+                    CreatedBy = x.CreatedBy,
+                    CreatedFullName = x.CreatedFullName,
+                    UpdatedAt = x.UpdatedAt,
+                    UpdatedBy = x.UpdatedBy,
+                    UpdatedFullName = x.UpdatedFullName
+                } )
+                .OrderByDescending( x => x.CreatedAt )
+                .ToList();
+        }
+        finally
+        {
+            isLoading = false;
+            await pagination.SetCurrentPageIndexAsync( 0 );
+            await InvokeAsync( StateHasChanged );
+        }
+    }
+
+    private enum DeletionFilter
+    {
+        All = 0,
+        ActiveOnly = 1,
+        DeletedOnly = 2
+    }
+
+    private sealed class MaintenanceLogViewModel
+    {
+        public Guid MaintenanceId { get; set; }
+        public Guid CoolingRoomId { get; set; }
+        public string RoomName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public Guid StatusId { get; set; }
+        public string StatusName { get; set; } = string.Empty;
+
+        public DateOnly MaintenanceDateStart { get; set; }
+        public DateOnly MaintenanceDateEnd { get; set; }
+        public int DurationDays => MaintenanceDateEnd.DayNumber - MaintenanceDateStart.DayNumber + 1;
+
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedBy { get; set; }
+
+        public DateTimeOffset CreatedAt { get; set; }
+        public Guid CreatedBy { get; set; }
+        public string CreatedFullName { get; set; } = string.Empty;
+
+        public DateTimeOffset? UpdatedAt { get; set; }
+        public Guid? UpdatedBy { get; set; }
+        public string? UpdatedFullName { get; set; }
+    }
+}
