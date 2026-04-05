@@ -14,14 +14,15 @@ public sealed class CustomerBalance : Entity
         PaidAmount? paidAmount,
         Description description,
         LastPaymentType? paymentType,
-        LastPaymentAt? lastPaymentAt )
+        LastPaymentAt? lastPaymentAt,
+        IdentityId reservationId )
     {
         SetCustomerId( customerId );
         SetDescription( description );
         SetLastPaymentType( paymentType );
         SetLastPaymentAt( lastPaymentAt );
-
         SetAmounts( totalAmount, paidAmount, outstandingAmount );
+        SetReservationId( reservationId );
     }
 
     public IdentityId CustomerId { get; private set; } = default!;
@@ -32,6 +33,7 @@ public sealed class CustomerBalance : Entity
     public BalanceStatus BalanceStatus { get; private set; } = BalanceStatus.Pending;
     public LastPaymentType? PaymentType { get; private set; }
     public LastPaymentAt? LastPaymentAt { get; private set; }
+    public IdentityId? ReservationId { get; private set; }
 
     #region Behaviors
     public void SetCustomerId( IdentityId customerId )
@@ -70,6 +72,11 @@ public sealed class CustomerBalance : Entity
     public void SetLastPaymentAt( LastPaymentAt? lastPaymentAt )
     {
         LastPaymentAt = lastPaymentAt;
+    }
+
+    public void SetReservationId( IdentityId reservationId )
+    {
+        ReservationId = reservationId;
     }
     #endregion
 
