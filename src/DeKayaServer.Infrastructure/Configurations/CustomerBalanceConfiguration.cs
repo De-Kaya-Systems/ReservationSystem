@@ -15,7 +15,6 @@ internal class CustomerBalanceConfiguration : IEntityTypeConfiguration<CustomerB
         builder.OwnsOne( x => x.PaidAmount );
         builder.OwnsOne( x => x.Description );
         builder.OwnsOne( x => x.BalanceStatus );
-        builder.OwnsOne( x => x.PaymentType );
         builder.OwnsOne( x => x.LastPaymentAt );
     }
 }

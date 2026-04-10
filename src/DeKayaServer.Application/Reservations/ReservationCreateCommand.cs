@@ -23,6 +23,7 @@ public sealed record ReservationCreateCommand(
     DateOnly PickUpDate,
     TimeOnly PickUpTime,
     Guid CoolingRoomId,
+    Guid PaymentTypeId,
     decimal PaidAtReservation,
     string? Note ) : IRequest<Result<string>>;
 
@@ -54,6 +55,10 @@ public sealed class ReservationCreateCommandValidator : AbstractValidator<Reserv
                 return pickup >= delivery;
             } )
             .WithMessage( "Geri alım tarihi/saati teslim tarih/saatinden önce olamaz." );
+
+        RuleFor( x => x.PaymentTypeId )
+            .NotEmpty()
+            .WithMessage( "Geçerli bir ödeme tipi seçin!" );
     }
 }
 
@@ -145,11 +150,11 @@ internal sealed class ReservationCreateCommandHandler(
         {
             var customerBalance = new CustomerBalance(
                 customerId: new IdentityId( request.CustomerId ),
+                paymentTypeId: new IdentityId( request.PaymentTypeId ),
                 totalAmount: new TotalAmount( totalAmount ),
                 outstandingAmount: new OutstandingAmount( outstandingBalance ),
                 paidAmount: new PaidAmount( paidAmount ),
                 description: new Description( $"Rezervasyon borcu - RezervasyonId: {reservation.Id.Value}" ),
-                paymentType: null, //buna bakacagim daha sonra
                 lastPaymentAt: paidAmount > 0 ? new LastPaymentAt( DateTime.Now ) : null,
                 reservationId: reservation.Id );
 
