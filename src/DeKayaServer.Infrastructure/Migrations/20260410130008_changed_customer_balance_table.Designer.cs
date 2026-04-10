@@ -4,6 +4,7 @@ using DeKayaServer.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DeKayaServer.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260410130008_changed_customer_balance_table")]
+    partial class changed_customer_balance_table
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -224,40 +227,6 @@ namespace DeKayaServer.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("LoginTokens", (string)null);
-                });
-
-            modelBuilder.Entity("DeKayaServer.Domain.PaymentTypes.PaymentTypes", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PaymentTypes", (string)null);
                 });
 
             modelBuilder.Entity("DeKayaServer.Domain.Reservations.Reservation", b =>
@@ -812,29 +781,6 @@ namespace DeKayaServer.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Token")
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("DeKayaServer.Domain.PaymentTypes.PaymentTypes", b =>
-                {
-                    b.OwnsOne("DeKayaServer.Domain.PaymentTypes.PaymentType", "PaymentType", b1 =>
-                        {
-                            b1.Property<Guid>("PaymentTypesId")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(MAX)");
-
-                            b1.HasKey("PaymentTypesId");
-
-                            b1.ToTable("PaymentTypes");
-
-                            b1.WithOwner()
-                                .HasForeignKey("PaymentTypesId");
-                        });
-
-                    b.Navigation("PaymentType")
                         .IsRequired();
                 });
 
