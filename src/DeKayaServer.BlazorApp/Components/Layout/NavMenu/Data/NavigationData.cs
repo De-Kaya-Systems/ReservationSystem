@@ -19,6 +19,11 @@ public static class NavigationData
             Children =
             [
                 new() {
+                    Title = "Rezervasyon Yap",
+                    Url = "/reservation-cooling-rooms",
+                    Permission = "reservation:page"
+                },
+                new() {
                     Title = "Tüm Odalar",
                     Url = "/cooling-rooms",
                     Permission = "seyyar-room:page"

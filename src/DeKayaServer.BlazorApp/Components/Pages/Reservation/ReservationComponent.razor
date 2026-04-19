@@ -1,0 +1,193 @@
+﻿@page "/reservation-cooling-rooms"
+@using Microsoft.AspNetCore.Components.QuickGrid
+@inherits UserContextComponent
+@inject IReservationService reservationService
+@inject ICustomerService customerService
+@inject ICoolingRoomService coolingRoomService
+@rendermode InteractiveServer
+
+<PageTitle>De-Kaya Systems | @PageTitleConstans.ReservationsPage</PageTitle>
+
+<PageHeader Title="Seyyar Soğutma Odası Rezervasyonları"
+            Icon="bi bi-calendar-check"
+            Description="Bu sayfada seyyar soğutma odalarının rezervasyon işlemlerini yönetebilirsin." />
+
+@if ( isLoading )
+{
+    <IsLoading Message="Rezervasyonlar getiriliyor, lütfen bekleyin." />
+}
+else
+{
+    <DeKayaQuickGrid Title="Rezervasyonlar"
+                     ShowTitle="true"
+                     ShowSearchInput="true"
+                     ShowSearchResultCount="true"
+                     TotalItemCount="@FilteredItems.Count"
+                     SearchTerm="@searchTerm"
+                     SearchTermChanged="OnSearchTermChanged"
+                     ShowPageSizeSelector="true"
+                     PageSize="@pageSize"
+                     PageSizeChanged="OnPageSizeChanged">
+
+        <QuickGridContent>
+            <QuickGrid Items="@GridItems"
+                       Pagination="pagination"
+                       Class="table table-striped table-hover table-responsive mb-0 align-middle">
+
+                <PropertyColumn Property="@(r => r.CustomerFullName)" Title="Müşteri" Sortable="true" />
+                <PropertyColumn Property="@(r => r.CoolingRoomName)" Title="Oda" Sortable="true" />
+                <PropertyColumn Property="@(r => r.ReservationStart)" Title="Rezervasyon Başlangıç" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
+                <PropertyColumn Property="@(r => r.ReservationEnd)" Title="Rezervasyon Bitiş" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
+
+                <TemplateColumn Title="Kalan Gün" Sortable="true" Context="r">
+                    <span class="badge @GetRemainingBadgeClass( r.ReservationEnd ) p-2">
+                        @GetRemainingText( r.ReservationEnd )
+                    </span>
+                </TemplateColumn>
+
+                <PropertyColumn Property="@(r => r.TotalDays)" Title="Toplam Gün" Sortable="true" />
+                <PropertyColumn Property="@(r => r.TotalAmount)" Title="Toplam Tutar" Format="N2" Sortable="true" />
+            </QuickGrid>
+            <div class="p-2">
+                <Paginator State="pagination" />
+            </div>
+        </QuickGridContent>
+    </DeKayaQuickGrid>
+}
+
+@code {
+    private bool isLoading;
+    private List<ReservationViewModel> reservations = [];
+    private string searchTerm = string.Empty;
+    private int pageSize = 25;
+    private PaginationState pagination = new() { ItemsPerPage = 25 };
+
+    private IReadOnlyList<ReservationViewModel> FilteredItems =>
+        ( string.IsNullOrWhiteSpace( searchTerm )
+            ? reservations
+            : reservations.Where( r =>
+                ( r.CustomerFullName != null && r.CustomerFullName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
+                ( r.CoolingRoomName != null && r.CoolingRoomName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ) )
+        .ToList();
+
+    private IQueryable<ReservationViewModel> GridItems => FilteredItems.AsQueryable();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadReservationsAsync();
+    }
+
+    private async Task OnSearchTermChanged( string value )
+    {
+        searchTerm = value;
+        await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task OnPageSizeChanged( int value )
+    {
+        pageSize = value;
+        pagination.ItemsPerPage = value;
+        await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task LoadReservationsAsync()
+    {
+        isLoading = true;
+        try
+        {
+            var reservationsTask = reservationService.GetAllAsync();
+            var customersTask = customerService.GetAllAsync();
+            var roomsTask = coolingRoomService.GetAllAsync();
+
+            await Task.WhenAll( reservationsTask, customersTask, roomsTask );
+
+            var reservationsResult = await reservationsTask;
+            if ( !reservationsResult.IsSuccessful || reservationsResult.Data is null )
+            {
+                reservations = [];
+                return;
+            }
+
+            var customersResult = await customersTask;
+            var roomsResult = await roomsTask;
+
+            var customerLookup = customersResult.IsSuccessful && customersResult.Data is not null
+                ? customersResult.Data.ToDictionary( c => c.Id, c => c.FullName )
+                : new Dictionary<Guid, string>();
+
+            var roomLookup = roomsResult.IsSuccessful && roomsResult.Data is not null
+                ? roomsResult.Data.ToDictionary( r => r.Id, r => r.RoomName )
+                : new Dictionary<Guid, string>();
+
+            reservations = reservationsResult.Data.Select( r => new ReservationViewModel
+            {
+                CustomerFullName = ResolveName( r.CustomerId, customerLookup ),
+                CoolingRoomName = ResolveName( r.CoolingRoomId, roomLookup ),
+                ReservationStart = r.DeliveryTime,
+                ReservationEnd = r.PickUpTime,
+                TotalDays = r.TotalDay,
+                TotalAmount = r.ReservationTotalAmount ?? 0
+            } ).ToList();
+        }
+        finally
+        {
+            isLoading = false;
+            await pagination.SetCurrentPageIndexAsync( 0 );
+            await InvokeAsync( StateHasChanged );
+        }
+    }
+
+    private static string ResolveName( string idValue, IReadOnlyDictionary<Guid, string> lookup )
+    {
+        if ( Guid.TryParse( idValue, out var id )
+             && lookup.TryGetValue( id, out var name )
+             && !string.IsNullOrWhiteSpace( name ) )
+        {
+            return name;
+        }
+
+        return idValue;
+    }
+
+    private static int GetRemainingDays( DateTime reservationEnd )
+    {
+        var remaining = ( reservationEnd.Date - DateTime.Now.Date ).Days;
+        return remaining;
+    }
+
+    private static string GetRemainingBadgeClass( DateTime reservationEnd )
+    {
+        var remaining = GetRemainingDays( reservationEnd );
+
+        return remaining switch
+        {
+            <= 0 => "bg-danger",
+            <= 2 => "bg-warning text-dark",
+            <= 7 => "bg-info text-dark",
+            _ => "bg-success"
+        };
+    }
+
+    private static string GetRemainingText( DateTime reservationEnd )
+    {
+        var remaining = GetRemainingDays( reservationEnd );
+
+        return remaining switch
+        {
+            <= 0 => "Süre doldu",
+            1 => "1 gün",
+            _ => $"{remaining} gün"
+        };
+    }
+
+    public sealed class ReservationViewModel
+    {
+        public string CustomerFullName { get; set; } = string.Empty;
+        public string CoolingRoomName { get; set; } = string.Empty;
+        public DateTime ReservationStart { get; set; }
+        public DateTime ReservationEnd { get; set; }
+        public int TotalDays { get; set; }
+        public decimal TotalAmount { get; set; }
+    }
+}

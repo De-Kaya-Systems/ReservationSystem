@@ -43,6 +43,7 @@ public sealed class PermissionService
         public static readonly string SeyyarRoomMaintenance = "seyyar-room:maintenance";
         public static readonly string UserPage = "user:page";
         public static readonly string CustomerPage = "customer:page";
+        public static readonly string ReservationPage = "reservation:page";
 
         public static readonly IReadOnlyCollection<string> DefaultPermissions =
         [
@@ -52,6 +53,7 @@ public sealed class PermissionService
             SeyyarRoomMaintenance,
             UserPage,
             CustomerPage,
+            ReservationPage
         ];
     }
 }
