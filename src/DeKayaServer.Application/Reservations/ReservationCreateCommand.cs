@@ -1,5 +1,6 @@
 ﻿using DeKayaServer.Application.Behaviors;
 using DeKayaServer.Domain.Abstractions;
+using DeKayaServer.Domain.Constants;
 using DeKayaServer.Domain.CoolingRooms;
 using DeKayaServer.Domain.CoolingRoomStatus;
 using DeKayaServer.Domain.CustomerBalance;
@@ -70,9 +71,6 @@ internal sealed class ReservationCreateCommandHandler(
     ICustomerBalanceRepository customerBalanceRepository,
     IUnitOfWork unitOfWork ) : IRequestHandler<ReservationCreateCommand, Result<string>>
 {
-    public const string AvailableCoolingRoomStatus = "Uygun";
-    public const string BookedCoolingRoomStatus = "Booked";
-    public const string ReservedCoolingRoomStatus = "Rezerve";
     public async Task<Result<string>> Handle( ReservationCreateCommand request, CancellationToken cancellationToken )
     {
         var customer = await customerRepository.FirstOrDefaultAsync( x => x.Id == request.CustomerId, cancellationToken );
@@ -93,9 +91,9 @@ internal sealed class ReservationCreateCommandHandler(
             return Result<string>.Failure( "Soğuk oda durumu bulunamadı!" );
         }
 
-        if ( currentStatus.StatusName.Value != AvailableCoolingRoomStatus )
+        if ( IsFaultyStatus( currentStatus.StatusName.Value ) )
         {
-            return Result<string>.Failure( "Seçilen soğuk oda uygun değil!" );
+            return Result<string>.Failure( "Seçilen soğuk oda arıza/bakımda!" );
         }
 
         var hasOverlap = await reservationRepository.AnyAsync(
@@ -131,7 +129,9 @@ internal sealed class ReservationCreateCommandHandler(
         reservationRepository.Add( reservation );
 
         var deliveryDateTime = request.DeliveryDate.ToDateTime( request.DeliveryTime );
-        var targetStatusName = deliveryDateTime > DateTime.Now ? ReservedCoolingRoomStatus : BookedCoolingRoomStatus;
+        var targetStatusName = deliveryDateTime > DateTime.Now
+            ? CoolingRoomStatusConstants.Reserved
+            : CoolingRoomStatusConstants.Booked;
 
         var targetStatus = await coolingRoomStatusRepository
            .FirstOrDefaultAsync( x => x.StatusName.Value == targetStatusName, cancellationToken );
@@ -143,7 +143,6 @@ internal sealed class ReservationCreateCommandHandler(
 
         coolingRoom.SetRoomStatusId( targetStatus.Id );
         coolingRoomRepository.Update( coolingRoom );
-
 
         var outstandingBalance = totalAmount - paidAmount;
         if ( outstandingBalance > 0 )
@@ -163,4 +162,7 @@ internal sealed class ReservationCreateCommandHandler(
         await unitOfWork.SaveChangesAsync( cancellationToken );
         return "Rezervasyon başarıyla oluşturuldu";
     }
+
+    private static bool IsFaultyStatus( string? statusName )
+        => string.Equals( statusName?.Trim(), CoolingRoomStatusConstants.Faulty, StringComparison.OrdinalIgnoreCase );
 }
