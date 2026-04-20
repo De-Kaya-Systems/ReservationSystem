@@ -30,6 +30,7 @@ public static class EndpointConstants
     //CoolingRooms
     public const string CoolingRooms = "/coolingrooms";
     public const string ODataCoolingRooms = "/odata/coolingrooms";
+    public const string CoolingRoomsAvailable = "/coolingrooms/available";
 
     //CoolingRoomMaintenances
     public const string CoolingRoomMaintenances = "/coolingroommaintenances";
@@ -37,4 +38,8 @@ public static class EndpointConstants
     //Reservations
     public const string Reservations = "/reservations";
     public const string ODataReservations = "/odata/reservations";
+
+    //PaymentTypes
+    public const string PaymentTypes = "/paymenttypes";
+    public const string ODataPaymentTypes = "/odata/paymenttypes";
 }

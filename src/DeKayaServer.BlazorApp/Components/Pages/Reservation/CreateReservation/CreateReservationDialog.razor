@@ -1,0 +1,615 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Models
+@using DeKayaServer.Contracts.Reservations
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@inject IReservationService reservationService
+@inject ICustomerService customerService
+@inject ICoolingRoomService coolingRoomService
+@inject IPaymentTypeService paymentTypeService
+@inject IApiResultPresenter apiResultPresenter
+@inject ToastService toastService
+@rendermode InteractiveServer
+
+<div class="create-reservation-diaolg">
+    <Dialog @ref="dialog"
+            Title="Rezervasyon Ekle">
+        <ChildContent>
+            @if ( isLoading )
+            {
+                <IsLoading Message="Veriler yükleniyor, lütfen bekleyin." />
+            }
+            else
+            {
+                <EditForm EditContext="@editContext"
+                          OnValidSubmit="HandleValidSubmit"
+                          OnInvalidSubmit="HandleInvalidSubmit">
+                    <DataAnnotationsValidator />
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label">Başlangıç tarihi</label>
+                            <InputDate class="form-control"
+                                       @bind-Value="model.DeliveryDate"
+                                       @bind-Value:after="OnDatesChanged"
+                                       @onfocus="OnDatesFocus" />
+                            <ValidationMessage For="@(() => model.DeliveryDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                        </div>
+
+                        <div class="col-12 col-md-3">
+                            <label class="form-label">Başlangıç saati</label>
+                            <InputText class="form-control"
+                                       type="time"
+                                       @bind-Value="model.DeliveryTime" />
+                            <ValidationMessage For="@(() => model.DeliveryTime)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                        </div>
+
+                        <div class="col-12 col-md-3">
+                            <label class="form-label">Rezervasyon bitiş tarihi</label>
+                            <InputDate class="form-control"
+                                       @bind-Value="model.PickUpDate"
+                                       @bind-Value:after="OnDatesChanged"
+                                       @onfocus="OnDatesFocus"
+                                       @attributes="PickUpDateAttributes" />
+                            <ValidationMessage For="@(() => model.PickUpDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                        </div>
+
+                        <div class="col-12 col-md-3">
+                            <label class="form-label">Rezervasyon bitiş saati</label>
+                            <InputText class="form-control"
+                                       type="time"
+                                       @bind-Value="model.PickUpTime" />
+                            <ValidationMessage For="@(() => model.PickUpTime)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <div class="position-relative">
+                                <div class="form-floating">
+                                    <input class="form-control"
+                                           value="@customerSearchTerm"
+                                           @oninput="OnCustomerSearchInput"
+                                           placeholder="Müşteri ara" />
+                                    <label>Müşteri ara</label>
+                                </div>
+                                <ValidationMessage For="@(() => model.CustomerId)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+
+                                @if ( ShowCustomerSuggestions )
+                                {
+                                    <div class="list-group position-absolute w-100 mt-1 shadow-sm" style="z-index: 1050;">
+                                        @foreach ( var customer in FilteredCustomers )
+                                        {
+                                            <button type="button"
+                                                    class="list-group-item list-group-item-action"
+                                                    @onclick="() => SelectCustomer( customer )">
+                                                @customer.CustomerDisplay
+                                            </button>
+                                        }
+
+                                        @if ( !FilteredCustomers.Any() )
+                                        {
+                                            <div class="list-group-item text-body-secondary">
+                                                Sonuç bulunamadı
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="form-floating">
+                                <InputSelect class="form-select"
+                                             @bind-Value="model.CoolingRoomId"
+                                             disabled="@(!DatesSelected || IsDateRangeInvalid || isLoadingRooms || isEditingDates)">
+                                    <option value="">Soğuk oda seçin</option>
+                                    @foreach ( var room in rooms )
+                                    {
+                                        <option value="@room.Id.ToString()">@room.Name</option>
+                                    }
+                                </InputSelect>
+                                <label>Soğuk oda</label>
+                            </div>
+                            <ValidationMessage For="@(() => model.CoolingRoomId)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+
+                            @if ( isLoadingRooms )
+                            {
+                                <div class="small text-body-secondary mt-1">Uygun odalar yükleniyor...</div>
+                            }
+                            else if ( !string.IsNullOrWhiteSpace( roomsInfoMessage ) )
+                            {
+                                <div class="small text-body-secondary mt-1">@roomsInfoMessage</div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-floating">
+                            <InputText class="form-control"
+                                       @bind-Value="model.DeliveryLocation"
+                                       placeholder="Teslimat konumu" />
+                            <label>Teslimat konumu girin</label>
+                        </div>
+                        <ValidationMessage For="@(() => model.DeliveryLocation)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="paymentReceivedSwitch"
+                                       checked="@paymentReceived"
+                                       @onchange="OnPaymentReceivedChanged" />
+                                <label class="form-check-label" for="paymentReceivedSwitch">Ödeme alındı mı?</label>
+                            </div>
+
+                            @if ( paymentReceived )
+                            {
+                                <div class="form-floating">
+                                    <InputSelect class="form-select"
+                                                 @bind-Value="model.PaymentTypeId">
+                                        <option value="">Ödeme tipi seçin</option>
+                                        @foreach ( var paymentType in PaymentTypeOptions )
+                                        {
+                                            <option value="@paymentType.Id.ToString()">@paymentType.Name</option>
+                                        }
+                                    </InputSelect>
+                                    <label>Ödeme tipi</label>
+                                </div>
+                                <ValidationMessage For="@(() => model.PaymentTypeId)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                            }
+                            else
+                            {
+                                <div class="small text-body-secondary">
+                                    Ödeme alınmadı.
+                                </div>
+                            }
+                        </div>
+                        @if ( paymentReceived )
+                        {
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Alınan ödemeyi girin.</label>
+                                <div class="input-group">
+                                    <InputNumber class="form-control"
+                                                 @bind-Value="model.PaidAtReservation"
+                                                 placeholder="0" />
+                                    <span class="input-group-text">₺</span>
+                                </div>
+                                <ValidationMessage For="@(() => model.PaidAtReservation)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-floating">
+                            <InputTextArea class="form-control"
+                                           @bind-Value="model.Note"
+                                           placeholder="Not (opsiyonel)" />
+                            <label>Not</label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 justify-content-end mt-4 pt-3 border-top">
+                        <button type="button"
+                                class="btn btn-outline-secondary px-4 py-2 fw-semibold"
+                                @onclick="HideAsync"
+                                disabled="@isSubmit">
+                            İptal
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-primary px-4 py-2 fw-semibold shadow-sm"
+                                disabled="@SubmitDisabled">
+                            Rezervasyonu Oluştur
+                        </button>
+                    </div>
+                </EditForm>
+            }
+        </ChildContent>
+    </Dialog>
+</div>
+
+@code {
+    private Dialog? dialog;
+    private bool isSubmit;
+    private bool isLoading;
+    private bool isLoadingRooms;
+    private bool isEditingDates;
+    private string? roomsInfoMessage;
+
+    private CreateReservationViewModel model = new();
+    private EditContext editContext = default!;
+    private bool submitAttempted;
+
+    private List<CustomerOption> customers = [];
+    private List<CoolingRoomOption> rooms = [];
+    private List<PaymentTypeOption> paymentTypes = [];
+
+    private string customerSearchTerm = string.Empty;
+    private bool showCustomerSuggestions;
+    private bool paymentReceived;
+    private Guid? noPayPaymentTypeId;
+
+    private bool SubmitDisabled =>
+        isSubmit || isLoading || ( submitAttempted && editContext.GetValidationMessages().Any() );
+
+    private bool ShowCustomerSuggestions
+        => showCustomerSuggestions && !string.IsNullOrWhiteSpace( customerSearchTerm );
+
+    private bool DatesSelected
+        => model.DeliveryDate.HasValue && model.PickUpDate.HasValue;
+
+    private bool IsDateRangeInvalid
+        => model.DeliveryDate.HasValue
+           && model.PickUpDate.HasValue
+           && model.PickUpDate.Value < model.DeliveryDate.Value;
+
+    private IReadOnlyDictionary<string, object> PickUpDateAttributes
+        => model.DeliveryDate.HasValue
+            ? new Dictionary<string, object>
+            {
+                [ "min" ] = model.DeliveryDate.Value.ToString( "yyyy-MM-dd" )
+            }
+            : new Dictionary<string, object>();
+
+    private IReadOnlyList<CustomerOption> FilteredCustomers
+        => string.IsNullOrWhiteSpace( customerSearchTerm )
+            ? customers
+            : customers
+                .Where( c => c.CustomerDisplay.Contains( customerSearchTerm, StringComparison.OrdinalIgnoreCase ) )
+                .OrderBy( c => c.CustomerDisplay )
+                .Take( 8 )
+                .ToList();
+
+    private IReadOnlyList<PaymentTypeOption> PaymentTypeOptions
+        => paymentTypes
+            .Where( p => !IsNoPay( p.Name ) )
+            .OrderBy( p => p.Name )
+            .ToList();
+
+    [Parameter] public EventCallback ReservationAdded { get; set; }
+
+    protected override void OnInitialized()
+    {
+        InitForm();
+        editContext.OnValidationStateChanged += OnValidationStateChanged;
+    }
+
+    private void OnValidationStateChanged( object? sender, ValidationStateChangedEventArgs e )
+        => _ = InvokeAsync( StateHasChanged );
+
+    public async Task ShowAsync()
+    {
+        if ( dialog is null )
+        {
+            return;
+        }
+
+        submitAttempted = false;
+        InitForm();
+
+        await LoadLookupsAsync();
+        await dialog.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        if ( dialog is null )
+        {
+            return;
+        }
+
+        submitAttempted = false;
+        await dialog.HideAsync();
+    }
+
+    private void InitForm()
+    {
+        model = new CreateReservationViewModel();
+        editContext = new EditContext( model );
+        editContext.OnValidationStateChanged += OnValidationStateChanged;
+
+        customerSearchTerm = string.Empty;
+        showCustomerSuggestions = false;
+        paymentReceived = false;
+        rooms = [];
+        roomsInfoMessage = "Önce rezervasyon başlangıç ve bitiş tarihlerini seçin.";
+        isEditingDates = false;
+    }
+
+    private void OnCustomerSearchInput( ChangeEventArgs e )
+    {
+        customerSearchTerm = e.Value?.ToString() ?? string.Empty;
+        showCustomerSuggestions = true;
+        OnCustomerSearchChanged();
+    }
+
+    private void OnCustomerSearchChanged()
+    {
+        if ( model.CustomerId is not null
+             && !customers.Any( c => c.Id == model.CustomerId && c.CustomerDisplay.Equals( customerSearchTerm, StringComparison.OrdinalIgnoreCase ) ) )
+        {
+            model.CustomerId = null;
+        }
+    }
+
+    private void SelectCustomer( CustomerOption customer )
+    {
+        model.CustomerId = customer.Id;
+        customerSearchTerm = customer.CustomerDisplay;
+        showCustomerSuggestions = false;
+        _ = InvokeAsync( StateHasChanged );
+    }
+
+    private void OnPaymentReceivedChanged( ChangeEventArgs e )
+    {
+        paymentReceived = e.Value is bool b && b;
+
+        if ( paymentReceived )
+        {
+            if ( model.PaymentTypeId == noPayPaymentTypeId )
+            {
+                model.PaymentTypeId = null;
+            }
+        }
+        else
+        {
+            model.PaidAtReservation = 0;
+
+            if ( noPayPaymentTypeId is not null )
+            {
+                model.PaymentTypeId = noPayPaymentTypeId;
+            }
+        }
+    }
+
+    private async Task LoadLookupsAsync()
+    {
+        isLoading = true;
+
+        try
+        {
+            var customersTask = customerService.GetAllAsync();
+            var paymentTypesTask = paymentTypeService.GetAllAsync();
+
+            await Task.WhenAll( customersTask, paymentTypesTask );
+
+            var customersResult = await customersTask;
+            customers = customersResult.IsSuccessful && customersResult.Data is not null
+                ? customersResult.Data
+                    .Select( c => new CustomerOption( c.Id, c.FullName, c.PhoneNumber ) )
+                    .OrderBy( c => c.CustomerDisplay )
+                    .ToList()
+                : [];
+
+            var paymentTypesResult = await paymentTypesTask;
+            paymentTypes = paymentTypesResult.IsSuccessful && paymentTypesResult.Data is not null
+                ? paymentTypesResult.Data
+                    .Where( p => p.IsActive )
+                    .Select( p => new PaymentTypeOption( p.Id, p.Name ) )
+                    .OrderBy( p => p.Name )
+                    .ToList()
+                : [];
+
+            noPayPaymentTypeId = paymentTypes.FirstOrDefault( p => IsNoPay( p.Name ) )?.Id;
+
+            if ( !paymentReceived && noPayPaymentTypeId is not null )
+            {
+                model.PaymentTypeId = noPayPaymentTypeId;
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync( StateHasChanged );
+        }
+    }
+
+    private async Task LoadAvailableRoomsAsync()
+    {
+        roomsInfoMessage = null;
+
+        if ( !DatesSelected )
+        {
+            rooms = [];
+            model.CoolingRoomId = null;
+            roomsInfoMessage = "Önce rezervasyon başlangıç ve bitiş tarihlerini seçin.";
+            return;
+        }
+
+        if ( IsDateRangeInvalid )
+        {
+            rooms = [];
+            model.CoolingRoomId = null;
+            roomsInfoMessage = "Rezervasyon başlangıç tarihi, bitiş tarihinden önce olamaz.";
+            return;
+        }
+
+        var deliveryDate = model.DeliveryDate;
+        var pickUpDate = model.PickUpDate;
+
+        if ( deliveryDate is null || pickUpDate is null )
+        {
+            rooms = [];
+            model.CoolingRoomId = null;
+            roomsInfoMessage = "Tarihler eksik.";
+            return;
+        }
+
+        isLoadingRooms = true;
+
+        try
+        {
+            var roomsResult = await coolingRoomService.GetAvailableAsync( deliveryDate.Value, pickUpDate.Value );
+
+            if ( !roomsResult.IsSuccessful )
+            {
+                rooms = [];
+                roomsInfoMessage = roomsResult.ErrorMessages?.FirstOrDefault() ?? "Uygun odalar getirilemedi.";
+                return;
+            }
+
+            rooms = roomsResult.Data is not null
+                ? roomsResult.Data
+                    .Select( r => new CoolingRoomOption( r.Id, r.RoomName ) )
+                    .OrderBy( r => r.Name )
+                    .ToList()
+                : [];
+
+            if ( rooms.Count == 0 )
+            {
+                roomsInfoMessage = "Seçilen tarih aralığında uygun oda yok.";
+            }
+
+            if ( model.CoolingRoomId is not null && !rooms.Any( r => r.Id == model.CoolingRoomId ) )
+            {
+                model.CoolingRoomId = null;
+            }
+        }
+        finally
+        {
+            isLoadingRooms = false;
+        }
+    }
+
+    private void OnDatesFocus()
+    {
+        isEditingDates = true;
+    }
+
+    private async Task OnDatesChanged()
+    {
+        await LoadAvailableRoomsAsync();
+        isEditingDates = false;
+        await InvokeAsync( StateHasChanged );
+    }
+
+    private static bool IsNoPay( string? name )
+        => string.Equals( name?.Trim(), "NoPay", StringComparison.OrdinalIgnoreCase );
+
+    private void HandleInvalidSubmit()
+    {
+        submitAttempted = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            isSubmit = true;
+
+            if ( model.DeliveryDate is null || model.PickUpDate is null )
+            {
+                toastService.ShowError( "Lütfen rezervasyon başlangıç ve bitiş tarihlerini seçin." );
+                return;
+            }
+
+            if ( !TimeOnly.TryParse( model.DeliveryTime, out var deliveryTime ) )
+            {
+                toastService.ShowError( "Rezervasyon saatini doğru giriniz!" );
+                return;
+            }
+
+            if ( !TimeOnly.TryParse( model.PickUpTime, out var pickUpTime ) )
+            {
+                toastService.ShowError( "Rezervasyon alma saatini doğru giriniz!" );
+                return;
+            }
+
+            if ( !paymentReceived && noPayPaymentTypeId is null )
+            {
+                toastService.ShowError( "NoPay ödeme tipi bulunamadı." );
+                return;
+            }
+
+            if ( model.CustomerId is null || model.CoolingRoomId is null || model.PaymentTypeId is null )
+            {
+                return;
+            }
+
+            var request = new CreateReservationRequest
+            {
+                CustomerId = model.CustomerId.Value,
+                CoolingRoomId = model.CoolingRoomId.Value,
+                DeliveryLocation = model.DeliveryLocation,
+                DeliveryDate = model.DeliveryDate.Value,
+                DeliveryTime = deliveryTime,
+                PickUpDate = model.PickUpDate.Value,
+                PickUpTime = pickUpTime,
+                PaymentTypeId = model.PaymentTypeId.Value,
+                PaidAtReservation = model.PaidAtReservation,
+                Note = string.IsNullOrWhiteSpace( model.Note ) ? null : model.Note
+            };
+
+            var result = await reservationService.CreateAsync( request );
+            apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = true } );
+
+            if ( !result.IsSuccessful )
+            {
+                return;
+            }
+
+            if ( ReservationAdded.HasDelegate )
+            {
+                await ReservationAdded.InvokeAsync();
+            }
+        }
+        finally
+        {
+            isSubmit = false;
+            submitAttempted = false;
+            InitForm();
+            await HideAsync();
+        }
+    }
+
+    private sealed class CreateReservationViewModel
+    {
+        [Required( ErrorMessage = "Müşteri seçin!" )]
+        public Guid? CustomerId { get; set; }
+
+        [Required( ErrorMessage = "Soğuk oda seçin!" )]
+        public Guid? CoolingRoomId { get; set; }
+
+        [Required( ErrorMessage = "Teslimat konumu girin!" )]
+        public string DeliveryLocation { get; set; } = string.Empty;
+
+        [Required( ErrorMessage = "Rezervasyon başlangıç tarihi seçin!" )]
+        public DateOnly? DeliveryDate { get; set; }
+
+        [Required( ErrorMessage = "Rezervasyon saati girin!" )]
+        [RegularExpression( @"^\d{2}:\d{2}$", ErrorMessage = "Saat formatı HH:mm olmalı." )]
+        public string DeliveryTime { get; set; } = "09:00";
+
+        [Required( ErrorMessage = "Rezervasyon bitiş tarihi seçin!" )]
+        public DateOnly? PickUpDate { get; set; }
+
+        [Required( ErrorMessage = "Rezervasyon bitiş saati girin!" )]
+        [RegularExpression( @"^\d{2}:\d{2}$", ErrorMessage = "Saat formatı HH:mm olmalı." )]
+        public string PickUpTime { get; set; } = "09:00";
+
+        [Required( ErrorMessage = "Ödeme tipi seçin!" )]
+        public Guid? PaymentTypeId { get; set; }
+
+        [Range( 0, double.MaxValue, ErrorMessage = "Ödeme tutarı negatif olamaz." )]
+        public decimal PaidAtReservation { get; set; }
+
+        public string? Note { get; set; }
+    }
+
+    private sealed record CustomerOption( Guid Id, string FullName, string PhoneNumber )
+    {
+        public string CustomerDisplay => $"{FullName} - {PhoneNumber}";
+    }
+
+    private sealed record CoolingRoomOption( Guid Id, string Name );
+    private sealed record PaymentTypeOption( Guid Id, string Name );
+}
+
+<style>
+    .create-reservation-diaolg {
+        max-width: 600px !important;
+    }
+</style>

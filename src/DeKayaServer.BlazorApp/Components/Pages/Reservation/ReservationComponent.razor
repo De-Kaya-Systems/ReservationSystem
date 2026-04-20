@@ -1,5 +1,6 @@
 ﻿@page "/reservation-cooling-rooms"
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using DeKayaServer.BlazorApp.Components.Pages.Reservation.CreateReservation
 @inherits UserContextComponent
 @inject IReservationService reservationService
 @inject ICustomerService customerService
@@ -29,6 +30,13 @@ else
                      PageSize="@pageSize"
                      PageSizeChanged="OnPageSizeChanged">
 
+        <HeaderActions>
+            <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateReservationDialog">
+                <i class="bi bi-plus-circle"></i>
+                <span>Ekle</span>
+            </button>
+        </HeaderActions>
+
         <QuickGridContent>
             <QuickGrid Items="@GridItems"
                        Pagination="pagination"
@@ -39,7 +47,13 @@ else
                 <PropertyColumn Property="@(r => r.ReservationStart)" Title="Rezervasyon Başlangıç" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
                 <PropertyColumn Property="@(r => r.ReservationEnd)" Title="Rezervasyon Bitiş" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
 
-                <TemplateColumn Title="Kalan Gün" Sortable="true" Context="r">
+                <TemplateColumn Title="Teslime Kalan Süre" Sortable="true" Context="r">
+                    <span class="badge @GetRemainingBadgeClass( r.ReservationStart ) p-2">
+                        @GetRemainingText( r.ReservationStart )
+                    </span>
+                </TemplateColumn>
+
+                <TemplateColumn Title="Alınmasına Kalan Süre" Sortable="true" Context="r">
                     <span class="badge @GetRemainingBadgeClass( r.ReservationEnd ) p-2">
                         @GetRemainingText( r.ReservationEnd )
                     </span>
@@ -55,12 +69,17 @@ else
     </DeKayaQuickGrid>
 }
 
+<CreateReservationDialog @ref="createReservationDialog"
+                         ReservationAdded="HandleReservationPageAsync" />
+
 @code {
     private bool isLoading;
     private List<ReservationViewModel> reservations = [];
     private string searchTerm = string.Empty;
     private int pageSize = 25;
     private PaginationState pagination = new() { ItemsPerPage = 25 };
+
+    private CreateReservationDialog? createReservationDialog;
 
     private IReadOnlyList<ReservationViewModel> FilteredItems =>
         ( string.IsNullOrWhiteSpace( searchTerm )
@@ -89,6 +108,22 @@ else
         pageSize = value;
         pagination.ItemsPerPage = value;
         await pagination.SetCurrentPageIndexAsync( 0 );
+    }
+
+    private async Task ShowCreateReservationDialog()
+    {
+        if ( createReservationDialog is null )
+        {
+            return;
+        }
+
+        await createReservationDialog.ShowAsync();
+    }
+
+    private async Task HandleReservationPageAsync()
+    {
+        await LoadReservationsAsync();
+        await InvokeAsync( StateHasChanged );
     }
 
     private async Task LoadReservationsAsync()

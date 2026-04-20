@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Application.CoolingRooms;
+using DeKayaServer.Application.CoolingRooms.SpecialQuery;
 using DeKayaServer.Contracts.CoolingRooms;
 using TS.MediatR;
 using TS.Result;
@@ -46,5 +47,13 @@ public static class CoolingRoomModule
                 return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
             } )
             .Produces<Result<CoolingRoomDto>>();
+
+        app.MapGet( "available",
+            async ( DateOnly from, DateOnly to, ISender sender, CancellationToken cancellationToken ) =>
+            {
+                var res = await sender.Send( new CoolingRoomGetAvailableQuery( from, to ), cancellationToken );
+                return res.IsSuccessful ? Results.Ok( res ) : Results.BadRequest( res );
+            } )
+            .Produces<Result<List<CoolingRoomDto>>>();
     }
 }
