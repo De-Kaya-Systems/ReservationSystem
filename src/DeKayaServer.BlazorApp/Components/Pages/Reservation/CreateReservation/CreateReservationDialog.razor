@@ -40,7 +40,8 @@
                             <label class="form-label">Başlangıç saati</label>
                             <InputText class="form-control"
                                        type="time"
-                                       @bind-Value="model.DeliveryTime" />
+                                       @bind-Value="model.DeliveryTime"
+                                       @bind-Value:after="OnPricingInputChanged" />
                             <ValidationMessage For="@(() => model.DeliveryTime)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
                         </div>
 
@@ -58,7 +59,8 @@
                             <label class="form-label">Rezervasyon bitiş saati</label>
                             <InputText class="form-control"
                                        type="time"
-                                       @bind-Value="model.PickUpTime" />
+                                       @bind-Value="model.PickUpTime"
+                                       @bind-Value:after="OnPricingInputChanged" />
                             <ValidationMessage For="@(() => model.PickUpTime)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
                         </div>
                     </div>
@@ -102,6 +104,7 @@
                             <div class="form-floating">
                                 <InputSelect class="form-select"
                                              @bind-Value="model.CoolingRoomId"
+                                             @bind-Value:after="OnPricingInputChanged"
                                              disabled="@(!DatesSelected || IsDateRangeInvalid || isLoadingRooms || isEditingDates)">
                                     <option value="">Soğuk oda seçin</option>
                                     @foreach ( var room in rooms )
@@ -174,6 +177,7 @@
                                 <div class="input-group">
                                     <InputNumber class="form-control"
                                                  @bind-Value="model.PaidAtReservation"
+                                                 @bind-Value:after="OnPricingInputChanged"
                                                  placeholder="0" />
                                     <span class="input-group-text">₺</span>
                                 </div>
@@ -181,6 +185,14 @@
                             </div>
                         }
                     </div>
+
+                    @if ( ComputedReservationTotalAmount is decimal totalReservationAmount )
+                    {
+                        <div class="alert alert-info py-2 px-3 mb-3 d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">Toplam rezervasyon bedeli</span>
+                            <span class="fs-5 fw-bold">@totalReservationAmount.ToString("N2") ₺</span>
+                        </div>
+                    }
 
                     <div class="mb-4">
                         <div class="form-floating">
@@ -221,6 +233,7 @@
 
     private CreateReservationViewModel model = new();
     private EditContext editContext = default!;
+    private ValidationMessageStore validationMessageStore = default!;
     private bool submitAttempted;
 
     private List<CustomerOption> customers = [];
@@ -231,12 +244,19 @@
     private bool showCustomerSuggestions;
     private bool paymentReceived;
     private Guid? noPayPaymentTypeId;
+    private bool hasPaidAmountExceedsTotalError;
 
     private bool SubmitDisabled =>
-        isSubmit || isLoading || ( submitAttempted && editContext.GetValidationMessages().Any() );
+        isSubmit
+        || isLoading
+        || hasPaidAmountExceedsTotalError
+        || ( submitAttempted && editContext.GetValidationMessages().Any() );
 
     private bool ShowCustomerSuggestions
         => showCustomerSuggestions && !string.IsNullOrWhiteSpace( customerSearchTerm );
+
+    private decimal? ComputedReservationTotalAmount
+        => TryGetTotalReservationAmount( out var totalReservationAmount ) ? totalReservationAmount : null;
 
     private bool DatesSelected
         => model.DeliveryDate.HasValue && model.PickUpDate.HasValue;
@@ -274,7 +294,6 @@
     protected override void OnInitialized()
     {
         InitForm();
-        editContext.OnValidationStateChanged += OnValidationStateChanged;
     }
 
     private void OnValidationStateChanged( object? sender, ValidationStateChangedEventArgs e )
@@ -307,13 +326,20 @@
 
     private void InitForm()
     {
+        if ( editContext is not null )
+        {
+            editContext.OnValidationStateChanged -= OnValidationStateChanged;
+        }
+
         model = new CreateReservationViewModel();
         editContext = new EditContext( model );
+        validationMessageStore = new ValidationMessageStore( editContext );
         editContext.OnValidationStateChanged += OnValidationStateChanged;
 
         customerSearchTerm = string.Empty;
         showCustomerSuggestions = false;
         paymentReceived = false;
+        hasPaidAmountExceedsTotalError = false;
         rooms = [];
         roomsInfoMessage = "Önce rezervasyon başlangıç ve bitiş tarihlerini seçin.";
         isEditingDates = false;
@@ -363,6 +389,8 @@
                 model.PaymentTypeId = noPayPaymentTypeId;
             }
         }
+
+        ValidatePaidAtReservationAgainstTotalAmount();
     }
 
     private async Task LoadLookupsAsync()
@@ -453,7 +481,7 @@
 
             rooms = roomsResult.Data is not null
                 ? roomsResult.Data
-                    .Select( r => new CoolingRoomOption( r.Id, r.RoomName ) )
+                    .Select( r => new CoolingRoomOption( r.Id, r.RoomName, r.DailyPrice ) )
                     .OrderBy( r => r.Name )
                     .ToList()
                 : [];
@@ -467,6 +495,8 @@
             {
                 model.CoolingRoomId = null;
             }
+
+            ValidatePaidAtReservationAgainstTotalAmount();
         }
         finally
         {
@@ -483,7 +513,72 @@
     {
         await LoadAvailableRoomsAsync();
         isEditingDates = false;
+        ValidatePaidAtReservationAgainstTotalAmount();
         await InvokeAsync( StateHasChanged );
+    }
+
+    private void OnPricingInputChanged()
+        => ValidatePaidAtReservationAgainstTotalAmount();
+
+    private void ValidatePaidAtReservationAgainstTotalAmount()
+    {
+        var paidAtReservationField = FieldIdentifier.Create( () => model.PaidAtReservation );
+        validationMessageStore.Clear( paidAtReservationField );
+        hasPaidAmountExceedsTotalError = false;
+
+        if ( paymentReceived
+             && TryGetTotalReservationAmount( out var totalReservationAmount )
+             && model.PaidAtReservation > totalReservationAmount )
+        {
+            validationMessageStore.Add( paidAtReservationField, "Alınan ödeme toplam rezervasyon tutarından büyük olamaz." );
+            hasPaidAmountExceedsTotalError = true;
+        }
+
+        editContext.NotifyValidationStateChanged();
+    }
+
+    private bool TryGetTotalReservationAmount( out decimal totalReservationAmount )
+    {
+        totalReservationAmount = 0;
+
+        if ( model.CoolingRoomId is null
+             || model.DeliveryDate is null
+             || model.PickUpDate is null
+             || !TimeOnly.TryParse( model.DeliveryTime, out var deliveryTime )
+             || !TimeOnly.TryParse( model.PickUpTime, out var pickUpTime ) )
+        {
+            return false;
+        }
+
+        var selectedRoom = rooms.FirstOrDefault( r => r.Id == model.CoolingRoomId.Value );
+        if ( selectedRoom is null )
+        {
+            return false;
+        }
+
+        var deliveryDateTime = model.DeliveryDate.Value.ToDateTime( deliveryTime );
+        var pickUpDateTime = model.PickUpDate.Value.ToDateTime( pickUpTime );
+        if ( pickUpDateTime < deliveryDateTime )
+        {
+            return false;
+        }
+
+        var totalDays = CalculateTotalDays( deliveryDateTime, pickUpDateTime );
+        totalReservationAmount = selectedRoom.DailyPrice * totalDays;
+        return true;
+    }
+
+    private static int CalculateTotalDays( DateTime deliveryDateTime, DateTime pickUpDateTime )
+    {
+        var totalDays = ( pickUpDateTime.Date - deliveryDateTime.Date ).Days;
+        var sameDayExtraAllowed = pickUpDateTime.TimeOfDay <= deliveryDateTime.TimeOfDay.Add( TimeSpan.FromHours( 2 ) );
+
+        if ( totalDays == 0 || ( totalDays == 1 && sameDayExtraAllowed ) )
+        {
+            return 1;
+        }
+
+        return sameDayExtraAllowed ? totalDays : totalDays + 1;
     }
 
     private static bool IsNoPay( string? name )
@@ -604,7 +699,7 @@
         public string CustomerDisplay => $"{FullName} - {PhoneNumber}";
     }
 
-    private sealed record CoolingRoomOption( Guid Id, string Name );
+    private sealed record CoolingRoomOption( Guid Id, string Name, decimal DailyPrice );
     private sealed record PaymentTypeOption( Guid Id, string Name );
 }
 
