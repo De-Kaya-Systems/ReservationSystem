@@ -1,4 +1,5 @@
-﻿using DeKayaServer.Infrastructure.Context;
+﻿using Azure.Communication.Email;
+using DeKayaServer.Infrastructure.Context;
 using DeKayaServer.Infrastructure.Options;
 using GenericRepository;
 using Microsoft.EntityFrameworkCore;
@@ -18,27 +19,12 @@ public static class ServiceRegistrar
         services.AddAuthentication().AddJwtBearer();
         services.AddAuthorization();
 
-        //Email Service FluentEmailSmtp kullaniyoruz. Burada SMTP ayarlarini yapabilirsiniz.Test ortami icin smtp4dev kullaniyoruz.Daha sonra Azure Email Service kullanacak.
-        //EN : We use FluentEmailSmtp for Email Service. You can configure SMTP settings here. We use smtp4dev for the test environment. Later, it will use Azure Email Service. 
         services.Configure<MailSettingOptions>(configuration.GetSection("MailSettings"));
-        using var scoped = services.BuildServiceProvider().CreateScope();
-        var mailSettings = scoped.ServiceProvider.GetRequiredService<IOptions<MailSettingOptions>>();
-        if (string.IsNullOrEmpty(mailSettings.Value.UserId))
+        services.AddSingleton(sp =>
         {
-            services.AddFluentEmail(mailSettings.Value.Email)
-                .AddSmtpSender(
-                    mailSettings.Value.Smtp,
-                    mailSettings.Value.Port);
-        }
-        else
-        {
-            services.AddFluentEmail(mailSettings.Value.Email)
-                .AddSmtpSender(
-                    mailSettings.Value.Smtp,
-                    mailSettings.Value.Port,
-                    mailSettings.Value.UserId,
-                    mailSettings.Value.Password);
-        }
+            var mailSettings = sp.GetRequiredService<IOptions<MailSettingOptions>>().Value;
+            return new EmailClient(mailSettings.ConnectionString);
+        });
 
         services.AddHttpContextAccessor();
         // Infrastructure Services Registration
