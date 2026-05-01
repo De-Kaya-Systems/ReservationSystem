@@ -74,14 +74,16 @@
                                 Beni hatirla
                             </label>
                         </div>
-                        <a href="#" class="forgot-password" data-bs-toggle="modal"
-                           data-bs-target="#forgotPasswordModal">
+                        <a href="#"
+                               class="forgot-password"
+                               @onclick="ShowForgotPasswordDialogAsync"
+                               @onclick:preventDefault="true">
                             Sifremi unuttum
                         </a>
                     </div>
 
                     <button type="submit" class="btn btn-admin-primary w-100" disabled="@isSubmitting">
-                        @if (isSubmitting)
+                        @if ( isSubmitting )
                         {
                             <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                             <span>Giris yapiliyor...</span>
@@ -99,169 +101,89 @@
                 </div>
             </div>
         </div>
-        <!-- Forgot Password Modal -->
-        <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel"
-             aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="forgotPasswordModalLabel">
-                            <i class="bi bi-key text-primary me-2"></i>
-                            Şifre Sıfırlama
-                        </h5>
-                        <button
-                            type="button" 
-                            class="btn-close" 
-                            data-bs-dismiss="modal" 
-                            disabled="@isForgotPasswordSubmitting"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="reset-form">
-                            <div class="reset-header">
-                                <i class="bi bi-envelope-check text-primary"></i>
-                                <h6>E-posta Adresinizi Girin</h6>
-                            </div>
-                            <EditForm Model="@forgotPasswordViewModel" OnValidSubmit="@HandleForgotPassword">
-                                <DataAnnotationsValidator />
-                                <div class="form-group">
-                                    <div class="input-group">
-                                        <span class="input-group-text">
-                                            <i class="bi bi-envelope"></i>
-                                        </span>
-                                        <InputText 
-                                            @bind-Value="forgotPasswordViewModel.Email" 
-                                            type="email" 
-                                            class="form-control" 
-                                            placeholder="admin@de-kaya.com"
-                                            disabled="@isForgotPasswordSubmitting" />
-                                    </div>
-                                    <ValidationMessage For="@(() => forgotPasswordViewModel.Email)" class="text-danger small pt-1" />
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" disabled="@isForgotPasswordSubmitting">İptal</button>
-                                    <button type="submit" class="btn btn-primary" disabled="@isForgotPasswordSubmitting">
-                                        @if (isForgotPasswordSubmitting)
-                                        {
-                                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                            <span>Gönderiliyor...</span>
-                                        }
-                                        else
-                                        {
-                                            <i class="bi bi-send me-1"></i>
-                                            <span>Sıfırlama Bağlantısı Gönder</span>
-                                        }
-                                    </button>
-                                </div>
-                            </EditForm>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <ForgotPasswordDialog @ref="forgotPasswordDialog" />
     </div>
 </div>
 
 
 @code {
-    [SupplyParameterFromQuery(Name = "returnUrl")]
+    [SupplyParameterFromQuery( Name = "returnUrl" )]
     public string? ReturnUrl { get; set; }
 
-    private ForgotPasswordViewModel forgotPasswordViewModel = new();
     private LoginViewModel loginViewModel = new();
+    private ForgotPasswordDialog? forgotPasswordDialog;
 
     private bool isSubmitting;
-    private bool isForgotPasswordSubmitting;
     private bool showPassword;
     private bool rememberMe;
 
     protected override async Task OnInitializedAsync()
     {
         var state = await AuthState.GetAuthenticationStateAsync();
-        if (state.User.Identity?.IsAuthenticated == true)
+        if ( state.User.Identity?.IsAuthenticated == true )
         {
-            NavigationManager.NavigateTo(GetSafeReturnUrl(ReturnUrl) ?? EndpointConstants.Dashboard, replace: true);
+            NavigationManager.NavigateTo( GetSafeReturnUrl( ReturnUrl ) ?? EndpointConstants.Dashboard, replace: true );
         }
     }
 
     private async Task HandleLoginAsync()
     {
-        if (isSubmitting)
+        if ( isSubmitting )
             return;
 
         isSubmitting = true;
         try
         {
             var result = await ApiExecutor.ExecuteAsync(
-                 () => AuthService.LoginAsync(new(loginViewModel.EmailOrUserName, loginViewModel.Password)),
+                 () => AuthService.LoginAsync( new( loginViewModel.EmailOrUserName, loginViewModel.Password ) ),
                  new ApiPresentationOptions
                  {
                      ShowError = true,
                      ShowSuccess = false,
                      ErrorTitle = "Giriş başarısız"
-                 });
+                 } );
 
-            if (!result.IsSuccessful)
+            if ( !result.IsSuccessful )
                 return;
 
             // Token set + auth notify artık AuthService içinde yapılıyor.
-            var target = GetSafeReturnUrl(ReturnUrl) ?? EndpointConstants.Dashboard;
-            NavigationManager.NavigateTo(target, replace: true);
+            var target = GetSafeReturnUrl( ReturnUrl ) ?? EndpointConstants.Dashboard;
+            NavigationManager.NavigateTo( target, replace: true );
         }
         finally
         {
             isSubmitting = false;
-            await InvokeAsync(StateHasChanged);
+            await InvokeAsync( StateHasChanged );
         }
     }
 
-    private async Task HandleForgotPassword()
+    private async Task ShowForgotPasswordDialogAsync()
     {
-        if (isForgotPasswordSubmitting || string.IsNullOrWhiteSpace(forgotPasswordViewModel.Email))
+        if ( forgotPasswordDialog is null )
             return;
 
-        isForgotPasswordSubmitting = true;
-        StateHasChanged();
-
-        try
-        {
-            var result = await ApiExecutor.ExecuteAsync(
-            () => AuthService.ForgotPasswordAsync(forgotPasswordViewModel.Email),
-            new ApiPresentationOptions
-            {
-                ShowError = true,
-                ShowSuccess = true,
-                ErrorTitle = "Şifre sıfırlama"
-            });
-
-            if (result.IsSuccessful)
-                forgotPasswordViewModel = new();
-        }
-        finally
-        {
-            isForgotPasswordSubmitting = false;
-            await InvokeAsync(StateHasChanged);
-        }
+        await forgotPasswordDialog.ShowAsync();
     }
 
     private void TogglePasswordVisibility() => showPassword = !showPassword;
 
-    private static string? GetSafeReturnUrl(string? returnUrl)
+    private static string? GetSafeReturnUrl( string? returnUrl )
     {
-        if (string.IsNullOrWhiteSpace(returnUrl))
+        if ( string.IsNullOrWhiteSpace( returnUrl ) )
             return null;
 
         // Bazı durumlarda decode edilmemiş gelebilir; garantiye al
         // In some cases, it may come undecoded; take it for granted
-        returnUrl = Uri.UnescapeDataString(returnUrl);
+        returnUrl = Uri.UnescapeDataString( returnUrl );
 
         // Open redirect engelleme için mutlak URL'leri reddet
         // EN: To prevent open redirect, reject absolute URLs
-        if (Uri.TryCreate(returnUrl, UriKind.Absolute, out _))
+        if ( Uri.TryCreate( returnUrl, UriKind.Absolute, out _ ) )
             return null;
 
         // "/cooling-rooms/new?x=1" bekliyoruz burada ama "cooling-rooms/new?x=1" gelirse başına "/" ekle
         // EN: We expect "/cooling-rooms/new?x=1" here, but if "cooling-rooms/new?x=1" comes, add "/" to the beginning
-        if (!returnUrl.StartsWith("/"))
+        if ( !returnUrl.StartsWith( "/" ) )
             return "/" + returnUrl;
 
         return returnUrl;
