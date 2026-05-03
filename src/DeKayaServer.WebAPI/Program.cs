@@ -1,5 +1,6 @@
 ﻿using DeKayaServer.Application;
 using DeKayaServer.Infrastructure;
+using DeKayaServer.Infrastructure.Seeding;
 using DeKayaServer.WebAPI;
 using DeKayaServer.WebAPI.Controllers;
 using DeKayaServer.WebAPI.Helper;
@@ -115,6 +116,7 @@ app.MapGet( "/auth/probe", () => Results.Ok( Result<string>.Succeed( "Authorized
    .RequireAuthorization();
 
 app.MapDefaultEndpoints();
-//await app.CreateFirstUser();
 await app.RemovePermissionsFromRolesAsync();
+await app.SeedDefaultDataAsync();
+await app.CreateFirstUser();
 app.Run();
