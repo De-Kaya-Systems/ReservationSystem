@@ -3,6 +3,7 @@ using GenericRepository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 
 namespace DeKayaServer.Infrastructure.Context;
@@ -11,8 +12,11 @@ namespace DeKayaServer.Infrastructure.Context;
 //EN: No external access is required. Therefore, I made it internal.
 internal sealed class ApplicationDbContext : DbContext, IUnitOfWork
 {
-    public ApplicationDbContext( DbContextOptions options ) : base( options )
+    private readonly IConfiguration _configuration;
+
+    public ApplicationDbContext( DbContextOptions options, IConfiguration configuration ) : base( options )
     {
+        _configuration = configuration;
     }
 
     protected override void OnModelCreating( ModelBuilder modelBuilder )
@@ -52,12 +56,13 @@ internal sealed class ApplicationDbContext : DbContext, IUnitOfWork
             .FirstOrDefault( p => p.Type == ClaimTypes.NameIdentifier )?
             .Value;
 
-        if ( userIdString is null )
-        {
-            return base.SaveChangesAsync( cancellationToken );
-        }
+        // Eğer userIdString null ise (seeding sırasında), secrets.json'dan admin user'ın ID'sini kullan
+        // EN: If userIdString is null (during seeding), use admin user's ID from secrets.json
+        string? adminIdString = _configuration[ "AdminUser:AdminId" ];
+        Guid userId = userIdString is not null
+            ? Guid.Parse( userIdString )
+            : ( adminIdString is not null ? Guid.Parse( adminIdString ) : Guid.NewGuid() );
 
-        Guid userId = Guid.Parse( userIdString );
         IdentityId identityId = new( userId );
 
         foreach ( var entry in entries )
