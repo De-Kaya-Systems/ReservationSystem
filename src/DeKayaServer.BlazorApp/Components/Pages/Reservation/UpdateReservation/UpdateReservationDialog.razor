@@ -26,182 +26,192 @@
                           OnInvalidSubmit="HandleInvalidSubmit">
                     <DataAnnotationsValidator />
 
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-3">
-                            <label class="form-label">Başlangıç tarihi</label>
-                            <InputDate class="form-control"
-                                       @bind-Value="model.DeliveryDate"
-                                       @bind-Value:after="OnDatesChanged"
-                                       @onfocus="OnDatesFocus" />
-                            <ValidationMessage For="@(() => model.DeliveryDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                    <fieldset disabled="@IsReservationEnded">
+                        @if ( IsReservationEnded )
+                        {
+                            <div class="alert alert-warning py-2 px-3 mb-3">
+                                Bu rezervasyonun bitiş tarihi geçtiği için yalnızca görüntülenebilir.
+                            </div>
+                        }
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-3">
+                                <label class="form-label">Başlangıç tarihi</label>
+                                <InputDate class="form-control"
+                                           @bind-Value="model.DeliveryDate"
+                                           @bind-Value:after="OnDatesChanged"
+                                           @onfocus="OnDatesFocus"
+                                           disabled="@IsDeliveryDateTimeInPast" />
+                                <ValidationMessage For="@(() => model.DeliveryDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label">Başlangıç saati</label>
+                                <InputText class="form-control"
+                                           type="time"
+                                           @bind-Value="model.DeliveryTime"
+                                           @bind-Value:after="OnPricingInputChanged"
+                                           disabled="@IsDeliveryDateTimeInPast" />
+                                <ValidationMessage For="@(() => model.DeliveryTime)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label">Rezervasyon bitiş tarihi</label>
+                                <InputDate class="form-control"
+                                           @bind-Value="model.PickUpDate"
+                                           @bind-Value:after="OnDatesChanged"
+                                           @onfocus="OnDatesFocus"
+                                           @attributes="PickUpDateAttributes" />
+                                <ValidationMessage For="@(() => model.PickUpDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label">Rezervasyon bitiş saati</label>
+                                <InputText class="form-control"
+                                           type="time"
+                                           @bind-Value="model.PickUpTime"
+                                           @bind-Value:after="OnPricingInputChanged" />
+                                <ValidationMessage For="@(() => model.PickUpTime)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                            </div>
                         </div>
-
-                        <div class="col-12 col-md-3">
-                            <label class="form-label">Başlangıç saati</label>
-                            <InputText class="form-control"
-                                       type="time"
-                                       @bind-Value="model.DeliveryTime"
-                                       @bind-Value:after="OnPricingInputChanged" />
-                            <ValidationMessage For="@(() => model.DeliveryTime)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
-                        </div>
-
-                        <div class="col-12 col-md-3">
-                            <label class="form-label">Rezervasyon bitiş tarihi</label>
-                            <InputDate class="form-control"
-                                       @bind-Value="model.PickUpDate"
-                                       @bind-Value:after="OnDatesChanged"
-                                       @onfocus="OnDatesFocus"
-                                       @attributes="PickUpDateAttributes" />
-                            <ValidationMessage For="@(() => model.PickUpDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
-                        </div>
-
-                        <div class="col-12 col-md-3">
-                            <label class="form-label">Rezervasyon bitiş saati</label>
-                            <InputText class="form-control"
-                                       type="time"
-                                       @bind-Value="model.PickUpTime"
-                                       @bind-Value:after="OnPricingInputChanged" />
-                            <ValidationMessage For="@(() => model.PickUpTime)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-6">
-                            <div class="position-relative">
-                                <div class="form-floating">
-                                    <input class="form-control"
-                                           value="@customerSearchTerm"
-                                           @oninput="OnCustomerSearchInput"
-                                           placeholder="Müşteri ara" />
-                                    <label>Müşteri ara</label>
-                                </div>
-                                <ValidationMessage For="@(() => model.CustomerId)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
-
-                                @if ( ShowCustomerSuggestions )
-                                {
-                                    <div class="list-group position-absolute w-100 mt-1 shadow-sm" style="z-index: 1050;">
-                                        @foreach ( var customer in FilteredCustomers )
-                                        {
-                                            <button type="button"
-                                                    class="list-group-item list-group-item-action"
-                                                    @onclick="() => SelectCustomer( customer )">
-                                                @customer.CustomerDisplay
-                                            </button>
-                                        }
-
-                                        @if ( !FilteredCustomers.Any() )
-                                        {
-                                            <div class="list-group-item text-body-secondary">
-                                                Sonuç bulunamadı
-                                            </div>
-                                        }
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <div class="position-relative">
+                                    <div class="form-floating">
+                                        <input class="form-control"
+                                               value="@customerSearchTerm"
+                                               @oninput="OnCustomerSearchInput"
+                                               placeholder="Müşteri ara" />
+                                        <label>Müşteri ara</label>
                                     </div>
+                                    <ValidationMessage For="@(() => model.CustomerId)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+
+                                    @if ( ShowCustomerSuggestions )
+                                    {
+                                        <div class="list-group position-absolute w-100 mt-1 shadow-sm" style="z-index: 1050;">
+                                            @foreach ( var customer in FilteredCustomers )
+                                            {
+                                                <button type="button"
+                                                        class="list-group-item list-group-item-action"
+                                                        @onclick="() => SelectCustomer( customer )">
+                                                    @customer.CustomerDisplay
+                                                </button>
+                                            }
+
+                                            @if ( !FilteredCustomers.Any() )
+                                            {
+                                                <div class="list-group-item text-body-secondary">
+                                                    Sonuç bulunamadı
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <div class="form-floating">
+                                    <InputSelect class="form-select"
+                                                 @bind-Value="model.CoolingRoomId"
+                                                 @bind-Value:after="OnPricingInputChanged"
+                                                 disabled="@(!DatesSelected || IsDateRangeInvalid || isLoadingRooms || isEditingDates)">
+                                        <option value="">Soğuk oda seçin</option>
+                                        @foreach ( var room in rooms )
+                                        {
+                                            <option value="@room.Id.ToString()">@room.Name</option>
+                                        }
+                                    </InputSelect>
+                                    <label>Soğuk oda</label>
+                                </div>
+                                <ValidationMessage For="@(() => model.CoolingRoomId)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+
+                                @if ( isLoadingRooms )
+                                {
+                                    <div class="small text-body-secondary mt-1">Uygun odalar yükleniyor...</div>
+                                }
+                                else if ( !string.IsNullOrWhiteSpace( roomsInfoMessage ) )
+                                {
+                                    <div class="small text-body-secondary mt-1">@roomsInfoMessage</div>
                                 }
                             </div>
                         </div>
 
-                        <div class="col-12 col-md-6">
+                        <div class="mb-3">
                             <div class="form-floating">
-                                <InputSelect class="form-select"
-                                             @bind-Value="model.CoolingRoomId"
-                                             @bind-Value:after="OnPricingInputChanged"
-                                             disabled="@(!DatesSelected || IsDateRangeInvalid || isLoadingRooms || isEditingDates)">
-                                    <option value="">Soğuk oda seçin</option>
-                                    @foreach ( var room in rooms )
-                                    {
-                                        <option value="@room.Id.ToString()">@room.Name</option>
-                                    }
-                                </InputSelect>
-                                <label>Soğuk oda</label>
+                                <InputText class="form-control"
+                                           @bind-Value="model.DeliveryLocation"
+                                           placeholder="Teslimat konumu" />
+                                <label>Teslimat konumu girin</label>
                             </div>
-                            <ValidationMessage For="@(() => model.CoolingRoomId)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
-
-                            @if ( isLoadingRooms )
-                            {
-                                <div class="small text-body-secondary mt-1">Uygun odalar yükleniyor...</div>
-                            }
-                            else if ( !string.IsNullOrWhiteSpace( roomsInfoMessage ) )
-                            {
-                                <div class="small text-body-secondary mt-1">@roomsInfoMessage</div>
-                            }
+                            <ValidationMessage For="@(() => model.DeliveryLocation)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <div class="form-floating">
-                            <InputText class="form-control"
-                                       @bind-Value="model.DeliveryLocation"
-                                       placeholder="Teslimat konumu" />
-                            <label>Teslimat konumu girin</label>
-                        </div>
-                        <ValidationMessage For="@(() => model.DeliveryLocation)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
-                    </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="paymentReceivedSwitchUpdate"
+                                           checked="@paymentReceived"
+                                           @onchange="OnPaymentReceivedChanged" />
+                                    <label class="form-check-label" for="paymentReceivedSwitchUpdate">Ödeme alındı mı?</label>
+                                </div>
 
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-6">
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input"
-                                       type="checkbox"
-                                       id="paymentReceivedSwitchUpdate"
-                                       checked="@paymentReceived"
-                                       @onchange="OnPaymentReceivedChanged" />
-                                <label class="form-check-label" for="paymentReceivedSwitchUpdate">Ödeme alındı mı?</label>
+                                @if ( paymentReceived )
+                                {
+                                    <div class="form-floating">
+                                        <InputSelect class="form-select"
+                                                     @bind-Value="model.PaymentTypeId">
+                                            <option value="">Ödeme tipi seçin</option>
+                                            @foreach ( var paymentType in PaymentTypeOptions )
+                                            {
+                                                <option value="@paymentType.Id.ToString()">@paymentType.Name</option>
+                                            }
+                                        </InputSelect>
+                                        <label>Ödeme tipi</label>
+                                    </div>
+                                    <ValidationMessage For="@(() => model.PaymentTypeId)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                                }
+                                else
+                                {
+                                    <div class="small text-body-secondary">
+                                        Ödeme alınmadı.
+                                    </div>
+                                }
                             </div>
-
                             @if ( paymentReceived )
                             {
-                                <div class="form-floating">
-                                    <InputSelect class="form-select"
-                                                 @bind-Value="model.PaymentTypeId">
-                                        <option value="">Ödeme tipi seçin</option>
-                                        @foreach ( var paymentType in PaymentTypeOptions )
-                                        {
-                                            <option value="@paymentType.Id.ToString()">@paymentType.Name</option>
-                                        }
-                                    </InputSelect>
-                                    <label>Ödeme tipi</label>
-                                </div>
-                                <ValidationMessage For="@(() => model.PaymentTypeId)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
-                            }
-                            else
-                            {
-                                <div class="small text-body-secondary">
-                                    Ödeme alınmadı.
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Alınan ödemeyi girin.</label>
+                                    <div class="input-group">
+                                        <InputNumber class="form-control"
+                                                     @bind-Value="model.PaidAtReservation"
+                                                     @bind-Value:after="OnPricingInputChanged"
+                                                     placeholder="0" />
+                                        <span class="input-group-text">₺</span>
+                                    </div>
+                                    <ValidationMessage For="@(() => model.PaidAtReservation)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
                                 </div>
                             }
                         </div>
-                        @if ( paymentReceived )
+
+                        @if ( ComputedReservationTotalAmount is decimal totalReservationAmount )
                         {
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Alınan ödemeyi girin.</label>
-                                <div class="input-group">
-                                    <InputNumber class="form-control"
-                                                 @bind-Value="model.PaidAtReservation"
-                                                 @bind-Value:after="OnPricingInputChanged"
-                                                 placeholder="0" />
-                                    <span class="input-group-text">₺</span>
-                                </div>
-                                <ValidationMessage For="@(() => model.PaidAtReservation)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                            <div class="alert alert-info py-2 px-3 mb-3 d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold">Toplam rezervasyon bedeli</span>
+                                <span class="fs-5 fw-bold">@totalReservationAmount.ToString("N2") ₺</span>
                             </div>
                         }
-                    </div>
 
-                    @if ( ComputedReservationTotalAmount is decimal totalReservationAmount )
-                    {
-                        <div class="alert alert-info py-2 px-3 mb-3 d-flex justify-content-between align-items-center">
-                            <span class="fw-semibold">Toplam rezervasyon bedeli</span>
-                            <span class="fs-5 fw-bold">@totalReservationAmount.ToString("N2") ₺</span>
+                        <div class="mb-4">
+                            <div class="form-floating">
+                                <InputTextArea class="form-control"
+                                               @bind-Value="model.Note"
+                                               placeholder="Not (opsiyonel)" />
+                                <label>Not</label>
+                            </div>
                         </div>
-                    }
-
-                    <div class="mb-4">
-                        <div class="form-floating">
-                            <InputTextArea class="form-control"
-                                           @bind-Value="model.Note"
-                                           placeholder="Not (opsiyonel)" />
-                            <label>Not</label>
-                        </div>
-                    </div>
+                    </fieldset>
 
                     <div class="d-flex gap-3 justify-content-end mt-4 pt-3 border-top">
                         <button type="button"
@@ -213,7 +223,7 @@
 
                         <button type="submit"
                                 class="btn btn-primary px-4 py-2 fw-semibold shadow-sm"
-                                disabled="@SubmitDisabled">
+                                disabled="@(SubmitDisabled || IsReservationEnded)">
                             Güncelle
                         </button>
                     </div>
@@ -266,6 +276,17 @@
         => model.DeliveryDate.HasValue
            && model.PickUpDate.HasValue
            && model.PickUpDate.Value < model.DeliveryDate.Value;
+
+    private bool IsReservationEnded
+        => model.PickUpDate.HasValue
+           && ( TimeOnly.TryParse( model.PickUpTime, out var pickUpTime )
+                ? model.PickUpDate.Value.ToDateTime( pickUpTime ) <= DateTime.Now
+                : model.PickUpDate.Value < DateOnly.FromDateTime( DateTime.Now ) );
+
+    private bool IsDeliveryDateTimeInPast
+        => model.DeliveryDate.HasValue
+           && TimeOnly.TryParse( model.DeliveryTime, out var deliveryTime )
+           && model.DeliveryDate.Value.ToDateTime( deliveryTime ) < DateTime.Now;
 
     private IReadOnlyDictionary<string, object> PickUpDateAttributes
         => model.DeliveryDate.HasValue
@@ -646,6 +667,12 @@
     {
         if ( ReservationId is null )
         {
+            return;
+        }
+
+        if ( IsReservationEnded )
+        {
+            toastService.ShowError( "Bitiş tarihi geçmiş rezervasyon güncellenemez." );
             return;
         }
 
