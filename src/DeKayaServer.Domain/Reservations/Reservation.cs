@@ -8,6 +8,7 @@ public sealed class Reservation : Entity
     private Reservation() { }
     private Reservation(
         IdentityId customerId,
+        ReservationNumber reservationNumber,
         DeliveryLocation deliveryLocation,
         DeliveryDate deliveryDate,
         DeliveryTime deliveryTime,
@@ -19,6 +20,7 @@ public sealed class Reservation : Entity
         Note? note )
     {
         SetCustomerId( customerId );
+        SetReservationNumber( reservationNumber );
         SetDeliveryLocation( deliveryLocation );
 
         SetDeliveryDate( deliveryDate );
@@ -38,6 +40,7 @@ public sealed class Reservation : Entity
 
     public static Reservation Create(
         IdentityId customerId,
+        ReservationNumber reservationNumber,
         DeliveryLocation deliveryLocation,
         DeliveryDate deliveryDate,
         DeliveryTime deliveryTime,
@@ -50,6 +53,7 @@ public sealed class Reservation : Entity
     {
         var reservation = new Reservation(
             customerId,
+            reservationNumber,
             deliveryLocation,
             deliveryDate,
             deliveryTime,
@@ -62,6 +66,7 @@ public sealed class Reservation : Entity
         return reservation;
     }
 
+    public ReservationNumber ReservationNumber { get; private set; } = default!;
     public IdentityId CustomerId { get; private set; } = default!;
     public DeliveryLocation DeliveryLocation { get; private set; } = default!;
     public DeliveryDate DeliveryDate { get; private set; } = default!;
@@ -76,6 +81,10 @@ public sealed class Reservation : Entity
     public PaidAtReservation PaidAtReservation { get; private set; } = new( 0 );
 
     #region Behavior
+    public void SetReservationNumber( ReservationNumber reservationNumber )
+    {
+        ReservationNumber = reservationNumber;
+    }
     public void SetCustomerId( IdentityId customerId )
     {
         CustomerId = customerId;

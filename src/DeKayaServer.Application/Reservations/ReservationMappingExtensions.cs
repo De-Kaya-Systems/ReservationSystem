@@ -16,6 +16,7 @@ public static class ReservationMappingExtensions
                 IsActive = x.Entity.IsActive,
 
                 CustomerId = x.Entity.CustomerId,
+                ReservationNumber = x.Entity.ReservationNumber.Value,
                 DeliveryLocation = x.Entity.DeliveryLocation.Value,
                 DeliveryDate = x.Entity.DeliveryDate.Value,
                 DeliveryTime = x.Entity.DeliveryDate.Value.ToDateTime( x.Entity.DeliveryTime.Value ),

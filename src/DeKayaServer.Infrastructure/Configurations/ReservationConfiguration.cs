@@ -23,6 +23,7 @@ internal class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
         builder.OwnsOne( x => x.ReservationTotalAmount );
         builder.OwnsOne( x => x.PaidAtReservation );
         builder.OwnsOne( x => x.Note );
+        builder.OwnsOne( x => x.ReservationNumber );
 
         builder.HasIndex( x => x.CustomerId );
         builder.HasIndex( x => x.CoolingRoomId );
