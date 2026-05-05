@@ -5,6 +5,7 @@ namespace DeKayaServer.Contracts.Reservations;
 public sealed class ReservationDto : EntityDto
 {
     public string CustomerId { get; set; } = default!;
+    public string? ReservationNumber { get; set; }
     public string DeliveryLocation { get; set; } = default!;
     public DateOnly DeliveryDate { get; set; } = default!;
     public DateTime DeliveryTime { get; set; } = default!;

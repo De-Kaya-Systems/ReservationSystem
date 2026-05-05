@@ -106,8 +106,12 @@ internal sealed class ReservationCreateCommandHandler(
             return Result<string>.Failure( "Seçilen soğuk oda bu tarihler arasında rezerve edilmiş!" );
         }
 
+        var reservationCount = await reservationRepository.CountAsync( cancellationToken );
+        var reservationNumber = new ReservationNumber( $"DK-{( reservationCount + 1 ):D6}" );
+
         var reservation = Reservation.Create(
             customerId: new IdentityId( request.CustomerId ),
+            reservationNumber: reservationNumber,
             deliveryLocation: new DeliveryLocation( request.DeliveryLocation ),
             deliveryDate: new DeliveryDate( request.DeliveryDate ),
             deliveryTime: new DeliveryTime( request.DeliveryTime ),

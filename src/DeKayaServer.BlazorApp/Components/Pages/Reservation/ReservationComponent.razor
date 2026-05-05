@@ -44,6 +44,7 @@ else
                        Class="table table-striped table-hover table-responsive mb-0 align-middle">
 
                 <PropertyColumn Property="@(r => r.CustomerFullName)" Title="Müşteri" Sortable="true" />
+                <PropertyColumn Property="@(r => r.ReservationNumber)" Title="Rezervasyon No" Sortable="true" />
                 <PropertyColumn Property="@(r => r.CoolingRoomName)" Title="Oda" Sortable="true" />
                 <PropertyColumn Property="@(r => r.ReservationStart)" Title="Rezervasyon Başlangıç" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
                 <PropertyColumn Property="@(r => r.ReservationEnd)" Title="Rezervasyon Bitiş" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
@@ -106,6 +107,7 @@ else
             ? reservations
             : reservations.Where( r =>
                 ( r.CustomerFullName != null && r.CustomerFullName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
+                ( r.ReservationNumber != null && r.ReservationNumber.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
                 ( r.CoolingRoomName != null && r.CoolingRoomName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ) )
         .ToList();
 
@@ -194,6 +196,7 @@ else
                 .Select( r => new ReservationViewModel
                 {
                     Id = r.Id,
+                    ReservationNumber = r.ReservationNumber,
                     CustomerFullName = ResolveName( r.CustomerId, customerLookup ),
                     CoolingRoomName = ResolveName( r.CoolingRoomId, roomLookup ),
                     ReservationStart = r.DeliveryTime,
@@ -258,6 +261,7 @@ else
     public sealed class ReservationViewModel
     {
         public Guid Id { get; set; }
+        public string? ReservationNumber { get; set; }
         public string CustomerFullName { get; set; } = string.Empty;
         public string CoolingRoomName { get; set; } = string.Empty;
         public DateTime ReservationStart { get; set; }
