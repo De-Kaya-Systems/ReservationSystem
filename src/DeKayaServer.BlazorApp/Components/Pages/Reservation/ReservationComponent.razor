@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.CreateReservation
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.UpdateReservation
+@using DeKayaServer.BlazorApp.Components.Pages.Reservation.DeleteReservation
 @inherits UserContextComponent
 @inject IReservationService reservationService
 @inject ICustomerService customerService
@@ -75,6 +76,15 @@ else
                                 <span>Güncelle</span>
                             </button>
                         }
+                        @if ( CurrentUser.HasPermission( "reservation:delete" ) )
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-danger btn-sm"
+                                    @onclick="() => ShowDeleteReservationDialog( r )">
+                                <i class="bi bi-trash"></i>
+                                <span>Sil</span>
+                            </button>
+                        }
                     </div>
                 </TemplateColumn>
             </QuickGrid>
@@ -90,6 +100,10 @@ else
 <UpdateReservationDialog @ref="updateReservationDialog"
                          ReservationId="@selectedReservationId"
                          ReservationUpdated="HandleReservationPageAsync" />
+<DeleteReservationDialog @ref="deleteReservationDialog"
+                         ReservationId="@selectedReservationId"
+                         ReservationNumber="@selectedReservationNumber"
+                         ReservationDeleted="HandleReservationPageAsync" />
 
 @code {
     private bool isLoading;
@@ -100,7 +114,9 @@ else
 
     private CreateReservationDialog? createReservationDialog;
     private UpdateReservationDialog? updateReservationDialog;
+    private DeleteReservationDialog? deleteReservationDialog;
     private Guid? selectedReservationId;
+    private string? selectedReservationNumber;
 
     private IReadOnlyList<ReservationViewModel> FilteredItems =>
         ( string.IsNullOrWhiteSpace( searchTerm )
@@ -155,6 +171,22 @@ else
         }
 
         await updateReservationDialog.ShowAsync();
+    }
+
+    private async Task ShowDeleteReservationDialog( ReservationViewModel reservation )
+    {
+        selectedReservationId = reservation.Id;
+        selectedReservationNumber = reservation.ReservationNumber;
+
+        await InvokeAsync( StateHasChanged );
+        await Task.Yield();
+
+        if ( deleteReservationDialog is null )
+        {
+            return;
+        }
+
+        await deleteReservationDialog.ShowAsync();
     }
 
     private async Task HandleReservationPageAsync()
