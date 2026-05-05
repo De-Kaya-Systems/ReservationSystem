@@ -178,6 +178,7 @@
                                     <InputNumber class="form-control"
                                                  @bind-Value="model.PaidAtReservation"
                                                  @bind-Value:after="OnPricingInputChanged"
+                                                 disabled="@(!model.PaymentTypeId.HasValue)"
                                                  placeholder="0" />
                                     <span class="input-group-text">₺</span>
                                 </div>

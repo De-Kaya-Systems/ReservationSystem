@@ -81,7 +81,7 @@ public sealed class CustomerBalance : Entity
     }
     #endregion
 
-    private void SetAmounts(
+    public void SetAmounts(
         TotalAmount totalAmount,
         PaidAmount? paidAmount,
         OutstandingAmount? outstandingAmount )
