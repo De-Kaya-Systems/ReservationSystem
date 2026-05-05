@@ -3,6 +3,7 @@
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.CreateReservation
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.UpdateReservation
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.DeleteReservation
+@using DeKayaServer.BlazorApp.Components.Pages.Reservation.DetailReservation
 @inherits UserContextComponent
 @inject IReservationService reservationService
 @inject ICustomerService customerService
@@ -67,6 +68,13 @@ else
 
                 <TemplateColumn Title="İşlemler" Context="r">
                     <div class="d-flex gap-2 py-1 justify-content-start">
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                @onclick="() => ShowDetailReservationDialog( r )">
+                            <i class="bi bi-search"></i>
+                            <span>Detay</span>
+                        </button>
+
                         @if ( CurrentUser.HasPermission( "reservation:edit" ) )
                         {
                             <button type="button"
@@ -97,6 +105,8 @@ else
 
 <CreateReservationDialog @ref="createReservationDialog"
                          ReservationAdded="HandleReservationPageAsync" />
+<DetailReservationDialog @ref="detailReservationDialog"
+                         ReservationId="@selectedReservationId" />
 <UpdateReservationDialog @ref="updateReservationDialog"
                          ReservationId="@selectedReservationId"
                          ReservationUpdated="HandleReservationPageAsync" />
@@ -113,6 +123,7 @@ else
     private PaginationState pagination = new() { ItemsPerPage = 25 };
 
     private CreateReservationDialog? createReservationDialog;
+    private DetailReservationDialog? detailReservationDialog;
     private UpdateReservationDialog? updateReservationDialog;
     private DeleteReservationDialog? deleteReservationDialog;
     private Guid? selectedReservationId;
@@ -156,6 +167,21 @@ else
         }
 
         await createReservationDialog.ShowAsync();
+    }
+
+    private async Task ShowDetailReservationDialog( ReservationViewModel reservation )
+    {
+        selectedReservationId = reservation.Id;
+
+        await InvokeAsync( StateHasChanged );
+        await Task.Yield();
+
+        if ( detailReservationDialog is null )
+        {
+            return;
+        }
+
+        await detailReservationDialog.ShowAsync();
     }
 
     private async Task ShowUpdateReservationDialog( ReservationViewModel reservation )
