@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Domain.Abstractions;
+using DeKayaServer.Domain.CustomerBalance.Enum;
 using DeKayaServer.Domain.CustomerBalance.ValueObjects;
 
 namespace DeKayaServer.Domain.CustomerBalance;
@@ -9,23 +10,27 @@ public sealed class CustomerBalance : Entity
 
     public CustomerBalance(
         IdentityId customerId,
+        BalanceSourceType sourceType,
+        IdentityId? sourceId,
         IdentityId paymentTypeId,
         TotalAmount totalAmount,
         OutstandingAmount? outstandingAmount,
         PaidAmount? paidAmount,
         Description description,
-        LastPaymentAt? lastPaymentAt,
-        IdentityId reservationId )
+        LastPaymentAt? lastPaymentAt )
     {
         SetCustomerId( customerId );
+        SetSourceType( sourceType );
+        SetSourceId( sourceId );
         SetPaymentType( paymentTypeId );
         SetDescription( description );
         SetLastPaymentAt( lastPaymentAt );
         SetAmounts( totalAmount, paidAmount, outstandingAmount );
-        SetReservationId( reservationId );
     }
 
     public IdentityId CustomerId { get; private set; } = default!;
+    public BalanceSourceType SourceType { get; private set; }
+    public IdentityId? SourceId { get; private set; }
     public IdentityId PaymentTypeId { get; private set; } = default!;
     public TotalAmount TotalAmount { get; private set; } = default!;
     public OutstandingAmount OutstandingAmount { get; private set; } = new( 0 );
@@ -33,13 +38,22 @@ public sealed class CustomerBalance : Entity
     public Description? Description { get; private set; }
     public BalanceStatus BalanceStatus { get; private set; } = BalanceStatus.Pending;
     public LastPaymentAt? LastPaymentAt { get; private set; }
-    public IdentityId? ReservationId { get; private set; }
 
     #region Behaviors
 
     public void SetCustomerId( IdentityId customerId )
     {
         CustomerId = customerId;
+    }
+
+    public void SetSourceType( BalanceSourceType sourceType )
+    {
+        SourceType = sourceType;
+    }
+
+    public void SetSourceId( IdentityId? sourceId )
+    {
+        SourceId = sourceId;
     }
 
     public void SetPaymentType( IdentityId paymentTypeId )
@@ -73,11 +87,6 @@ public sealed class CustomerBalance : Entity
     public void SetLastPaymentAt( LastPaymentAt? lastPaymentAt )
     {
         LastPaymentAt = lastPaymentAt;
-    }
-
-    public void SetReservationId( IdentityId reservationId )
-    {
-        ReservationId = reservationId;
     }
     #endregion
 

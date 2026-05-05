@@ -3,8 +3,10 @@ using DeKayaServer.Domain.Abstractions;
 using DeKayaServer.Domain.CoolingRooms;
 using DeKayaServer.Domain.CoolingRoomStatus;
 using DeKayaServer.Domain.CustomerBalance;
+using DeKayaServer.Domain.CustomerBalance.Enum;
 using DeKayaServer.Domain.CustomerBalance.ValueObjects;
 using DeKayaServer.Domain.Customers;
+using DeKayaServer.Domain.PaymentHistory;
 using DeKayaServer.Domain.Reservations;
 using DeKayaServer.Domain.Reservations.ValueObjects;
 using FluentValidation;
@@ -73,6 +75,7 @@ internal sealed class ReservationUpdateCommandHandler(
     ICoolingRoomRepository coolingRoomRepository,
     ICoolingRoomStatusRepository coolingRoomStatusRepository,
     ICustomerBalanceRepository customerBalanceRepository,
+    IPaymentHistoryRepository paymentHistoryRepository,
     IUnitOfWork unitOfWork ) : IRequestHandler<ReservationUpdateCommand, Result<string>>
 {
     private const string AvailableCoolingRoomStatus = "Uygun";
@@ -171,34 +174,54 @@ internal sealed class ReservationUpdateCommandHandler(
         var outstandingBalance = totalAmount - paidAmount;
 
         var customerBalance = await customerBalanceRepository.FirstOrDefaultAsync(
-            x => x.ReservationId == reservation.Id,
+            x => x.SourceType == BalanceSourceType.Reservation && x.SourceId == reservation.Id,
             cancellationToken );
 
         if ( customerBalance is null && outstandingBalance > 0 )
         {
             customerBalance = new CustomerBalance(
                 customerId: new IdentityId( request.CustomerId ),
+                sourceType: BalanceSourceType.Reservation,
+                sourceId: reservation.Id,
                 paymentTypeId: new IdentityId( request.PaymentTypeId ),
                 totalAmount: new TotalAmount( totalAmount ),
                 outstandingAmount: new OutstandingAmount( outstandingBalance ),
                 paidAmount: new PaidAmount( paidAmount ),
-                description: new Description( $"Rezervasyon borcu - RezervasyonId: {reservation.Id.Value}" ),
-                lastPaymentAt: paidAmount > 0 ? new LastPaymentAt( DateTime.Now ) : null,
-                reservationId: reservation.Id );
+                description: new Description( $"Rezervasyon borcu - RezervasyonNo: {reservation.ReservationNumber.Value}" ),
+                lastPaymentAt: paidAmount > 0 ? new LastPaymentAt( DateTime.Now ) : null );
 
             customerBalanceRepository.Add( customerBalance );
         }
         else if ( customerBalance is not null )
         {
+            var previousPaidAmount = customerBalance.PaidAmount.Value;
+            var newPaymentAmount = paidAmount - previousPaidAmount;
+
             customerBalance.SetCustomerId( new IdentityId( request.CustomerId ) );
             customerBalance.SetPaymentType( new IdentityId( request.PaymentTypeId ) );
             customerBalance.SetAmounts(
                 totalAmount: new TotalAmount( totalAmount ),
                 paidAmount: new PaidAmount( paidAmount ),
                 outstandingAmount: new OutstandingAmount( outstandingBalance ) );
-            customerBalance.SetDescription( new Description( $"Rezervasyon borcu - RezervasyonId: {reservation.Id.Value}" ) );
+            customerBalance.SetDescription( new Description( $"Rezervasyon borcu - RezervasyonNo: {reservation.ReservationNumber.Value}" ) );
             customerBalance.SetLastPaymentAt( paidAmount > 0 ? new LastPaymentAt( DateTime.Now ) : null );
             customerBalanceRepository.Update( customerBalance );
+
+            // Eğer yeni ödeme yapılmışsa payment history entry oluştur
+            if ( newPaymentAmount > 0 )
+            {
+                var paymentHistory = PaymentHistory.Create(
+                    customerId: new IdentityId( request.CustomerId ),
+                    sourceType: BalanceSourceType.Reservation,
+                    sourceId: reservation.Id,
+                    paymentTypeId: new IdentityId( request.PaymentTypeId ),
+                    paymentAmount: newPaymentAmount,
+                    remainingBalance: outstandingBalance,
+                    paymentDate: DateTime.Now,
+                    notes: $"Rezervasyon güncellemesi sırasında yapılan ödeme - RezervasyonNo: {reservation.ReservationNumber.Value}" );
+
+                paymentHistoryRepository.Add( paymentHistory );
+            }
         }
 
         await unitOfWork.SaveChangesAsync( cancellationToken );
