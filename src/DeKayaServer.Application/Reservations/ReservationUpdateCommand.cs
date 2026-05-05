@@ -192,9 +192,10 @@ internal sealed class ReservationUpdateCommandHandler(
         {
             customerBalance.SetCustomerId( new IdentityId( request.CustomerId ) );
             customerBalance.SetPaymentType( new IdentityId( request.PaymentTypeId ) );
-            customerBalance.SetTotalAmount( new TotalAmount( totalAmount ) );
-            customerBalance.SetPaidAmount( new PaidAmount( paidAmount ) );
-            customerBalance.SetOutstandingAmount( new OutstandingAmount( outstandingBalance ) );
+            customerBalance.SetAmounts(
+                totalAmount: new TotalAmount( totalAmount ),
+                paidAmount: new PaidAmount( paidAmount ),
+                outstandingAmount: new OutstandingAmount( outstandingBalance ) );
             customerBalance.SetDescription( new Description( $"Rezervasyon borcu - RezervasyonId: {reservation.Id.Value}" ) );
             customerBalance.SetLastPaymentAt( paidAmount > 0 ? new LastPaymentAt( DateTime.Now ) : null );
             customerBalanceRepository.Update( customerBalance );

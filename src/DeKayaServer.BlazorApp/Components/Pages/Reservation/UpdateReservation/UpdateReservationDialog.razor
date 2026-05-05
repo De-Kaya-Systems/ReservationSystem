@@ -30,7 +30,7 @@
                         @if ( IsReservationEnded )
                         {
                             <div class="alert alert-warning py-2 px-3 mb-3">
-                                Bu rezervasyonun bitiş tarihi geçtiği için yalnızca görüntülenebilir.
+                                Bu rezervasyonun süresi dolduğu için yalnızca görüntülenebilir.
                             </div>
                         }
 
@@ -154,7 +154,7 @@
                                            id="paymentReceivedSwitchUpdate"
                                            checked="@paymentReceived"
                                            @onchange="OnPaymentReceivedChanged" />
-                                    <label class="form-check-label" for="paymentReceivedSwitchUpdate">Ödeme alındı mı?</label>
+                                    <label class="form-check-label" for="paymentReceivedSwitchUpdate">Bu güncellemede ödeme alındı mı?</label>
                                 </div>
 
                                 @if ( paymentReceived )
@@ -182,11 +182,12 @@
                             @if ( paymentReceived )
                             {
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label">Alınan ödemeyi girin.</label>
+                                    <label class="form-label">Bu güncellemede alınan ödemeyi girin.</label>
                                     <div class="input-group">
                                         <InputNumber class="form-control"
                                                      @bind-Value="model.PaidAtReservation"
                                                      @bind-Value:after="OnPricingInputChanged"
+                                                     disabled="@(!model.PaymentTypeId.HasValue)"
                                                      placeholder="0" />
                                         <span class="input-group-text">₺</span>
                                     </div>
@@ -197,9 +198,27 @@
 
                         @if ( ComputedReservationTotalAmount is decimal totalReservationAmount )
                         {
-                            <div class="alert alert-info py-2 px-3 mb-3 d-flex justify-content-between align-items-center">
-                                <span class="fw-semibold">Toplam rezervasyon bedeli</span>
-                                <span class="fs-5 fw-bold">@totalReservationAmount.ToString("N2") ₺</span>
+                            <div class="alert alert-info py-2 px-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-semibold">Toplam rezervasyon bedeli</span>
+                                    <span class="fs-5 fw-bold">@totalReservationAmount.ToString("N2") ₺</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span>Daha önce alınan ödeme</span>
+                                    <span class="fw-semibold">@existingPaidAtReservation.ToString("N2") ₺</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <span>Bu güncellemede alınan ödeme</span>
+                                    <span class="fw-semibold">@CurrentUpdatePaidAmount.ToString("N2") ₺</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <span>Toplam alınan ödeme</span>
+                                    <span class="fw-semibold">@TotalPaidAtReservation.ToString("N2") ₺</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <span>Kalan borç</span>
+                                    <span class="fw-bold">@Math.Max( totalReservationAmount - TotalPaidAtReservation, 0 ).ToString("N2") ₺</span>
+                                </div>
                             </div>
                         }
 
@@ -234,6 +253,10 @@
 </div>
 
 @code {
+    private const string SelectDatesMessage = "Önce rezervasyon başlangıç ve bitiş tarihlerini seçin.";
+    private const string DateRangeInvalidMessage = "Rezervasyon başlangıç tarihi, bitiş tarihinden önce olamaz.";
+    private const string DatesMissingMessage = "Tarihler eksik.";
+
     private Dialog? dialog;
     private bool isSubmit;
     private bool isLoading;
@@ -255,6 +278,7 @@
     private bool paymentReceived;
     private Guid? noPayPaymentTypeId;
     private bool hasPaidAmountExceedsTotalError;
+    private decimal existingPaidAtReservation;
 
     private bool SubmitDisabled =>
         isSubmit
@@ -268,6 +292,12 @@
 
     private decimal? ComputedReservationTotalAmount
         => TryGetTotalReservationAmount( out var totalReservationAmount ) ? totalReservationAmount : null;
+
+    private decimal CurrentUpdatePaidAmount
+        => paymentReceived ? model.PaidAtReservation : 0;
+
+    private decimal TotalPaidAtReservation
+        => existingPaidAtReservation + CurrentUpdatePaidAmount;
 
     private bool DatesSelected
         => model.DeliveryDate.HasValue && model.PickUpDate.HasValue;
@@ -357,22 +387,16 @@
 
     private void InitForm()
     {
-        if ( editContext is not null )
-        {
-            editContext.OnValidationStateChanged -= OnValidationStateChanged;
-        }
-
         model = new UpdateReservationViewModel();
-        editContext = new EditContext( model );
-        validationMessageStore = new ValidationMessageStore( editContext );
-        editContext.OnValidationStateChanged += OnValidationStateChanged;
+        RebindEditContext();
 
         customerSearchTerm = string.Empty;
         showCustomerSuggestions = false;
         paymentReceived = false;
         hasPaidAmountExceedsTotalError = false;
+        existingPaidAtReservation = 0;
         rooms = [];
-        roomsInfoMessage = "Önce rezervasyon başlangıç ve bitiş tarihlerini seçin.";
+        roomsInfoMessage = SelectDatesMessage;
         isEditingDates = false;
     }
 
@@ -382,6 +406,7 @@
         if ( !result.IsSuccessful || result.Data is null )
         {
             model = new UpdateReservationViewModel();
+            RebindEditContext();
             return;
         }
 
@@ -398,11 +423,13 @@
             DeliveryTime = TimeOnly.FromDateTime( reservation.DeliveryTime ).ToString( "HH:mm" ),
             PickUpDate = reservation.PickUpDate,
             PickUpTime = TimeOnly.FromDateTime( reservation.PickUpTime ).ToString( "HH:mm" ),
-            PaidAtReservation = reservation.PaidAtReservation ?? 0,
+            PaidAtReservation = 0,
             Note = reservation.Note
         };
+        RebindEditContext();
 
-        paymentReceived = model.PaidAtReservation > 0;
+        existingPaidAtReservation = reservation.PaidAtReservation ?? 0;
+        paymentReceived = false;
 
         if ( customerId is not null )
         {
@@ -412,10 +439,37 @@
                 : customerId.Value.ToString();
         }
 
-        if ( !paymentReceived && noPayPaymentTypeId is not null )
+        SetNoPayPaymentTypeIfAvailable();
+    }
+
+    private void RebindEditContext()
+    {
+        if ( editContext is not null )
+        {
+            editContext.OnValidationStateChanged -= OnValidationStateChanged;
+        }
+
+        editContext = new EditContext( model );
+        validationMessageStore = new ValidationMessageStore( editContext );
+        editContext.OnValidationStateChanged += OnValidationStateChanged;
+    }
+
+    private void SetNoPayPaymentTypeIfAvailable()
+    {
+        if ( noPayPaymentTypeId is not null )
         {
             model.PaymentTypeId = noPayPaymentTypeId;
         }
+    }
+
+    private void ResetAvailableRooms( string message, bool clearSelectedRoom = true )
+    {
+        rooms = [];
+        if ( clearSelectedRoom )
+        {
+            model.CoolingRoomId = null;
+        }
+        roomsInfoMessage = message;
     }
 
     private void OnCustomerSearchInput( ChangeEventArgs e )
@@ -457,9 +511,9 @@
         {
             model.PaidAtReservation = 0;
 
-            if ( noPayPaymentTypeId is not null )
+            if ( existingPaidAtReservation == 0 && noPayPaymentTypeId is not null )
             {
-                model.PaymentTypeId = noPayPaymentTypeId;
+                SetNoPayPaymentTypeIfAvailable();
             }
         }
 
@@ -499,17 +553,13 @@
 
         if ( !DatesSelected )
         {
-            rooms = [];
-            model.CoolingRoomId = null;
-            roomsInfoMessage = "Önce rezervasyon başlangıç ve bitiş tarihlerini seçin.";
+            ResetAvailableRooms( SelectDatesMessage );
             return;
         }
 
         if ( IsDateRangeInvalid )
         {
-            rooms = [];
-            model.CoolingRoomId = null;
-            roomsInfoMessage = "Rezervasyon başlangıç tarihi, bitiş tarihinden önce olamaz.";
+            ResetAvailableRooms( DateRangeInvalidMessage );
             return;
         }
 
@@ -518,9 +568,7 @@
 
         if ( deliveryDate is null || pickUpDate is null )
         {
-            rooms = [];
-            model.CoolingRoomId = null;
-            roomsInfoMessage = "Tarihler eksik.";
+            ResetAvailableRooms( DatesMissingMessage );
             return;
         }
 
@@ -532,8 +580,9 @@
 
             if ( !roomsResult.IsSuccessful )
             {
-                rooms = [];
-                roomsInfoMessage = roomsResult.ErrorMessages?.FirstOrDefault() ?? "Uygun odalar getirilemedi.";
+                ResetAvailableRooms(
+                    message: roomsResult.ErrorMessages?.FirstOrDefault() ?? "Uygun odalar getirilemedi.",
+                    clearSelectedRoom: false );
                 return;
             }
 
@@ -597,11 +646,10 @@
         validationMessageStore.Clear( paidAtReservationField );
         hasPaidAmountExceedsTotalError = false;
 
-        if ( paymentReceived
-             && TryGetTotalReservationAmount( out var totalReservationAmount )
-             && model.PaidAtReservation > totalReservationAmount )
+        if ( TryGetTotalReservationAmount( out var totalReservationAmount )
+             && TotalPaidAtReservation > totalReservationAmount )
         {
-            validationMessageStore.Add( paidAtReservationField, "Alınan ödeme toplam rezervasyon tutarından büyük olamaz." );
+            validationMessageStore.Add( paidAtReservationField, "Toplam alınan ödeme toplam rezervasyon tutarından büyük olamaz." );
             hasPaidAmountExceedsTotalError = true;
         }
 
@@ -661,6 +709,44 @@
     private void HandleInvalidSubmit()
     {
         submitAttempted = true;
+        var validationMessage = editContext.GetValidationMessages().FirstOrDefault();
+        if ( !string.IsNullOrWhiteSpace( validationMessage ) )
+        {
+            toastService.ShowError( validationMessage );
+        }
+    }
+
+    private bool TryEnsureRequiredSelections(
+        out Guid customerId,
+        out Guid coolingRoomId,
+        out Guid paymentTypeId )
+    {
+        customerId = default;
+        coolingRoomId = default;
+        paymentTypeId = default;
+
+        if ( model.CustomerId is null )
+        {
+            toastService.ShowError( "Müşteri seçin!" );
+            return false;
+        }
+
+        if ( model.CoolingRoomId is null )
+        {
+            toastService.ShowError( "Soğuk oda seçin!" );
+            return false;
+        }
+
+        if ( model.PaymentTypeId is null )
+        {
+            toastService.ShowError( "Ödeme tipi seçin!" );
+            return false;
+        }
+
+        customerId = model.CustomerId.Value;
+        coolingRoomId = model.CoolingRoomId.Value;
+        paymentTypeId = model.PaymentTypeId.Value;
+        return true;
     }
 
     private async Task HandleValidSubmit()
@@ -704,23 +790,28 @@
                 return;
             }
 
-            if ( model.CustomerId is null || model.CoolingRoomId is null || model.PaymentTypeId is null )
+            if ( !TryEnsureRequiredSelections(
+                out var customerId,
+                out var coolingRoomId,
+                out var paymentTypeId ) )
             {
                 return;
             }
 
+            var paidAtReservation = TotalPaidAtReservation;
+
             var request = new UpdateReservationRequest
             {
                 Id = ReservationId.Value,
-                CustomerId = model.CustomerId.Value,
-                CoolingRoomId = model.CoolingRoomId.Value,
+                CustomerId = customerId,
+                CoolingRoomId = coolingRoomId,
                 DeliveryLocation = model.DeliveryLocation,
                 DeliveryDate = model.DeliveryDate.Value,
                 DeliveryTime = deliveryTime,
                 PickUpDate = model.PickUpDate.Value,
                 PickUpTime = pickUpTime,
-                PaymentTypeId = model.PaymentTypeId.Value,
-                PaidAtReservation = model.PaidAtReservation,
+                PaymentTypeId = paymentTypeId,
+                PaidAtReservation = paidAtReservation,
                 Note = string.IsNullOrWhiteSpace( model.Note ) ? null : model.Note
             };
 
