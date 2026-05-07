@@ -48,10 +48,15 @@ jobs:
           echo "Published dll files:"
           find $GITHUB_WORKSPACE/publish -name "*.dll"
 
-          if [ -z "$(find $GITHUB_WORKSPACE/publish -name "*.dll")" ]; then
-            echo "ERROR: Publish folder does not contain any dll file."
+          if [ -z "$(find $GITHUB_WORKSPACE/publish -name "DeKayaServer.WebAPI.dll")" ]; then
+            echo "ERROR: DeKayaServer.WebAPI.dll was not found."
             exit 1
           fi
+
+      - name: Create deployment package
+        run: |
+          cd $GITHUB_WORKSPACE/publish
+          zip -r $GITHUB_WORKSPACE/dekaya-webapi.zip .
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -65,4 +70,4 @@ jobs:
         with:
           app-name: 'dekaya-webapi'
           slot-name: 'Production'
-          package: ${{ github.workspace }}/publish
+          package: ${{ github.workspace }}/dekaya-webapi.zip
