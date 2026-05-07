@@ -33,17 +33,25 @@ jobs:
       - name: Publish project
         run: |
           mkdir -p $GITHUB_WORKSPACE/publish
+
           dotnet publish ./src/DeKayaServer.WebAPI/DeKayaServer.WebAPI.csproj \
             --configuration Release \
             --output $GITHUB_WORKSPACE/publish \
-            -p:IsTransformWebConfigDisabled=true
+            -p:IsTransformWebConfigDisabled=true \
+            -p:IsPublishable=true
 
       - name: Verify publish output
         run: |
           echo "Publish folder:"
           ls -la $GITHUB_WORKSPACE/publish
+
           echo "Published dll files:"
           find $GITHUB_WORKSPACE/publish -name "*.dll"
+
+          if [ -z "$(find $GITHUB_WORKSPACE/publish -name "*.dll")" ]; then
+            echo "ERROR: Publish folder does not contain any dll file."
+            exit 1
+          fi
 
       - name: Login to Azure
         uses: azure/login@v2
