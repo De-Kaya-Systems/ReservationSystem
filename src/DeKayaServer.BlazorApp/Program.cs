@@ -26,7 +26,7 @@ builder.Services.AddScoped<ProtectedLocalStorage>();
 
 builder.Services.AddScoped<AccessTokenStoreService>();
 builder.Services.AddScoped<IAccessTokenStoreService>( sp =>
-    new CachedAccessTokenStoreService( sp.GetRequiredService<AccessTokenStoreService>() ) );
+    new CachedAccessTokenStoreService( sp.GetRequiredService<AccessTokenStoreService>(), sp.GetRequiredService<ILogger<CachedAccessTokenStoreService>>() ) );
 
 builder.Services.AddScoped<CurrentAccessToken>();
 
@@ -44,7 +44,6 @@ builder.Services.AddScoped<CircuitIdProvider>();
 builder.Services.TryAddEnumerable( ServiceDescriptor.Scoped<CircuitHandler, CircuitServicesAccessorCircuitHandler>() );
 builder.Services.TryAddEnumerable( ServiceDescriptor.Scoped<CircuitHandler, CircuitIdCircuitHandler>() );
 
-//All Services (DI)
 builder.Services.AddScoped<ProtectedSessionStorage>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<IBreadcrumbService, BreadcrumbService>();
@@ -64,6 +63,8 @@ builder.Services.AddScoped<IPaymentTypeService, PaymentTypeService>();
 
 builder.Services.AddScoped<IAuthProbeService, AuthProbeService>();
 
+// AuthHeaderHandler: Must be registered as Transient to get fresh instance per handler chain
+// CurrentAccessToken is injected as Scoped, so each request gets consistent token
 builder.Services.AddTransient<AuthHeaderHandler>();
 
 builder.Services.AddHttpClient<IApiClient, ApiClient>( client =>
