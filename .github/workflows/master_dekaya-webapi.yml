@@ -1,6 +1,3 @@
-# Docs for the Azure Web Apps Deploy action:
-# https://github.com/Azure/webapps-deploy
-
 name: Build and deploy ASP.Net Core app to Azure Web App - dekaya-webapi
 
 on:
@@ -33,7 +30,7 @@ jobs:
         run: dotnet build ./src/DeKayaServer.WebAPI/DeKayaServer.WebAPI.csproj --configuration Release --no-restore
 
       - name: Publish project
-        run: dotnet publish ./src/DeKayaServer.WebAPI/DeKayaServer.WebAPI.csproj --configuration Release --no-build --output ./publish
+        run: dotnet publish ./src/DeKayaServer.WebAPI/DeKayaServer.WebAPI.csproj --configuration Release --output ./publish -p:IsTransformWebConfigDisabled=true
 
       - name: Verify publish output
         run: ls -la ./publish
@@ -46,7 +43,6 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-
     needs: build
 
     permissions:
