@@ -27,7 +27,9 @@ jobs:
         run: dotnet build ./src/DeKayaServer.WebAPI/DeKayaServer.WebAPI.csproj --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish ./src/DeKayaServer.WebAPI/DeKayaServer.WebAPI.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp -p:IsTransformWebConfigDisabled=true ls -la ${{env.DOTNET_ROOT}}/myapp
+        run: |
+           dotnet publish ./src/DeKayaServer.WebAPI/DeKayaServer.WebAPI.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp -p:IsTransformWebConfigDisabled=true
+           ls -la ${{env.DOTNET_ROOT}}/myapp
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
