@@ -30,19 +30,29 @@ jobs:
         run: dotnet build ./src/DeKayaServer.WebAPI/DeKayaServer.WebAPI.csproj --configuration Release --no-restore
 
       - name: Publish project
-        run: dotnet publish ./src/DeKayaServer.WebAPI/DeKayaServer.WebAPI.csproj --configuration Release --output ./publish -p:IsTransformWebConfigDisabled=true
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/publish
+          dotnet publish ./src/DeKayaServer.WebAPI/DeKayaServer.WebAPI.csproj \
+            --configuration Release \
+            --output $GITHUB_WORKSPACE/publish \
+            -p:IsTransformWebConfigDisabled=true
 
       - name: Verify publish output
-        run: ls -la ./publish
+        run: |
+          echo "Publish folder:"
+          ls -la $GITHUB_WORKSPACE/publish
+          echo "Published dll files:"
+          find $GITHUB_WORKSPACE/publish -name "*.dll"
 
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: webapi-app
-          path: ./publish
+          path: ${{ github.workspace }}/publish
 
   deploy:
     runs-on: ubuntu-latest
+
     needs: build
 
     permissions:
