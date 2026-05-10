@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
 	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	<UserSecretsId>8bd386d0-7404-4258-8bf1-8e27fc7ccc9b</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
