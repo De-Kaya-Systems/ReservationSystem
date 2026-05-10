@@ -32,7 +32,8 @@
                             <InputDate class="form-control"
                                        @bind-Value="model.DeliveryDate"
                                        @bind-Value:after="OnDatesChanged"
-                                       @onfocus="OnDatesFocus" />
+                                       @onfocus="OnDatesFocus"
+                                       @attributes="DeliveryDateAttributes"/>
                             <ValidationMessage For="@(() => model.DeliveryDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
                         </div>
 
@@ -262,6 +263,10 @@
     private bool DatesSelected
         => model.DeliveryDate.HasValue && model.PickUpDate.HasValue;
 
+    //Rezervasyon başlangıç tarihinin bugünden önce seçilmesini engellemek için kullanılır.
+    private DateOnly ReservationStartDateControl
+        => DateOnly.FromDateTime( DateTime.Today );
+
     private bool IsDateRangeInvalid
         => model.DeliveryDate.HasValue
            && model.PickUpDate.HasValue
@@ -274,6 +279,12 @@
                 [ "min" ] = model.DeliveryDate.Value.ToString( "yyyy-MM-dd" )
             }
             : new Dictionary<string, object>();
+
+    private IReadOnlyDictionary<string, object> DeliveryDateAttributes
+        => new Dictionary<string, object>
+        {
+            [ "min" ] = ReservationStartDateControl.ToString( "yyyy-MM-dd" )
+        };
 
     private IReadOnlyList<CustomerOption> FilteredCustomers
         => string.IsNullOrWhiteSpace( customerSearchTerm )
