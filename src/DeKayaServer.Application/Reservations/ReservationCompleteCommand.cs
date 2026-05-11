@@ -224,7 +224,7 @@ internal sealed class ReservationCompleteCommandHandler(
                 totalAmount: new TotalAmount( totalAmount ),
                 outstandingAmount: new OutstandingAmount( newOutstandingAmount ),
                 paidAmount: new PaidAmount( newPaidAmount ),
-                description: new Domain.CustomerBalance.ValueObjects.Description( $"Rezervasyon borcu - RezervasyonNo: {reservation.ReservationNumber.Value}" ),
+                description: new Domain.CustomerBalance.ValueObjects.Description( $"Rezervasyon borcu - Rezervasyon no: {reservation.ReservationNumber.Value}" ),
                 lastPaymentAt: request.PaymentReceived ? new LastPaymentAt( DateTime.Now ) : null );
 
             customerBalanceRepository.Add( customerBalance );
@@ -245,7 +245,7 @@ internal sealed class ReservationCompleteCommandHandler(
                 paymentAmount: paymentAmount,
                 remainingBalance: newOutstandingAmount,
                 paymentDate: DateTime.Now,
-                notes: $"Rezervasyon tamamlanırken alınan ödeme - RezervasyonNo: {reservation.ReservationNumber.Value}" );
+                notes: $"Rezervasyon tamamlanırken alınan ödeme - Rezervasyon no: {reservation.ReservationNumber.Value}" );
 
             paymentHistoryRepository.Add( paymentHistory );
         }

@@ -2,6 +2,7 @@
 @using DeKayaServer.BlazorApp.Models
 @using DeKayaServer.BlazorApp.Services
 @using DeKayaServer.Contracts.CoolingRooms
+@using DeKayaServer.Contracts.Reservations
 
 @inject ICoolingRoomService coolingRoomService
 @inject IApiResultPresenter apiResultPresenter
@@ -22,14 +23,14 @@
         }
         else if ( room is not null )
         {
-            <div class="d-flex align-items-start justify-content-between gap-3">
-                <div class="min-w-0">
+            <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                <div>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <h5 class="mb-0 text-truncate">@Display( room.RoomName )</h5>
+                        <h5 class="mb-0">@Display( room.RoomName )</h5>
 
-                        <span class="badge p-2 @GetStatusBadgeClass( room.StatusName )">
-                            <i class="bi @GetStatusIcon( room.StatusName ) me-1"></i>
-                            @Display( room.StatusName )
+                        <span class="badge p-2 @GetStatusBadgeClass( room )">
+                            <i class="bi @GetStatusIcon( room ) me-1"></i>
+                            @GetOperationText( room )
                         </span>
 
                         <span class="badge p-2 @(room.IsActive ? "bg-success" : "bg-secondary")">
@@ -43,7 +44,7 @@
                         </span>
                     </div>
 
-                    @if(CurrentUser.HasPermission(RoleConstants.SysAdmin))
+                    @if ( CurrentUser.HasPermission( RoleConstants.SysAdmin ) )
                     {
                         <div class="text-muted small mt-1">
                             Oda Id: <span class="font-monospace">@room.Id</span>
@@ -62,55 +63,134 @@
             <div class="row g-3">
 
                 <div class="col-12 col-lg-6">
-                    <div class="card border-0 shadow-sm">
+                    <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-body d-flex align-items-center gap-2">
                             <i class="bi bi-thermometer-snow"></i>
                             <span class="fw-semibold">Oda Bilgileri</span>
                         </div>
+
                         <div class="card-body">
                             <dl class="row mb-0">
                                 <dt class="col-5 text-muted fw-normal">Oda Adı</dt>
                                 <dd class="col-7 mb-2">@Display( room.RoomName )</dd>
 
-                                <dt class="col-5 text-muted fw-normal">Günlük Fiyat</dt>
-                                <dd class="col-7 mb-2">@FormatMoney( room.DailyPrice )</dd>
-
                                 <dt class="col-5 text-muted fw-normal">Durum</dt>
+                                <dd class="col-7 mb-2">@GetOperationText( room )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Sistem Durumu</dt>
                                 <dd class="col-7 mb-2">@Display( room.StatusName )</dd>
 
                                 <dt class="col-5 text-muted fw-normal">Raf</dt>
-                                <dd class="col-7 mb-0">@(room.Shelf ? "Raflı" : "Rafsız")</dd>
+                                <dd class="col-7 mb-2">@(room.Shelf ? "Raflı" : "Rafsız")</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Günlük Fiyat</dt>
+                                <dd class="col-7 mb-0">@FormatMoney( room.DailyPrice )</dd>
                             </dl>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-12 col-lg-6">
-                    <div class="card border-0 shadow-sm">
+                    <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-body d-flex align-items-center gap-2">
-                            <i class="bi bi-tools"></i>
-                            <span class="fw-semibold">Bakım/Arıza</span>
+                            <i class="bi bi-person-lines-fill"></i>
+                            <span class="fw-semibold">Müşteri / Aktif Rezervasyon</span>
                         </div>
+
                         <div class="card-body">
-                            @if ( room.Maintenance is null )
+                            @if ( room.CurrentReservationId is null )
                             {
                                 <div class="text-muted">
-                                    Bakım kaydı yok.
+                                    Şu anda aktif rezervasyon yok.
                                 </div>
                             }
                             else
                             {
                                 <dl class="row mb-0">
-                                    <dt class="col-5 text-muted fw-normal">Açıklama</dt>
-                                    <dd class="col-7 mb-2">@Display( room.Maintenance.Description )</dd>
+                                    <dt class="col-5 text-muted fw-normal">Rezervasyon</dt>
+                                    <dd class="col-7 mb-2">@Display( room.CurrentReservationNumber )</dd>
+
+                                    <dt class="col-5 text-muted fw-normal">Müşteri</dt>
+                                    <dd class="col-7 mb-2">@Display( room.CurrentCustomerName )</dd>
+
+                                    <dt class="col-5 text-muted fw-normal">Telefon</dt>
+                                    <dd class="col-7 mb-2">@Display( room.CurrentCustomerPhoneNumber )</dd>
 
                                     <dt class="col-5 text-muted fw-normal">Başlangıç</dt>
-                                    <dd class="col-7 mb-2">@room.Maintenance.MaintenanceDateStart.ToString( "dd.MM.yyyy" )</dd>
+                                    <dd class="col-7 mb-2">@DisplayDateTime( room.CurrentReservationStart )</dd>
 
                                     <dt class="col-5 text-muted fw-normal">Bitiş</dt>
-                                    <dd class="col-7 mb-0">@room.Maintenance.MaintenanceDateEnd.ToString( "dd.MM.yyyy" )</dd>
+                                    <dd class="col-7 mb-2">@DisplayDateTime( room.CurrentReservationEnd )</dd>
+
+                                    <dt class="col-5 text-muted fw-normal">Teslim</dt>
+                                    <dd class="col-7 mb-2">@DisplayDateTime( room.DeliveredAt )</dd>
+
+                                    <dt class="col-5 text-muted fw-normal">Geri Alım</dt>
+                                    <dd class="col-7 mb-0">@DisplayDateTime( room.PickedUpAt )</dd>
                                 </dl>
                             }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-body d-flex align-items-center gap-2">
+                            <i class="bi bi-calendar-event"></i>
+                            <span class="fw-semibold">Planlama</span>
+                        </div>
+
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-5 text-muted fw-normal">Sonraki Rez.</dt>
+                                <dd class="col-7 mb-2">@Display( room.NextReservationNumber )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Sonraki Müşteri</dt>
+                                <dd class="col-7 mb-2">@Display( room.NextCustomerName )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Başlangıç</dt>
+                                <dd class="col-7 mb-2">@DisplayDateTime( room.NextReservationStart )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Bitiş</dt>
+                                <dd class="col-7 mb-2">@DisplayDateTime( room.NextReservationEnd )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">En Yakın Müsaitlik</dt>
+                                <dd class="col-7 mb-0">
+                                    @if ( room.NextAvailableAt is null && IsAvailable( room ) )
+                                    {
+                                        <span class="text-success fw-semibold">Şimdi</span>
+                                    }
+                                    else
+                                    {
+                                        @DisplayDateTime( room.NextAvailableAt )
+                                    }
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-body d-flex align-items-center gap-2">
+                            <i class="bi bi-cash-coin"></i>
+                            <span class="fw-semibold">Finans</span>
+                        </div>
+
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-5 text-muted fw-normal">Kalan Borç</dt>
+                                <dd class="col-7 mb-0">
+                                    @if ( room.OutstandingAmount > 0 )
+                                    {
+                                        <span class="fw-bold text-danger">@FormatMoney( room.OutstandingAmount )</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-success fw-semibold">Borç yok</span>
+                                    }
+                                </dd>
+                            </dl>
                         </div>
                     </div>
                 </div>
@@ -118,29 +198,27 @@
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-body d-flex align-items-center gap-2">
-                            <i class="bi bi-clock-history"></i>
-                            <span class="fw-semibold">Sistem Bilgileri</span>
+                            <i class="bi bi-tools"></i>
+                            <span class="fw-semibold">Bakım / Arıza</span>
                         </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-12 col-md-6">
-                                    <div class="p-3 rounded-3 bg-body-tertiary border">
-                                        <div class="text-muted small">Oluşturan</div>
-                                        <div class="fw-semibold">@Display( room.CreatedFullName )</div>
-                                        <div class="text-muted small mt-1">@room.CreatedAt.ToString( "dd.MM.yyyy HH:mm" )</div>
-                                    </div>
-                                </div>
 
-                                <div class="col-12 col-md-6">
-                                    <div class="p-3 rounded-3 bg-body-tertiary border">
-                                        <div class="text-muted small">Güncelleyen</div>
-                                        <div class="fw-semibold">@Display( room.UpdatedFullName )</div>
-                                        <div class="text-muted small mt-1">
-                                            @( room.UpdatedAt.HasValue ? room.UpdatedAt.Value.ToString( "dd.MM.yyyy HH:mm" ) : "—" )
-                                        </div>
-                                    </div>
+                        <div class="card-body">
+                            @if ( room.MaintenanceId is null )
+                            {
+                                <div class="text-muted">
+                                    Aktif bakım veya arıza kaydı yok.
                                 </div>
-                            </div>
+                            }
+                            else
+                            {
+                                <dl class="row mb-0">
+                                    <dt class="col-5 col-md-3 text-muted fw-normal">Açıklama</dt>
+                                    <dd class="col-7 col-md-9 mb-2">@Display( room.MaintenanceDescription )</dd>
+
+                                    <dt class="col-5 col-md-3 text-muted fw-normal">Tahmini Bitiş</dt>
+                                    <dd class="col-7 col-md-9 mb-0">@DisplayDate( room.MaintenanceEnd )</dd>
+                                </dl>
+                            }
                         </div>
                     </div>
                 </div>
@@ -155,19 +233,21 @@
 
     private bool isLoading;
     private bool hasLoaded;
-    private CoolingRoomDto? room;
+    private CoolingRoomOverviewDto? room;
 
     [Parameter] public Guid? CoolingRoomId { get; set; }
 
     public async Task ShowAsync()
     {
         if ( dialog is null || CoolingRoomId is null )
+        {
             return;
+        }
 
         room = null;
         hasLoaded = false;
-
         isLoading = true;
+
         await InvokeAsync( StateHasChanged );
 
         await LoadAsync( CoolingRoomId.Value );
@@ -182,12 +262,14 @@
     public async Task HideAsync()
     {
         if ( dialog is not null )
+        {
             await dialog.HideAsync();
+        }
     }
 
     private async Task LoadAsync( Guid id )
     {
-        var result = await coolingRoomService.GetByIdAsync( id );
+        var result = await coolingRoomService.GetOverviewAsync();
         apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = false } );
 
         if ( !result.IsSuccessful || result.Data is null )
@@ -196,38 +278,106 @@
             return;
         }
 
-        room = result.Data;
+        room = result.Data.FirstOrDefault( x => x.Id == id );
+    }
+
+    private static string GetOperationText( CoolingRoomOverviewDto room )
+    {
+        if ( IsFaulty( room ) )
+        {
+            return "Arıza/Bakım";
+        }
+
+        if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.DeliveredToCustomer
+             && room.CurrentReservationEnd is not null
+             && room.CurrentReservationEnd.Value <= DateTime.Now.AddHours( 24 ) )
+        {
+            return "Geri alım bekliyor";
+        }
+
+        if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.DeliveredToCustomer )
+        {
+            return "Müşteride";
+        }
+
+        if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.Scheduled
+             && room.CurrentReservationEnd is not null
+             && room.CurrentReservationEnd.Value <= DateTime.Now )
+        {
+            return "Teslim kaydı eksik";
+        }
+
+        if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.Scheduled
+             && room.CurrentReservationStart is not null
+             && room.CurrentReservationStart.Value <= DateTime.Now )
+        {
+            return "Teslimat bekliyor";
+        }
+
+        if ( IsAvailable( room ) )
+        {
+            return "Uygun";
+        }
+
+        if ( IsReserved( room ) )
+        {
+            return "Rezerve";
+        }
+
+        return Display( room.StatusName );
+    }
+
+    private static bool IsAvailable( CoolingRoomOverviewDto room )
+        => IsStatus( room.StatusName, "uygun" );
+
+    private static bool IsReserved( CoolingRoomOverviewDto room )
+        => IsStatus( room.StatusName, "reserve", "rezerve" );
+
+    private static bool IsFaulty( CoolingRoomOverviewDto room )
+        => IsStatus( room.StatusName, "arıza/bakım", "ariza/bakim", "arıza", "ariza", "bakım", "bakim" );
+
+    private static bool IsStatus( string? statusName, params string[] values )
+    {
+        var key = ( statusName ?? string.Empty ).Trim().ToLowerInvariant();
+
+        return values.Any( x => x == key );
     }
 
     private static string Display( string? value )
         => string.IsNullOrWhiteSpace( value ) ? "—" : value;
 
+    private static string DisplayDateTime( DateTime? value )
+        => value.HasValue ? value.Value.ToString( "dd.MM.yyyy HH:mm" ) : "—";
+
+    private static string DisplayDate( DateTime? value )
+        => value.HasValue ? value.Value.ToString( "dd.MM.yyyy" ) : "—";
+
     private static string FormatMoney( decimal value )
         => value.ToString( "N2" ) + " ₺";
 
-    private static string GetStatusBadgeClass( string? statusName )
-    {
-        var key = ( statusName ?? string.Empty ).Trim().ToLowerInvariant();
-        return key switch
+    private static string GetStatusBadgeClass( CoolingRoomOverviewDto room )
+        => GetOperationText( room ) switch
         {
-            "uygun" => "bg-success",
-            "reserve" or "rezerve" => "bg-primary",
-            "booked" => "bg-warning text-dark",
-            "arıza/bakım" or "ariza/bakim" => "bg-danger",
+            "Uygun" => "bg-success",
+            "Rezerve" => "bg-primary",
+            "Müşteride" => "bg-warning text-dark",
+            "Teslimat bekliyor" => "bg-warning text-dark",
+            "Geri alım bekliyor" => "bg-warning text-dark",
+            "Teslim kaydı eksik" => "bg-danger",
+            "Arıza/Bakım" => "bg-danger",
             _ => "bg-secondary"
         };
-    }
 
-    private static string GetStatusIcon( string? statusName )
-    {
-        var key = ( statusName ?? string.Empty ).Trim().ToLowerInvariant();
-        return key switch
+    private static string GetStatusIcon( CoolingRoomOverviewDto room )
+        => GetOperationText( room ) switch
         {
-            "uygun" => "bi-check-circle",
-            "reserve" or "rezerve" => "bi-bookmark-check",
-            "booked" => "bi-hourglass-split",
-            "arıza/bakım" or "ariza/bakim" => "bi-exclamation-octagon",
+            "Uygun" => "bi-check-circle",
+            "Rezerve" => "bi-bookmark-check",
+            "Müşteride" => "bi-hourglass-split",
+            "Teslimat bekliyor" => "bi-truck",
+            "Geri alım bekliyor" => "bi-arrow-return-left",
+            "Teslim kaydı eksik" => "bi-exclamation-triangle",
+            "Arıza/Bakım" => "bi-exclamation-octagon",
             _ => "bi-info-circle"
         };
-    }
 }
