@@ -31,7 +31,7 @@
                             <label class="form-label">Başlangıç tarihi</label>
                             <InputDate class="form-control"
                                        @bind-Value="model.DeliveryDate"
-                                       @bind-Value:after="OnDatesChanged"
+                                       @bind-Value:after="OnDeliveryDateChanged"
                                        @onfocus="OnDatesFocus"
                                        @attributes="DeliveryDateAttributes"/>
                             <ValidationMessage For="@(() => model.DeliveryDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
@@ -529,6 +529,32 @@
         await InvokeAsync( StateHasChanged );
     }
 
+    private async Task OnDeliveryDateChanged()
+    {
+        SetDefaultDeliveryTimeForSelectedDate();
+        await OnDatesChanged();
+    }
+
+    private void SetDefaultDeliveryTimeForSelectedDate()
+    {
+        if ( model.DeliveryDate is null )
+        {
+            model.DeliveryTime = "11:00";
+            return;
+        }
+
+        var today = DateOnly.FromDateTime( DateTime.Now );
+        var noon = new TimeOnly( 11, 0 );
+
+        if ( model.DeliveryDate.Value == today
+             && TimeOnly.FromDateTime( DateTime.Now ) > noon )
+        {
+            model.DeliveryTime = TimeOnly.FromDateTime( DateTime.Now ).ToString( "HH:mm" );
+            return;
+        }
+
+        model.DeliveryTime = noon.ToString( "HH:mm" );
+    }
     private void OnPricingInputChanged()
         => ValidatePaidAtReservationAgainstTotalAmount();
 
@@ -688,14 +714,14 @@
 
         [Required( ErrorMessage = "Rezervasyon saati girin!" )]
         [RegularExpression( @"^\d{2}:\d{2}$", ErrorMessage = "Saat formatı HH:mm olmalı." )]
-        public string DeliveryTime { get; set; } = "09:00";
+        public string DeliveryTime { get; set; } = "11:00";
 
         [Required( ErrorMessage = "Rezervasyon bitiş tarihi seçin!" )]
         public DateOnly? PickUpDate { get; set; }
 
         [Required( ErrorMessage = "Rezervasyon bitiş saati girin!" )]
         [RegularExpression( @"^\d{2}:\d{2}$", ErrorMessage = "Saat formatı HH:mm olmalı." )]
-        public string PickUpTime { get; set; } = "09:00";
+        public string PickUpTime { get; set; } = "11:00";
 
         [Required( ErrorMessage = "Ödeme tipi seçin!" )]
         public Guid? PaymentTypeId { get; set; }

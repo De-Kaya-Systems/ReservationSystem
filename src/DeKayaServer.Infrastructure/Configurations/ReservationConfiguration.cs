@@ -12,12 +12,17 @@ internal class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
         builder.HasKey( x => x.Id );
         builder.Property( x => x.CustomerId ).IsRequired();
         builder.Property( x => x.CoolingRoomId ).IsRequired();
+        builder.Property( x => x.Status )
+            .HasConversion<int>()
+            .IsRequired();
 
         builder.OwnsOne( x => x.DeliveryLocation );
         builder.OwnsOne( x => x.DeliveryDate );
         builder.OwnsOne( x => x.DeliveryTime );
         builder.OwnsOne( x => x.PickUpDate );
         builder.OwnsOne( x => x.PickUpTime );
+        builder.OwnsOne( x => x.DeliveredAt );
+        builder.OwnsOne( x => x.PickedUpAt );
         builder.OwnsOne( x => x.TotalDay );
         builder.OwnsOne( x => x.CoolingRoomDailyPrice );
         builder.OwnsOne( x => x.ReservationTotalAmount );

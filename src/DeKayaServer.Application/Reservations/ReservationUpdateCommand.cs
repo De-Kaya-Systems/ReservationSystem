@@ -8,6 +8,7 @@ using DeKayaServer.Domain.CustomerBalance.ValueObjects;
 using DeKayaServer.Domain.Customers;
 using DeKayaServer.Domain.PaymentHistory;
 using DeKayaServer.Domain.Reservations;
+using DeKayaServer.Domain.Reservations.Enum;
 using DeKayaServer.Domain.Reservations.ValueObjects;
 using FluentValidation;
 using GenericRepository;
@@ -26,6 +27,7 @@ public sealed record ReservationUpdateCommand(
     DateOnly PickUpDate,
     TimeOnly PickUpTime,
     Guid CoolingRoomId,
+    ReservationStatus Status,
     Guid PaymentTypeId,
     decimal PaidAtReservation,
     string? Note ) : IRequest<Result<string>>;
@@ -66,6 +68,10 @@ public sealed class ReservationUpdateCommandValidator : AbstractValidator<Reserv
         RuleFor( x => x.PaymentTypeId )
             .NotEmpty()
             .WithMessage( "Geçerli bir ödeme tipi seçin!" );
+
+        RuleFor( x => x.Status )
+            .Must( status => status is ReservationStatus.Scheduled or ReservationStatus.DeliveredToCustomer )
+            .WithMessage( "Rezervasyon durumu yalnızca rezerve edildi veya müşteriye teslim edildi olabilir." );
     }
 }
 
@@ -145,6 +151,12 @@ internal sealed class ReservationUpdateCommandHandler(
         reservation.SetTotalDay();
         reservation.SetReservationTotalAmount();
 
+        var statusUpdateResult = ApplyReservationStatus( reservation, request.Status );
+        if ( !statusUpdateResult.IsSuccessful )
+        {
+            return statusUpdateResult;
+        }
+
         var totalAmount = reservation.ReservationTotalAmount.Value;
         var paidAmount = reservation.PaidAtReservation.Value;
 
@@ -155,10 +167,9 @@ internal sealed class ReservationUpdateCommandHandler(
 
         reservationRepository.Update( reservation );
 
-        var deliveryDateTime = request.DeliveryDate.ToDateTime( request.DeliveryTime );
-        var targetStatusName = deliveryDateTime > DateTime.Now
-            ? ReservedCoolingRoomStatus
-            : BookedCoolingRoomStatus;
+        var targetStatusName = reservation.Status == ReservationStatus.DeliveredToCustomer
+            ? BookedCoolingRoomStatus
+            : ReservedCoolingRoomStatus;
 
         var targetStatus = await coolingRoomStatusRepository
             .FirstOrDefaultAsync( x => x.StatusName.Value == targetStatusName, cancellationToken );
@@ -187,7 +198,7 @@ internal sealed class ReservationUpdateCommandHandler(
                 totalAmount: new TotalAmount( totalAmount ),
                 outstandingAmount: new OutstandingAmount( outstandingBalance ),
                 paidAmount: new PaidAmount( paidAmount ),
-                description: new Description( $"Rezervasyon borcu - RezervasyonNo: {reservation.ReservationNumber.Value}" ),
+                description: new Description( $"Rezervasyon borcu - Rezervasyon no: {reservation.ReservationNumber.Value}" ),
                 lastPaymentAt: paidAmount > 0 ? new LastPaymentAt( DateTime.Now ) : null );
 
             customerBalanceRepository.Add( customerBalance );
@@ -203,7 +214,7 @@ internal sealed class ReservationUpdateCommandHandler(
                 totalAmount: new TotalAmount( totalAmount ),
                 paidAmount: new PaidAmount( paidAmount ),
                 outstandingAmount: new OutstandingAmount( outstandingBalance ) );
-            customerBalance.SetDescription( new Description( $"Rezervasyon borcu - RezervasyonNo: {reservation.ReservationNumber.Value}" ) );
+            customerBalance.SetDescription( new Description( $"Rezervasyon borcu - Rezervasyon no: {reservation.ReservationNumber.Value}" ) );
             customerBalance.SetLastPaymentAt( paidAmount > 0 ? new LastPaymentAt( DateTime.Now ) : null );
             customerBalanceRepository.Update( customerBalance );
 
@@ -218,7 +229,7 @@ internal sealed class ReservationUpdateCommandHandler(
                     paymentAmount: newPaymentAmount,
                     remainingBalance: outstandingBalance,
                     paymentDate: DateTime.Now,
-                    notes: $"Rezervasyon güncellemesi sırasında yapılan ödeme - RezervasyonNo: {reservation.ReservationNumber.Value}" );
+                    notes: $"Rezervasyon güncellemesi sırasında yapılan ödeme - Rezervasyon no: {reservation.ReservationNumber.Value}" );
 
                 paymentHistoryRepository.Add( paymentHistory );
             }
@@ -226,5 +237,22 @@ internal sealed class ReservationUpdateCommandHandler(
 
         await unitOfWork.SaveChangesAsync( cancellationToken );
         return "Rezervasyon başarıyla güncellendi";
+    }
+
+    private static Result<string> ApplyReservationStatus( Reservation reservation, ReservationStatus requestedStatus )
+    {
+        if ( reservation.Status == requestedStatus )
+        {
+            return Result<string>.Succeed( string.Empty );
+        }
+
+        if ( reservation.Status == ReservationStatus.Scheduled
+             && requestedStatus == ReservationStatus.DeliveredToCustomer )
+        {
+            reservation.MarkAsDelivered();
+            return Result<string>.Succeed( string.Empty );
+        }
+
+        return Result<string>.Failure( "Bu rezervasyon durumu bu ekrandan değiştirilemez." );
     }
 }

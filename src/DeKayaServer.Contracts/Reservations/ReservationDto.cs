@@ -11,6 +11,10 @@ public sealed class ReservationDto : EntityDto
     public DateTime DeliveryTime { get; set; } = default!;
     public DateOnly PickUpDate { get; set; } = default!;
     public DateTime PickUpTime { get; set; } = default!;
+
+    public int Status { get; set; }
+    public DateTime? DeliveredAt { get; set; }
+    public DateTime? PickedUpAt { get; set; }
     public string CoolingRoomId { get; set; } = default!;
     public int TotalDay { get; set; }
     public decimal CoolingRoomDailyPrice { get; set; } = default!;

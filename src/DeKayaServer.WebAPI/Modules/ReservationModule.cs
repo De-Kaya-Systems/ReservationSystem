@@ -31,6 +31,25 @@ public static class ReservationModule
             } )
             .Produces<Result<string>>();
 
+        app.MapPut( "{id}/complete",
+            async ( Guid id, CompleteReservationRequest request, ISender sender, CancellationToken cancellationToken ) =>
+            {
+                var command = new ReservationCompleteCommand(
+                    Id: id,
+                    DeliveredAt: request.DeliveredAt,
+                    PickedUpAt: request.PickedUpAt,
+                    PaymentReceived: request.PaymentReceived,
+                    PaymentTypeId: request.PaymentTypeId,
+                    PaymentAmount: request.PaymentAmount,
+                    HasFault: request.HasFault,
+                    FaultDescription: request.FaultDescription,
+                    Note: request.Note );
+
+                var res = await sender.Send( command, cancellationToken );
+                return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
+            } )
+            .Produces<Result<string>>();
+
         app.MapDelete( "{id}",
             async ( Guid id, ISender sender, CancellationToken cancellationToken ) =>
             {
