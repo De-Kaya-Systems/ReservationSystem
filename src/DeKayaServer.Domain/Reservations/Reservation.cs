@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Domain.Abstractions;
+using DeKayaServer.Domain.Reservations.Enum;
 using DeKayaServer.Domain.Reservations.ValueObjects;
 
 namespace DeKayaServer.Domain.Reservations;
@@ -33,6 +34,8 @@ public sealed class Reservation : Entity
 
         SetPaidAtReservation( paidAtReservation );
         SetNote( note );
+
+        SetStatus( ReservationStatus.Scheduled );
 
         SetTotalDay();
         SetReservationTotalAmount();
@@ -73,6 +76,9 @@ public sealed class Reservation : Entity
     public DeliveryTime DeliveryTime { get; private set; } = default!;
     public PickUpDate PickUpDate { get; private set; } = default!;
     public PickUpTime PickUpTime { get; private set; } = default!;
+    public ReservationStatus Status { get; private set; } = ReservationStatus.Scheduled;
+    public DeliveredAt? DeliveredAt { get; private set; }
+    public PickedUpAt? PickedUpAt { get; private set; }
     public TotalDay TotalDay { get; private set; } = default!;
     public IdentityId CoolingRoomId { get; private set; } = default!;
     public CoolingRoomDailyPrice CoolingRoomDailyPrice { get; private set; } = default!;
@@ -113,6 +119,40 @@ public sealed class Reservation : Entity
     public void SetPickUpTime( PickUpTime pickUpTime )
     {
         PickUpTime = pickUpTime;
+    }
+
+    public void SetStatus( ReservationStatus status )
+    {
+        Status = status;
+    }
+
+    public void MarkAsDelivered()
+    {
+        Status = ReservationStatus.DeliveredToCustomer;
+        DeliveredAt = new DeliveredAt( DateTime.Now );
+    }
+
+    public void MarkAsPickedUp()
+    {
+        Status = ReservationStatus.PickedUpFromCustomer;
+        PickedUpAt = new PickedUpAt( DateTime.Now );
+    }
+
+    public void Complete()
+    {
+        Status = ReservationStatus.Completed;
+    }
+
+    public void Cancel()
+    {
+        Status = ReservationStatus.Cancelled;
+    }
+
+    public void CompleteReservation( DeliveredAt deliveredAt, PickedUpAt pickedUpAt )
+    {
+        DeliveredAt = deliveredAt;
+        PickedUpAt = pickedUpAt;
+        Status = ReservationStatus.Completed;
     }
 
     public void SetTotalDay()

@@ -1,0 +1,473 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Models
+@using DeKayaServer.Contracts.PaymentTypes
+@using DeKayaServer.Contracts.Reservations
+@inject IReservationService reservationService
+@inject IPaymentTypeService paymentTypeService
+@inject IApiResultPresenter apiResultPresenter
+@inject ToastService toastService
+@rendermode InteractiveServer
+
+<Dialog @ref="dialog"
+        Title="Rezervasyonu Tamamla">
+    <ChildContent>
+        @if ( isLoading )
+        {
+            <IsLoading Message="Rezervasyon bilgileri yükleniyor, lütfen bekleyin." />
+        }
+        else if ( reservation is null )
+        {
+            <div class="alert alert-warning mb-0">
+                Rezervasyon bilgisi bulunamadı.
+            </div>
+        }
+        else
+        {
+            <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+
+                @if ( RequiresDeliveredAtInput )
+                {
+                    <div class="alert alert-warning py-2 px-3">
+                        Bu rezervasyon müşteriye teslim edildi olarak işaretlenmemiş.
+                        Lütfen gerçek teslim tarihini girin.
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Gerçek teslim tarihi</label>
+                            <InputDate class="form-control" @bind-Value="model.DeliveredDate" />
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Gerçek teslim saati</label>
+                            <InputText class="form-control"
+                                       type="time"
+                                       @bind-Value="model.DeliveredTime" />
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info py-2 px-3">
+                        <div class="fw-semibold">Gerçek teslim tarihi</div>
+                        <div>@reservation.DeliveredAt!.Value.ToString( "dd.MM.yyyy HH:mm" )</div>
+                    </div>
+                }
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Gerçek geri alım tarihi</label>
+                        <InputDate class="form-control" @bind-Value="model.PickedUpDate" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Gerçek geri alım saati</label>
+                        <InputText class="form-control"
+                                   type="time"
+                                   @bind-Value="model.PickedUpTime" />
+                    </div>
+                </div>
+
+                <div class="alert alert-light border py-2 px-3 mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Toplam rezervasyon tutarı</span>
+                        <span class="fw-semibold">@TotalAmount.ToString( "N2" ) ₺</span>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <span>Daha önce alınan ödeme</span>
+                        <span class="fw-semibold">@PaidAmount.ToString( "N2" ) ₺</span>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <span>Kalan bakiye</span>
+                        <span class="fw-bold">@RemainingAmount.ToString( "N2" ) ₺</span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="completePaymentReceived"
+                                   checked="@model.PaymentReceived"
+                                   @onchange="OnPaymentReceivedChanged" />
+                            <label class="form-check-label" for="completePaymentReceived">
+                                Teslim alırken ödeme alındı mı?
+                            </label>
+                        </div>
+
+                        @if ( model.PaymentReceived )
+                        {
+                            <div class="form-floating">
+                                <InputSelect class="form-select" @bind-Value="model.PaymentTypeId">
+                                    <option value="">Ödeme tipi seçin</option>
+                                    @foreach ( var paymentType in PaymentTypeOptions )
+                                    {
+                                        <option value="@paymentType.Id.ToString()">@paymentType.Name</option>
+                                    }
+                                </InputSelect>
+                                <label>Ödeme tipi</label>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="small text-body-secondary">
+                                Ödeme alınmadı. Ödeme tipi NoPay olarak gönderilecek.
+                            </div>
+                        }
+                    </div>
+
+                    @if ( model.PaymentReceived )
+                    {
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Alınan ödeme</label>
+                            <div class="input-group">
+                                <InputNumber class="form-control"
+                                             @bind-Value="model.PaymentAmount" />
+                                <span class="input-group-text">₺</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="completeHasFault"
+                               checked="@model.HasFault"
+                               @onchange="OnHasFaultChanged" />
+                        <label class="form-check-label" for="completeHasFault">
+                            Odada arıza/hasar var mı?
+                        </label>
+                    </div>
+
+                    @if ( model.HasFault )
+                    {
+                        <div class="form-floating">
+                            <InputTextArea class="form-control"
+                                           @bind-Value="model.FaultDescription"
+                                           placeholder="Arıza açıklaması" />
+                            <label>Arıza açıklaması</label>
+                        </div>
+                    }
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-floating">
+                        <InputTextArea class="form-control"
+                                       @bind-Value="model.Note"
+                                       placeholder="Not" />
+                        <label>Not</label>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 justify-content-end mt-4 pt-3 border-top">
+                    <button type="button"
+                            class="btn btn-outline-secondary px-4 py-2 fw-semibold"
+                            @onclick="HideAsync"
+                            disabled="@isSubmit">
+                        İptal
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-success px-4 py-2 fw-semibold"
+                            disabled="@isSubmit">
+                        Rezervasyonu Tamamla
+                    </button>
+                </div>
+            </EditForm>
+        }
+    </ChildContent>
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+    private bool isLoading;
+    private bool isSubmit;
+
+    private ReservationDto? reservation;
+    private CompleteReservationViewModel model = new();
+
+    private List<PaymentTypeOption> paymentTypes = [];
+    private Guid? noPayPaymentTypeId;
+
+    [Parameter] public Guid? ReservationId { get; set; }
+    [Parameter] public EventCallback ReservationCompleted { get; set; }
+
+    private bool RequiresDeliveredAtInput
+        => reservation?.DeliveredAt is null;
+
+    private decimal TotalAmount
+        => reservation?.ReservationTotalAmount ?? 0;
+
+    private decimal PaidAmount
+        => reservation?.PaidAtReservation ?? 0;
+
+    private decimal RemainingAmount
+        => Math.Max( TotalAmount - PaidAmount, 0 );
+
+    private IReadOnlyList<PaymentTypeOption> PaymentTypeOptions
+        => paymentTypes
+            .Where( p => !IsNoPay( p.Name ) )
+            .OrderBy( p => p.Name )
+            .ToList();
+
+    public async Task ShowAsync()
+    {
+        if ( dialog is null || ReservationId is null )
+        {
+            return;
+        }
+
+        isLoading = true;
+        InitForm();
+        await dialog.ShowAsync();
+        await InvokeAsync( StateHasChanged );
+
+        await LoadPaymentTypesAsync();
+        await LoadReservationAsync( ReservationId.Value );
+
+        isLoading = false;
+        await InvokeAsync( StateHasChanged );
+    }
+
+    public async Task HideAsync()
+    {
+        if ( dialog is null )
+        {
+            return;
+        }
+
+        await dialog.HideAsync();
+    }
+
+    private void InitForm()
+    {
+        reservation = null;
+        model = new CompleteReservationViewModel
+        {
+            PickedUpDate = DateOnly.FromDateTime( DateTime.Now ),
+            PickedUpTime = TimeOnly.FromDateTime( DateTime.Now ).ToString( "HH:mm" )
+        };
+    }
+
+    private async Task LoadPaymentTypesAsync()
+    {
+        var result = await paymentTypeService.GetAllAsync();
+
+        paymentTypes = result.IsSuccessful && result.Data is not null
+            ? result.Data
+                .Where( p => p.IsActive )
+                .Select( p => new PaymentTypeOption( p.Id, p.Name ) )
+                .OrderBy( p => p.Name )
+                .ToList()
+            : [];
+
+        noPayPaymentTypeId = paymentTypes.FirstOrDefault( p => IsNoPay( p.Name ) )?.Id;
+
+        if ( noPayPaymentTypeId is not null )
+        {
+            model.PaymentTypeId = noPayPaymentTypeId;
+        }
+    }
+
+    private async Task LoadReservationAsync( Guid reservationId )
+    {
+        var result = await reservationService.GetByIdAsync( reservationId );
+
+        if ( !result.IsSuccessful || result.Data is null )
+        {
+            toastService.ShowError( result.ErrorMessages?.FirstOrDefault() ?? "Rezervasyon getirilemedi." );
+            return;
+        }
+
+        reservation = result.Data;
+
+        if ( reservation.DeliveredAt is null )
+        {
+            model.DeliveredDate = reservation.DeliveryDate;
+            model.DeliveredTime = TimeOnly.FromDateTime( reservation.DeliveryTime ).ToString( "HH:mm" );
+        }
+    }
+
+    private void OnPaymentReceivedChanged( ChangeEventArgs e )
+    {
+        model.PaymentReceived = e.Value is bool b && b;
+
+        if ( model.PaymentReceived )
+        {
+            model.PaymentTypeId = null;
+            return;
+        }
+
+        model.PaymentAmount = 0;
+
+        if ( noPayPaymentTypeId is not null )
+        {
+            model.PaymentTypeId = noPayPaymentTypeId;
+        }
+    }
+
+    private void OnHasFaultChanged( ChangeEventArgs e )
+    {
+        model.HasFault = e.Value is bool b && b;
+
+        if ( !model.HasFault )
+        {
+            model.FaultDescription = null;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if ( ReservationId is null || reservation is null )
+        {
+            return;
+        }
+
+        if ( !TryBuildDateTimes( out var deliveredAt, out var pickedUpAt ) )
+        {
+            return;
+        }
+
+        if ( pickedUpAt < deliveredAt )
+        {
+            toastService.ShowError( "Geri alım tarihi teslim tarihinden önce olamaz." );
+            return;
+        }
+
+        if ( model.PaymentTypeId is null )
+        {
+            toastService.ShowError( "Ödeme tipi seçilmelidir." );
+            return;
+        }
+
+        if ( model.PaymentReceived && model.PaymentAmount <= 0 )
+        {
+            toastService.ShowError( "Ödeme alındıysa ödeme tutarı 0'dan büyük olmalıdır." );
+            return;
+        }
+
+        if ( !model.PaymentReceived && model.PaymentAmount != 0 )
+        {
+            toastService.ShowError( "Ödeme alınmadıysa ödeme tutarı 0 olmalıdır." );
+            return;
+        }
+
+        if ( model.PaymentAmount > RemainingAmount )
+        {
+            toastService.ShowError( "Alınan ödeme kalan bakiyeden büyük olamaz." );
+            return;
+        }
+
+        if ( model.HasFault && string.IsNullOrWhiteSpace( model.FaultDescription ) )
+        {
+            toastService.ShowError( "Arıza varsa arıza açıklaması girilmelidir." );
+            return;
+        }
+
+        try
+        {
+            isSubmit = true;
+
+            var request = new CompleteReservationRequest
+            {
+                Id = ReservationId.Value,
+                DeliveredAt = deliveredAt,
+                PickedUpAt = pickedUpAt,
+                PaymentReceived = model.PaymentReceived,
+                PaymentTypeId = model.PaymentTypeId,
+                PaymentAmount = model.PaymentReceived ? model.PaymentAmount : 0,
+                HasFault = model.HasFault,
+                FaultDescription = model.HasFault ? model.FaultDescription : null,
+                Note = string.IsNullOrWhiteSpace( model.Note ) ? null : model.Note
+            };
+
+            var result = await reservationService.CompleteAsync( ReservationId.Value, request );
+            apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = true } );
+
+            if ( !result.IsSuccessful )
+            {
+                return;
+            }
+
+            if ( ReservationCompleted.HasDelegate )
+            {
+                await ReservationCompleted.InvokeAsync();
+            }
+
+            await HideAsync();
+        }
+        finally
+        {
+            isSubmit = false;
+        }
+    }
+
+    private bool TryBuildDateTimes( out DateTime deliveredAt, out DateTime pickedUpAt )
+    {
+        deliveredAt = default;
+        pickedUpAt = default;
+
+        if ( reservation?.DeliveredAt is DateTime existingDeliveredAt )
+        {
+            deliveredAt = existingDeliveredAt;
+        }
+        else
+        {
+            if ( model.DeliveredDate is null )
+            {
+                toastService.ShowError( "Gerçek teslim tarihini seçin." );
+                return false;
+            }
+
+            if ( !TimeOnly.TryParse( model.DeliveredTime, out var deliveredTime ) )
+            {
+                toastService.ShowError( "Gerçek teslim saatini doğru girin." );
+                return false;
+            }
+
+            deliveredAt = model.DeliveredDate.Value.ToDateTime( deliveredTime );
+        }
+
+        if ( model.PickedUpDate is null )
+        {
+            toastService.ShowError( "Gerçek geri alım tarihini seçin." );
+            return false;
+        }
+
+        if ( !TimeOnly.TryParse( model.PickedUpTime, out var pickedUpTime ) )
+        {
+            toastService.ShowError( "Gerçek geri alım saatini doğru girin." );
+            return false;
+        }
+
+        pickedUpAt = model.PickedUpDate.Value.ToDateTime( pickedUpTime );
+        return true;
+    }
+
+    private static bool IsNoPay( string? name )
+        => string.Equals( name?.Trim(), "NoPay", StringComparison.OrdinalIgnoreCase );
+
+    private sealed class CompleteReservationViewModel
+    {
+        public DateOnly? DeliveredDate { get; set; }
+        public string DeliveredTime { get; set; } = "09:00";
+
+        public DateOnly? PickedUpDate { get; set; }
+        public string PickedUpTime { get; set; } = "09:00";
+
+        public bool PaymentReceived { get; set; }
+        public Guid? PaymentTypeId { get; set; }
+        public decimal PaymentAmount { get; set; }
+
+        public bool HasFault { get; set; }
+        public string? FaultDescription { get; set; }
+
+        public string? Note { get; set; }
+    }
+
+    private sealed record PaymentTypeOption( Guid Id, string Name );
+}

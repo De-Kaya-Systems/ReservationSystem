@@ -10,6 +10,7 @@ public class UpdateReservationRequest
     public DateOnly PickUpDate { get; set; }
     public TimeOnly PickUpTime { get; set; }
     public Guid CoolingRoomId { get; set; }
+    public int Status { get; set; }
     public Guid PaymentTypeId { get; set; }
     public decimal PaidAtReservation { get; set; }
     public string? Note { get; set; }

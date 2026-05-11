@@ -4,6 +4,8 @@
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.UpdateReservation
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.DeleteReservation
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.DetailReservation
+@using DeKayaServer.BlazorApp.Components.Pages.Reservation.CompleteReservation
+@using DeKayaServer.Contracts.Reservations
 @inherits UserContextComponent
 @inject IReservationService reservationService
 @inject ICustomerService customerService
@@ -51,15 +53,9 @@ else
                 <PropertyColumn Property="@(r => r.ReservationStart)" Title="Rezervasyon Başlangıç" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
                 <PropertyColumn Property="@(r => r.ReservationEnd)" Title="Rezervasyon Bitiş" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
 
-                <TemplateColumn Title="Teslime Kalan Süre" Sortable="true" Context="r">
-                    <span class="badge @GetRemainingBadgeClass( r.ReservationStart ) p-2">
-                        @GetRemainingText( r.ReservationStart )
-                    </span>
-                </TemplateColumn>
-
-                <TemplateColumn Title="Alınmasına Kalan Süre" Sortable="true" Context="r">
-                    <span class="badge @GetRemainingBadgeClass( r.ReservationEnd ) p-2">
-                        @GetRemainingText( r.ReservationEnd )
+                <TemplateColumn Title="Operasyon Durumu" Context="r">
+                    <span class="badge @GetOperationStatusBadgeClass( r ) p-2">
+                        @GetOperationStatusText( r )
                     </span>
                 </TemplateColumn>
 
@@ -82,6 +78,15 @@ else
                                     @onclick="() => ShowUpdateReservationDialog( r )">
                                 <i class="bi bi-pen"></i>
                                 <span>Güncelle</span>
+                            </button>
+                        }
+                        @if ( CurrentUser.HasPermission( "reservation:edit" ) && CanCompleteReservation( r ) )
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-success btn-sm"
+                                    @onclick="() => ShowCompleteReservationDialog( r )">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>Tamamla</span>
                             </button>
                         }
                         @if ( CurrentUser.HasPermission( "reservation:delete" ) )
@@ -110,6 +115,9 @@ else
 <UpdateReservationDialog @ref="updateReservationDialog"
                          ReservationId="@selectedReservationId"
                          ReservationUpdated="HandleReservationPageAsync" />
+<CompleteReservationDialog @ref="completeReservationDialog"
+                           ReservationId="@selectedReservationId"
+                           ReservationCompleted="HandleReservationPageAsync" />
 <DeleteReservationDialog @ref="deleteReservationDialog"
                          ReservationId="@selectedReservationId"
                          ReservationNumber="@selectedReservationNumber"
@@ -125,6 +133,7 @@ else
     private CreateReservationDialog? createReservationDialog;
     private DetailReservationDialog? detailReservationDialog;
     private UpdateReservationDialog? updateReservationDialog;
+    private CompleteReservationDialog? completeReservationDialog;
     private DeleteReservationDialog? deleteReservationDialog;
     private Guid? selectedReservationId;
     private string? selectedReservationNumber;
@@ -135,7 +144,8 @@ else
             : reservations.Where( r =>
                 ( r.CustomerFullName != null && r.CustomerFullName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
                 ( r.ReservationNumber != null && r.ReservationNumber.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
-                ( r.CoolingRoomName != null && r.CoolingRoomName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ) )
+                ( r.CoolingRoomName != null && r.CoolingRoomName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
+                GetOperationStatusText( r ).Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) )
         .ToList();
 
     private IQueryable<ReservationViewModel> GridItems => FilteredItems.AsQueryable();
@@ -199,6 +209,44 @@ else
         await updateReservationDialog.ShowAsync();
     }
 
+    private async Task ShowCompleteReservationDialog( ReservationViewModel reservation )
+    {
+        selectedReservationId = reservation.Id;
+
+        await InvokeAsync( StateHasChanged );
+        await Task.Yield();
+
+        if ( completeReservationDialog is null )
+        {
+            return;
+        }
+
+        await completeReservationDialog.ShowAsync();
+    }
+
+    private static bool CanCompleteReservation( ReservationViewModel reservation )
+    {
+        if ( reservation.Status is ReservationOperationStatusDto.Completed
+            or ReservationOperationStatusDto.PickedUpFromCustomer
+            or ReservationOperationStatusDto.Cancelled )
+        {
+            return false;
+        }
+
+        if ( reservation.Status == ReservationOperationStatusDto.DeliveredToCustomer )
+        {
+            return IsDueOrWithinNext24Hours( reservation.ReservationEnd );
+        }
+
+        if ( reservation.Status == ReservationOperationStatusDto.Scheduled )
+        {
+            return reservation.ReservationEnd <= DateTime.Now;
+        }
+
+        return false;
+    }
+
+
     private async Task ShowDeleteReservationDialog( ReservationViewModel reservation )
     {
         selectedReservationId = reservation.Id;
@@ -259,6 +307,9 @@ else
                     CoolingRoomName = ResolveName( r.CoolingRoomId, roomLookup ),
                     ReservationStart = r.DeliveryTime,
                     ReservationEnd = r.PickUpTime,
+                    Status = ( ReservationOperationStatusDto )r.Status,
+                    DeliveredAt = r.DeliveredAt,
+                    PickedUpAt = r.PickedUpAt,
                     TotalDays = r.TotalDay,
                     TotalAmount = r.ReservationTotalAmount ?? 0
                 } )
@@ -285,36 +336,74 @@ else
         return idValue;
     }
 
-    private static int GetRemainingDays( DateTime reservationEnd )
-    {
-        var remaining = ( reservationEnd.Date - DateTime.Now.Date ).Days;
-        return remaining;
-    }
+    private static bool IsDueOrWithinNext24Hours( DateTime targetDateTime )
+        => targetDateTime <= DateTime.Now.AddHours( 24 );
 
-    private static string GetRemainingBadgeClass( DateTime reservationEnd )
+    private static string GetOperationStatusText( ReservationViewModel reservation )
     {
-        var remaining = GetRemainingDays( reservationEnd );
-
-        return remaining switch
+        return reservation.Status switch
         {
-            <= 0 => "bg-danger",
-            <= 2 => "bg-warning text-dark",
-            <= 7 => "bg-info text-dark",
-            _ => "bg-success"
+            ReservationOperationStatusDto.Scheduled when reservation.ReservationEnd <= DateTime.Now
+                => "Teslim kaydı eksik",
+
+            ReservationOperationStatusDto.Scheduled when IsDueOrWithinNext24Hours( reservation.ReservationStart )
+                => "Teslimat bekliyor",
+
+            ReservationOperationStatusDto.Scheduled
+                => "Rezerve edildi",
+
+            ReservationOperationStatusDto.DeliveredToCustomer when IsDueOrWithinNext24Hours( reservation.ReservationEnd )
+                => "Geri alım bekliyor",
+
+            ReservationOperationStatusDto.DeliveredToCustomer
+                => "Müşteriye teslim edildi",
+
+            ReservationOperationStatusDto.PickedUpFromCustomer
+                => "Müşteriden geri alındı",
+
+            ReservationOperationStatusDto.Completed
+                => "Tamamlandı",
+
+            ReservationOperationStatusDto.Cancelled
+                => "İptal edildi",
+
+            _ => "Bilinmiyor"
         };
     }
 
-    private static string GetRemainingText( DateTime reservationEnd )
-    {
-        var remaining = GetRemainingDays( reservationEnd );
 
-        return remaining switch
+    private static string GetOperationStatusBadgeClass( ReservationViewModel reservation )
+    {
+        return reservation.Status switch
         {
-            <= 0 => "Süre doldu",
-            1 => "1 gün",
-            _ => $"{remaining} gün"
+            ReservationOperationStatusDto.Scheduled when reservation.ReservationEnd <= DateTime.Now
+                => "bg-danger",
+
+            ReservationOperationStatusDto.Scheduled when IsDueOrWithinNext24Hours( reservation.ReservationStart )
+                => "bg-warning text-dark",
+
+            ReservationOperationStatusDto.Scheduled
+                => "bg-info text-dark",
+
+            ReservationOperationStatusDto.DeliveredToCustomer when IsDueOrWithinNext24Hours( reservation.ReservationEnd )
+                => "bg-warning text-dark",
+
+            ReservationOperationStatusDto.DeliveredToCustomer
+                => "bg-primary",
+
+            ReservationOperationStatusDto.PickedUpFromCustomer
+                => "bg-success",
+
+            ReservationOperationStatusDto.Completed
+                => "bg-success",
+
+            ReservationOperationStatusDto.Cancelled
+                => "bg-secondary",
+
+            _ => "bg-secondary"
         };
     }
+
 
     public sealed class ReservationViewModel
     {
@@ -324,6 +413,9 @@ else
         public string CoolingRoomName { get; set; } = string.Empty;
         public DateTime ReservationStart { get; set; }
         public DateTime ReservationEnd { get; set; }
+        public ReservationOperationStatusDto Status { get; set; }
+        public DateTime? DeliveredAt { get; set; }
+        public DateTime? PickedUpAt { get; set; }
         public int TotalDays { get; set; }
         public decimal TotalAmount { get; set; }
     }

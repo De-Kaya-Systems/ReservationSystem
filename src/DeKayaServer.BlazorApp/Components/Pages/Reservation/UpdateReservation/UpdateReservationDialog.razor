@@ -74,6 +74,28 @@
                                 <ValidationMessage For="@(() => model.PickUpTime)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
                             </div>
                         </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <div class="form-floating">
+                                    <InputSelect class="form-select"
+                                                 @bind-Value="model.Status">
+                                        <option value="@ReservationOperationStatusDto.Scheduled"
+                                                disabled="@(model.Status == ReservationOperationStatusDto.DeliveredToCustomer)">
+                                            Rezerve edildi
+                                        </option>
+                                        <option value="@ReservationOperationStatusDto.DeliveredToCustomer">
+                                            Müşteriye teslim edildi
+                                        </option>
+                                    </InputSelect>
+                                    <label>Operasyon durumu</label>
+                                </div>
+                                <div class="small text-body-secondary mt-1">
+                                    Oda müşteriye verildiyse durumu müşteriye teslim edildi olarak güncelleyin.
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row g-3 mb-3">
                             <div class="col-12 col-md-6">
                                 <div class="position-relative">
@@ -423,6 +445,7 @@
             DeliveryTime = TimeOnly.FromDateTime( reservation.DeliveryTime ).ToString( "HH:mm" ),
             PickUpDate = reservation.PickUpDate,
             PickUpTime = TimeOnly.FromDateTime( reservation.PickUpTime ).ToString( "HH:mm" ),
+            Status = ( ReservationOperationStatusDto )reservation.Status,
             PaidAtReservation = 0,
             Note = reservation.Note
         };
@@ -810,6 +833,7 @@
                 DeliveryTime = deliveryTime,
                 PickUpDate = model.PickUpDate.Value,
                 PickUpTime = pickUpTime,
+                Status = ( int )model.Status,
                 PaymentTypeId = paymentTypeId,
                 PaidAtReservation = paidAtReservation,
                 Note = string.IsNullOrWhiteSpace( model.Note ) ? null : model.Note
@@ -861,6 +885,8 @@
         [Required( ErrorMessage = "Rezervasyon bitiş saati girin!" )]
         [RegularExpression( @"^\d{2}:\d{2}$", ErrorMessage = "Saat formatı HH:mm olmalı." )]
         public string PickUpTime { get; set; } = "09:00";
+
+        public ReservationOperationStatusDto Status { get; set; } = ReservationOperationStatusDto.Scheduled;
 
         [Required( ErrorMessage = "Ödeme tipi seçin!" )]
         public Guid? PaymentTypeId { get; set; }
