@@ -40,6 +40,14 @@ public static class CoolingRoomModule
             } )
             .Produces<Result<string>>();
 
+        app.MapGet( "overview",
+            async ( ISender sender, CancellationToken cancellationToken ) =>
+            {
+                var res = await sender.Send( new CoolingRoomOverviewGetAllQuery(), cancellationToken );
+                return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
+            } )
+            .Produces<Result<List<CoolingRoomOverviewDto>>>();
+
         app.MapGet( "{id}",
             async ( Guid id, ISender sender, CancellationToken cancellationToken ) =>
             {

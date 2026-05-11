@@ -6,6 +6,7 @@
 @using DeKayaServer.BlazorApp.Models
 @using DeKayaServer.BlazorApp.Services
 @using DeKayaServer.Contracts.CoolingRooms
+@using DeKayaServer.Contracts.Reservations
 
 @inject ICoolingRoomService coolingRoomService
 @inject IApiResultPresenter apiResultPresenter
@@ -39,7 +40,7 @@
             <div class="col-12 col-md-4 col-lg-3">
                 <label class="form-label small text-body-secondary">Arama</label>
                 <input class="form-control form-control-sm cr-control"
-                       placeholder="Oda adı..."
+                       placeholder="Oda, müşteri, rezervasyon..."
                        @bind="searchText"
                        @bind:event="oninput" />
             </div>
@@ -99,32 +100,9 @@
 
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            @switch ( room.Status )
-                            {
-                                case CoolingRoomStatus.Available:
-                                    <span class="badge text-bg-success rounded-pill">
-                                        <i class="bi bi-check2-circle me-1"></i>Uygun
-                                    </span>
-                                    break;
-
-                                case CoolingRoomStatus.Occupied:
-                                    <span class="badge text-bg-warning rounded-pill">
-                                        <i class="bi bi-hourglass-split me-1"></i>Müşteride
-                                    </span>
-                                    break;
-
-                                case CoolingRoomStatus.Faulty:
-                                    <span class="badge text-bg-danger rounded-pill">
-                                        <i class="bi bi-exclamation-octagon me-1"></i>Arıza/Bakım
-                                    </span>
-                                    break;
-
-                                case CoolingRoomStatus.Reserved:
-                                    <span class="badge text-bg-primary rounded-pill">
-                                        <i class="bi bi-bookmark-check me-1"></i>Rezerve
-                                    </span>
-                                    break;
-                            }
+                            <span class="badge @GetStatusBadgeClass( room ) rounded-pill">
+                                <i class="bi @GetStatusIcon( room ) me-1"></i>@GetRoomOperationText( room )
+                            </span>
 
                             @if ( room.Shelf )
                             {
@@ -145,6 +123,13 @@
                                     Pasif
                                 </span>
                             }
+
+                            @if ( room.OutstandingAmount > 0 )
+                            {
+                                <span class="badge text-bg-danger rounded-pill">
+                                    Borç var
+                                </span>
+                            }
                         </div>
 
                         <div class="dropdown">
@@ -163,7 +148,7 @@
                                 </li>
                                 <li class="cp">
                                     <a class="dropdown-item"
-                                            @onclick="() => ShowUpdateCoolingRoomDialog(room.Id)">
+                                           @onclick="() => ShowUpdateCoolingRoomDialog( room.Id )">
                                         Güncelle
                                     </a>
                                 </li>
@@ -189,17 +174,51 @@
                                 @if ( room.Status == CoolingRoomStatus.Available )
                                 {
                                     <div class="fw-semibold">Müsait</div>
-                                    <div class="small text-body-secondary">Rezervasyon yok</div>
+
+                                    @if ( room.NextReservationStart is not null )
+                                    {
+                                        <div class="small text-body-secondary">
+                                            Sonraki: @FormatDateTime( room.NextReservationStart.Value )
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="small text-body-secondary">Rezervasyon yok</div>
+                                    }
                                 }
                                 else if ( room.Status == CoolingRoomStatus.Faulty )
                                 {
                                     <div class="fw-semibold text-danger">Arıza/Bakım</div>
-                                    <div class="small text-body-secondary">Servis kaydı var</div>
+
+                                    @if ( room.MaintenanceEnd is not null )
+                                    {
+                                        <div class="small text-body-secondary">
+                                            Bitiş: @FormatDate( room.MaintenanceEnd.Value )
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="small text-body-secondary">Servis kaydı var</div>
+                                    }
+                                }
+                                else if ( room.CurrentReservationEnd is not null )
+                                {
+                                    <div class="fw-semibold">@GetRoomOperationText( room )</div>
+                                    <div class="small text-body-secondary">
+                                        Bitiş: @FormatDateTime( room.CurrentReservationEnd.Value )
+                                    </div>
+                                }
+                                else if ( room.NextReservationStart is not null )
+                                {
+                                    <div class="fw-semibold">@GetRoomOperationText( room )</div>
+                                    <div class="small text-body-secondary">
+                                        Başlangıç: @FormatDateTime( room.NextReservationStart.Value )
+                                    </div>
                                 }
                                 else
                                 {
-                                    <div class="fw-semibold">Rezervasyon</div>
-                                    <div class="small text-body-secondary">Detay yakında</div>
+                                    <div class="fw-semibold">@GetRoomOperationText( room )</div>
+                                    <div class="small text-body-secondary">Rezervasyon bilgisi yok</div>
                                 }
                             </div>
                         </div>
@@ -208,8 +227,80 @@
                     <div class="mt-4 small">
                         <div class="d-flex justify-content-between gap-3">
                             <span class="text-body-secondary">Durum</span>
-                            <span class="fw-medium">@(!string.IsNullOrWhiteSpace( room.StatusName ) ? room.StatusName : "-")</span>
+                            <span class="fw-medium text-end">@GetRoomOperationText( room )</span>
                         </div>
+
+                        @if ( !string.IsNullOrWhiteSpace( room.CurrentReservationNumber ) )
+                        {
+                            <div class="d-flex justify-content-between gap-3 mt-2">
+                                <span class="text-body-secondary">Rezervasyon</span>
+                                <span class="fw-medium">@room.CurrentReservationNumber</span>
+                            </div>
+                        }
+
+                        @if ( !string.IsNullOrWhiteSpace( room.CurrentCustomerName ) )
+                        {
+                            <div class="d-flex justify-content-between gap-3 mt-2">
+                                <span class="text-body-secondary">Müşteri</span>
+                                <span class="fw-medium text-end">@room.CurrentCustomerName</span>
+                            </div>
+                        }
+
+                        @if ( !string.IsNullOrWhiteSpace( room.CurrentCustomerPhoneNumber ) )
+                        {
+                            <div class="d-flex justify-content-between gap-3 mt-2">
+                                <span class="text-body-secondary">Telefon</span>
+                                <span class="fw-medium">@room.CurrentCustomerPhoneNumber</span>
+                            </div>
+                        }
+
+                        @if ( room.CurrentReservationEnd is not null )
+                        {
+                            <div class="d-flex justify-content-between gap-3 mt-2">
+                                <span class="text-body-secondary">Rez. Bitiş</span>
+                                <span class="fw-medium">@FormatDateTime( room.CurrentReservationEnd.Value )</span>
+                            </div>
+                        }
+
+                        @if ( room.NextReservationStart is not null )
+                        {
+                            <div class="d-flex justify-content-between gap-3 mt-2">
+                                <span class="text-body-secondary">Sonraki Rez.</span>
+                                <span class="fw-medium">@FormatDateTime( room.NextReservationStart.Value )</span>
+                            </div>
+                        }
+
+                        @if ( room.NextAvailableAt is not null )
+                        {
+                            <div class="d-flex justify-content-between gap-3 mt-2">
+                                <span class="text-body-secondary">Müsaitlik</span>
+                                <span class="fw-medium">@FormatDateTime( room.NextAvailableAt.Value )</span>
+                            </div>
+                        }
+                        else if ( room.Status == CoolingRoomStatus.Available )
+                        {
+                            <div class="d-flex justify-content-between gap-3 mt-2">
+                                <span class="text-body-secondary">Müsaitlik</span>
+                                <span class="fw-medium text-success">Şimdi</span>
+                            </div>
+                        }
+
+                        @if ( room.OutstandingAmount > 0 )
+                        {
+                            <div class="d-flex justify-content-between gap-3 mt-2">
+                                <span class="text-body-secondary">Kalan Borç</span>
+                                <span class="fw-bold text-danger">@FormatMoney( room.OutstandingAmount )</span>
+                            </div>
+                        }
+
+                        @if ( !string.IsNullOrWhiteSpace( room.MaintenanceDescription ) )
+                        {
+                            <div class="d-flex justify-content-between gap-3 mt-2">
+                                <span class="text-body-secondary">Bakım</span>
+                                <span class="fw-medium text-end">@room.MaintenanceDescription</span>
+                            </div>
+                        }
+
                         <div class="d-flex justify-content-between gap-3 mt-2">
                             <span class="text-body-secondary">Günlük Fiyat</span>
                             <span class="fw-medium">@FormatMoney( room.DailyPrice )</span>
@@ -222,21 +313,17 @@
     }
 </div>
 
-<CreateCoolingRoomDialog
-    @ref="createCoolingRoomDialog"
-    CoolingRoomAdded="ReloadAsync" />
+<CreateCoolingRoomDialog @ref="createCoolingRoomDialog"
+                         CoolingRoomAdded="ReloadAsync" />
 
-<UpdateCoolingRoomDialog
-    @ref="updateCoolingRoomDialog"
-    CoolingRoomUpdated="ReloadAsync" />
+<UpdateCoolingRoomDialog @ref="updateCoolingRoomDialog"
+                         CoolingRoomUpdated="ReloadAsync" />
 
-<DeleteCoolingRoomDialog
-    @ref="deleteCoolingRoomDialog"
-    CoolingRoomDeleted="ReloadAsync" />
+<DeleteCoolingRoomDialog @ref="deleteCoolingRoomDialog"
+                         CoolingRoomDeleted="ReloadAsync" />
 
-<DetailCoolingRoomDialog
-    @ref="detailCoolingRoomDialog"
-    CoolingRoomId="selectedCoolingRoomId" />
+<DetailCoolingRoomDialog @ref="detailCoolingRoomDialog"
+                         CoolingRoomId="selectedCoolingRoomId" />
 
 @code {
     private CreateCoolingRoomDialog? createCoolingRoomDialog;
@@ -269,8 +356,18 @@
                 || ( shelfFilter == ShelfFilter.Shelf && r.Shelf )
                 || ( shelfFilter == ShelfFilter.NoShelf && !r.Shelf ) )
             .Where( r => statusFilter is null || r.Status == statusFilter.Value )
-            .Where( r => string.IsNullOrWhiteSpace( searchText )
-                || r.Name.Contains( searchText.Trim(), StringComparison.OrdinalIgnoreCase ) )
+            .Where( r =>
+            {
+                var term = searchText.Trim();
+
+                return string.IsNullOrWhiteSpace( term )
+                    || r.Name.Contains( term, StringComparison.OrdinalIgnoreCase )
+                    || ( r.StatusName != null && r.StatusName.Contains( term, StringComparison.OrdinalIgnoreCase ) )
+                    || ( r.CurrentCustomerName != null && r.CurrentCustomerName.Contains( term, StringComparison.OrdinalIgnoreCase ) )
+                    || ( r.CurrentCustomerPhoneNumber != null && r.CurrentCustomerPhoneNumber.Contains( term, StringComparison.OrdinalIgnoreCase ) )
+                    || ( r.CurrentReservationNumber != null && r.CurrentReservationNumber.Contains( term, StringComparison.OrdinalIgnoreCase ) )
+                    || ( r.NextReservationNumber != null && r.NextReservationNumber.Contains( term, StringComparison.OrdinalIgnoreCase ) );
+            } )
             .ToList();
 
     protected override async Task OnInitializedAsync()
@@ -285,7 +382,7 @@
         {
             isLoading = true;
 
-            var res = await coolingRoomService.GetAllAsync();
+            var res = await coolingRoomService.GetOverviewAsync();
             apiResultPresenter.Present( res, new ApiPresentationOptions { ShowSuccess = false } );
 
             if ( !res.IsSuccessful || res.Data is null )
@@ -344,21 +441,24 @@
         await Task.Yield();
 
         if ( detailCoolingRoomDialog is null )
+        {
             return;
+        }
 
         await detailCoolingRoomDialog.ShowAsync();
     }
 
-
     private async Task ShowDeleteCoolingRoomDialog( Guid id, string name )
     {
         if ( deleteCoolingRoomDialog is null )
+        {
             return;
+        }
 
         await deleteCoolingRoomDialog.ShowAsync( id, name );
     }
 
-    private static CoolingRoomViewModel MapToViewModel( CoolingRoomDto dto )
+    private static CoolingRoomViewModel MapToViewModel( CoolingRoomOverviewDto dto )
         => new()
         {
             Id = dto.Id,
@@ -370,6 +470,28 @@
             Status = MapStatus( dto.StatusName ),
             MaintenanceId = dto.MaintenanceId,
             IsActive = dto.IsActive,
+
+            CurrentReservationId = dto.CurrentReservationId,
+            CurrentReservationNumber = dto.CurrentReservationNumber,
+            CurrentCustomerName = dto.CurrentCustomerName,
+            CurrentCustomerPhoneNumber = dto.CurrentCustomerPhoneNumber,
+            CurrentReservationStart = dto.CurrentReservationStart,
+            CurrentReservationEnd = dto.CurrentReservationEnd,
+            CurrentReservationStatus = dto.CurrentReservationStatus,
+            DeliveredAt = dto.DeliveredAt,
+            PickedUpAt = dto.PickedUpAt,
+
+            NextReservationId = dto.NextReservationId,
+            NextReservationNumber = dto.NextReservationNumber,
+            NextCustomerName = dto.NextCustomerName,
+            NextReservationStart = dto.NextReservationStart,
+            NextReservationEnd = dto.NextReservationEnd,
+
+            NextAvailableAt = dto.NextAvailableAt,
+            OutstandingAmount = dto.OutstandingAmount,
+
+            MaintenanceDescription = dto.MaintenanceDescription,
+            MaintenanceEnd = dto.MaintenanceEnd
         };
 
     private static CoolingRoomStatus MapStatus( string? statusName )
@@ -399,18 +521,193 @@
     private static string FormatMoney( decimal value )
         => value.ToString( "N2" ) + " ₺";
 
+    private static string FormatDateTime( DateTime value )
+        => value.ToString( "dd.MM.yyyy HH:mm" );
+
+    private static string FormatDate( DateTime value )
+        => value.ToString( "dd.MM.yyyy" );
+
+    private static string GetRoomOperationText( CoolingRoomViewModel room )
+    {
+        if ( room.Status == CoolingRoomStatus.Faulty )
+        {
+            return "Arıza/Bakım";
+        }
+
+        if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.DeliveredToCustomer
+             && room.CurrentReservationEnd is not null
+             && room.CurrentReservationEnd.Value <= DateTime.Now.AddHours( 24 ) )
+        {
+            return "Geri alım bekliyor";
+        }
+
+        if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.DeliveredToCustomer )
+        {
+            return "Müşteride";
+        }
+
+        if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.Scheduled
+             && room.CurrentReservationEnd is not null
+             && room.CurrentReservationEnd.Value <= DateTime.Now )
+        {
+            return "Teslim kaydı eksik";
+        }
+
+        if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.Scheduled
+             && room.CurrentReservationStart is not null
+             && room.CurrentReservationStart.Value <= DateTime.Now )
+        {
+            return "Teslimat bekliyor";
+        }
+
+        if ( room.Status == CoolingRoomStatus.Available )
+        {
+            return "Uygun";
+        }
+
+        if ( room.Status == CoolingRoomStatus.Reserved )
+        {
+            return "Rezerve";
+        }
+
+        if ( room.Status == CoolingRoomStatus.Occupied )
+        {
+            return "Müşteride";
+        }
+
+        return !string.IsNullOrWhiteSpace( room.StatusName )
+            ? room.StatusName
+            : "-";
+    }
+
+    private static string GetStatusBadgeClass( CoolingRoomViewModel room )
+        => GetRoomOperationText( room ) switch
+        {
+            "Uygun" => "text-bg-success",
+            "Müşteride" => "text-bg-warning",
+            "Geri alım bekliyor" => "text-bg-warning",
+            "Teslimat bekliyor" => "text-bg-warning",
+            "Teslim kaydı eksik" => "text-bg-danger",
+            "Arıza/Bakım" => "text-bg-danger",
+            "Rezerve" => "text-bg-primary",
+            _ => "text-bg-secondary"
+        };
+
+    private static string GetStatusIcon( CoolingRoomViewModel room )
+        => GetRoomOperationText( room ) switch
+        {
+            "Uygun" => "bi-check2-circle",
+            "Müşteride" => "bi-hourglass-split",
+            "Geri alım bekliyor" => "bi-arrow-return-left",
+            "Teslimat bekliyor" => "bi-truck",
+            "Teslim kaydı eksik" => "bi-exclamation-triangle",
+            "Arıza/Bakım" => "bi-exclamation-octagon",
+            "Rezerve" => "bi-bookmark-check",
+            _ => "bi-info-circle"
+        };
+
     private static int GetProgress( CoolingRoomViewModel room )
-        => room.Status == CoolingRoomStatus.Occupied ? 10 : 0;
+    {
+        var now = DateTime.Now;
+
+        if ( room.Status == CoolingRoomStatus.Available )
+        {
+            return 0;
+        }
+
+        if ( room.Status == CoolingRoomStatus.Faulty )
+        {
+            return 100;
+        }
+
+        if ( room.CurrentReservationStart is not null
+             && room.CurrentReservationEnd is not null
+             && room.CurrentReservationStart.Value <= now )
+        {
+            return GetElapsedReservationProgress(
+                room.CurrentReservationStart.Value,
+                room.CurrentReservationEnd.Value,
+                now );
+        }
+
+        if ( room.NextReservationStart is not null )
+        {
+            return GetUpcomingReservationUrgencyProgress(
+                room.NextReservationStart.Value,
+                now );
+        }
+
+        return 0;
+    }
+
+    private static int GetElapsedReservationProgress( DateTime start, DateTime end, DateTime now )
+    {
+        if ( end <= start )
+        {
+            return 100;
+        }
+
+        if ( now <= start )
+        {
+            return 0;
+        }
+
+        if ( now >= end )
+        {
+            return 100;
+        }
+
+        var total = ( end - start ).TotalSeconds;
+        var elapsed = ( now - start ).TotalSeconds;
+
+        return ( int )Math.Clamp( elapsed / total * 100, 0, 100 );
+    }
+
+    private static int GetUpcomingReservationUrgencyProgress( DateTime reservationStart, DateTime now )
+    {
+        var hoursUntilStart = ( reservationStart - now ).TotalHours;
+
+        if ( hoursUntilStart <= 0 )
+        {
+            return 100;
+        }
+
+        if ( hoursUntilStart >= 24 )
+        {
+            return 20;
+        }
+
+        var progress = 100 - ( hoursUntilStart / 24 * 80 );
+
+        return ( int )Math.Clamp( progress, 20, 100 );
+    }
+
 
     private static string GetAccent( CoolingRoomViewModel room )
-        => room.Status switch
+    {
+        var operationText = GetRoomOperationText( room );
+
+        if ( operationText == "Teslimat bekliyor"
+             || operationText == "Geri alım bekliyor" )
         {
-            CoolingRoomStatus.Available => "#27ae60",
-            CoolingRoomStatus.Occupied => "#f39c12",
-            CoolingRoomStatus.Faulty => "#e74c3c",
-            CoolingRoomStatus.Reserved => "#007fff",
+            return "#f39c12";
+        }
+
+        if ( operationText == "Teslim kaydı eksik" )
+        {
+            return "#e74c3c";
+        }
+
+        return operationText switch
+        {
+            "Uygun" => "#27ae60",
+            "Müşteride" => "#f39c12",
+            "Arıza/Bakım" => "#e74c3c",
+            "Rezerve" => "#007fff",
             _ => "#22c55e"
         };
+    }
+
 
     private enum CoolingRoomStatus
     {
@@ -441,5 +738,27 @@
         public bool IsActive { get; set; }
 
         public CoolingRoomStatus Status { get; set; }
+
+        public Guid? CurrentReservationId { get; set; }
+        public string? CurrentReservationNumber { get; set; }
+        public string? CurrentCustomerName { get; set; }
+        public string? CurrentCustomerPhoneNumber { get; set; }
+        public DateTime? CurrentReservationStart { get; set; }
+        public DateTime? CurrentReservationEnd { get; set; }
+        public int? CurrentReservationStatus { get; set; }
+        public DateTime? DeliveredAt { get; set; }
+        public DateTime? PickedUpAt { get; set; }
+
+        public Guid? NextReservationId { get; set; }
+        public string? NextReservationNumber { get; set; }
+        public string? NextCustomerName { get; set; }
+        public DateTime? NextReservationStart { get; set; }
+        public DateTime? NextReservationEnd { get; set; }
+
+        public DateTime? NextAvailableAt { get; set; }
+        public decimal OutstandingAmount { get; set; }
+
+        public string? MaintenanceDescription { get; set; }
+        public DateTime? MaintenanceEnd { get; set; }
     }
 }

@@ -11,6 +11,8 @@ public interface ICoolingRoomService
     Task<Result<string>> UpdateAsync( Guid Id, UpdateCoolingRoomRequest request, CancellationToken cancellationToken = default );
     Task<Result<CoolingRoomDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default );
     Task<Result<List<CoolingRoomDto>>> GetAllAsync( CancellationToken cancellationToken = default );
+    Task<Result<List<CoolingRoomOverviewDto>>> GetOverviewAsync( CancellationToken cancellationToken = default );
+
     Task<Result<List<CoolingRoomDto>>> GetAvailableAsync( DateOnly from, DateOnly to, CancellationToken cancellationToken = default );
 
     Task<Result<string>> DeleteAsync( Guid id, CancellationToken cancellationToken = default );
@@ -35,6 +37,11 @@ public class CoolingRoomService( IApiClient apiClient ) : ICoolingRoomService
 
     public Task<Result<CoolingRoomDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default )
         => apiClient.GetAsync<CoolingRoomDto>( $"{EndpointConstants.CoolingRooms}/{id}", cancellationToken );
+
+    public Task<Result<List<CoolingRoomOverviewDto>>> GetOverviewAsync( CancellationToken cancellationToken = default )
+    => apiClient.GetAsync<List<CoolingRoomOverviewDto>>(
+        EndpointConstants.CoolingRoomsOverview,
+        cancellationToken );
 
     public async Task<Result<List<CoolingRoomDto>>> GetAllAsync( CancellationToken cancellationToken = default )
     {
