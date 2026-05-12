@@ -24,10 +24,17 @@
         }
         else if ( reservation is not null )
         {
-            <div class="d-flex align-items-start justify-content-between gap-3">
+            <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
                 <div class="min-w-0">
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <h5 class="mb-0 text-truncate">Rezervasyon No : @Display( reservation.ReservationNumber )</h5>
+                        <h5 class="mb-0 text-truncate">
+                            Rezervasyon No : @Display( reservation.ReservationNumber )
+                        </h5>
+
+                        <span class="badge p-2 @GetReservationStatusBadgeClass( reservation.Status )">
+                            <i class="bi @GetReservationStatusIcon( reservation.Status ) me-1"></i>
+                            @GetReservationStatusText( reservation.Status )
+                        </span>
 
                         <span class="badge p-2 @(reservation.IsActive ? "bg-success" : "bg-secondary")">
                             <i class="bi @(reservation.IsActive ? "bi-check-circle" : "bi-x-circle") me-1"></i>
@@ -48,19 +55,31 @@
 
             <div class="row g-3">
                 <div class="col-12 col-lg-6">
-                    <div class="card border-0 shadow-sm">
+                    <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-body d-flex align-items-center gap-2">
                             <i class="bi bi-person-check"></i>
                             <span class="fw-semibold">Müşteri & Oda Bilgileri</span>
                         </div>
+
                         <div class="card-body">
                             <dl class="row mb-0">
                                 <dt class="col-5 text-muted fw-normal">Müşteri</dt>
                                 <dd class="col-7 mb-2">@Display( customerName )</dd>
 
+                                @if ( CurrentUser.HasPermission( RoleConstants.SysAdmin ) )
+                                {
+                                    <dt class="col-5 text-muted fw-normal">Müşteri Id</dt>
+                                    <dd class="col-7 mb-2 font-monospace small">@Display( reservation.CustomerId )</dd>
+                                }
+
                                 <dt class="col-5 text-muted fw-normal">Oda</dt>
                                 <dd class="col-7 mb-2">@Display( coolingRoomName )</dd>
 
+                                @if ( CurrentUser.HasPermission( RoleConstants.SysAdmin ) )
+                                {
+                                    <dt class="col-5 text-muted fw-normal">Oda Id</dt>
+                                    <dd class="col-7 mb-2 font-monospace small">@Display( reservation.CoolingRoomId )</dd>
+                                }
                                 <dt class="col-5 text-muted fw-normal">Oda Günlük Fiyatı</dt>
                                 <dd class="col-7 mb-0">@FormatMoney( reservation.CoolingRoomDailyPrice )</dd>
                             </dl>
@@ -69,11 +88,12 @@
                 </div>
 
                 <div class="col-12 col-lg-6">
-                    <div class="card border-0 shadow-sm">
+                    <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-body d-flex align-items-center gap-2">
                             <i class="bi bi-calendar-range"></i>
-                            <span class="fw-semibold">Teslim & İade Bilgileri</span>
+                            <span class="fw-semibold">Planlanan Teslim & Geri Alım</span>
                         </div>
+
                         <div class="card-body">
                             <dl class="row mb-0">
                                 <dt class="col-5 text-muted fw-normal">Teslim Tarihi</dt>
@@ -82,66 +102,117 @@
                                 <dt class="col-5 text-muted fw-normal">Teslim Saati</dt>
                                 <dd class="col-7 mb-2">@reservation.DeliveryTime.ToString( "HH:mm" )</dd>
 
-                                <dt class="col-5 text-muted fw-normal">İade Tarihi</dt>
+                                <dt class="col-5 text-muted fw-normal">Geri Alım Tarihi</dt>
                                 <dd class="col-7 mb-2">@reservation.PickUpDate.ToString( "dd.MM.yyyy" )</dd>
 
-                                <dt class="col-5 text-muted fw-normal">İade Saati</dt>
-                                <dd class="col-7 mb-0">@reservation.PickUpTime.ToString( "HH:mm" )</dd>
+                                <dt class="col-5 text-muted fw-normal">Geri Alım Saati</dt>
+                                <dd class="col-7 mb-2">@reservation.PickUpTime.ToString( "HH:mm" )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Toplam Gün</dt>
+                                <dd class="col-7 mb-0">@reservation.TotalDay</dd>
                             </dl>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-12 col-lg-6">
-                    <div class="card border-0 shadow-sm">
+                    <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-body d-flex align-items-center gap-2">
-                            <i class="bi bi-map-fill"></i>
-                            <span class="fw-semibold">Teslim Konumu</span>
+                            <i class="bi bi-truck"></i>
+                            <span class="fw-semibold">Operasyon Bilgileri</span>
                         </div>
+
                         <div class="card-body">
                             <dl class="row mb-0">
-                                <dt class="col-4 text-muted fw-normal">Konum</dt>
-                                <dd class="col-8 mb-0">@Display( reservation.DeliveryLocation )</dd>
+                                <dt class="col-5 text-muted fw-normal">Durum</dt>
+                                <dd class="col-7 mb-2">
+                                    <span class="badge @GetReservationStatusBadgeClass( reservation.Status )">
+                                        @GetReservationStatusText( reservation.Status )
+                                    </span>
+                                </dd>
+
+                                <dt class="col-5 text-muted fw-normal">Durum Kodu</dt>
+                                <dd class="col-7 mb-2">@reservation.Status</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Gerçek Teslim</dt>
+                                <dd class="col-7 mb-2">@DisplayDateTime( reservation.DeliveredAt )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Gerçek Geri Alım</dt>
+                                <dd class="col-7 mb-0">@DisplayDateTime( reservation.PickedUpAt )</dd>
                             </dl>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-12 col-lg-6">
-                    <div class="card border-0 shadow-sm">
+                    <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-body d-flex align-items-center gap-2">
                             <i class="bi bi-calculator"></i>
                             <span class="fw-semibold">Fiyatlandırma</span>
                         </div>
+
                         <div class="card-body">
                             <dl class="row mb-0">
+                                <dt class="col-5 text-muted fw-normal">Günlük Fiyat</dt>
+                                <dd class="col-7 mb-2">@FormatMoney( reservation.CoolingRoomDailyPrice )</dd>
+
                                 <dt class="col-5 text-muted fw-normal">Toplam Gün</dt>
                                 <dd class="col-7 mb-2">@reservation.TotalDay</dd>
 
                                 <dt class="col-5 text-muted fw-normal">Toplam Tutar</dt>
                                 <dd class="col-7 mb-2">@FormatMoney( reservation.ReservationTotalAmount ?? 0 )</dd>
 
-                                <dt class="col-5 text-muted fw-normal">Ödenen Tutar</dt>
-                                <dd class="col-7 mb-0">@FormatMoney( reservation.PaidAtReservation ?? 0 )</dd>
+                                <dt class="col-5 text-muted fw-normal">Rezervasyonda Ödenen</dt>
+                                <dd class="col-7 mb-2">@FormatMoney( reservation.PaidAtReservation ?? 0 )</dd>
+
+                                <dt class="col-5 text-muted fw-normal">Kalan Bakiye</dt>
+                                <dd class="col-7 mb-0">
+                                    @if ( GetRemainingAmount( reservation ) > 0 )
+                                    {
+                                        <span class="fw-bold text-danger">
+                                            @FormatMoney( GetRemainingAmount( reservation ) )
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="fw-semibold text-success">
+                                            @FormatMoney( 0 )
+                                        </span>
+                                    }
+                                </dd>
                             </dl>
                         </div>
                     </div>
                 </div>
 
-                @if ( !string.IsNullOrWhiteSpace( reservation.Note ) )
-                {
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-body d-flex align-items-center gap-2">
-                                <i class="bi bi-chat-dots"></i>
-                                <span class="fw-semibold">Notlar</span>
-                            </div>
-                            <div class="card-body">
-                                <p class="mb-0">@reservation.Note</p>
-                            </div>
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-body d-flex align-items-center gap-2">
+                            <i class="bi bi-map-fill"></i>
+                            <span class="fw-semibold">Teslim Konumu</span>
+                        </div>
+
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-12 col-md-3 text-muted fw-normal">Konum</dt>
+                                <dd class="col-12 col-md-9 mb-0">@Display( reservation.DeliveryLocation )</dd>
+                            </dl>
                         </div>
                     </div>
-                }
+                </div>
+
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-body d-flex align-items-center gap-2">
+                            <i class="bi bi-chat-dots"></i>
+                            <span class="fw-semibold">Notlar</span>
+                        </div>
+
+                        <div class="card-body">
+                            <p class="mb-0">@Display( reservation.Note )</p>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
@@ -149,25 +220,46 @@
                             <i class="bi bi-clock-history"></i>
                             <span class="fw-semibold">Sistem Bilgileri</span>
                         </div>
+
                         <div class="card-body">
                             <div class="row g-3">
                                 <div class="col-12 col-md-6">
-                                    <div class="p-3 rounded-3 bg-body-tertiary border">
+                                    <div class="p-3 rounded-3 bg-body-tertiary border h-100">
                                         <div class="text-muted small">Oluşturan</div>
                                         <div class="fw-semibold">@Display( reservation.CreatedFullName )</div>
-                                        <div class="text-muted small mt-1">@reservation.CreatedAt.ToString( "dd.MM.yyyy HH:mm" )</div>
+                                        <div class="text-muted small mt-1">
+                                            @reservation.CreatedAt.ToString( "dd.MM.yyyy HH:mm" )
+                                        </div>
+
+                                        @if ( CurrentUser.HasPermission( RoleConstants.SysAdmin ) )
+                                        {
+                                            <div class="text-muted small mt-2">
+                                                Kullanıcı Id:
+                                                <span class="font-monospace">@reservation.CreatedBy</span>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
 
                                 <div class="col-12 col-md-6">
-                                    <div class="p-3 rounded-3 bg-body-tertiary border">
+                                    <div class="p-3 rounded-3 bg-body-tertiary border h-100">
                                         <div class="text-muted small">Güncelleyen</div>
                                         <div class="fw-semibold">@Display( reservation.UpdatedFullName )</div>
                                         <div class="text-muted small mt-1">
                                             @( reservation.UpdatedAt.HasValue
-                                                   ? reservation.UpdatedAt.Value.ToString( "dd.MM.yyyy HH:mm" )
-                                                   : "—" )
+                                                ? reservation.UpdatedAt.Value.ToString( "dd.MM.yyyy HH:mm" )
+                                                : "—" )
                                         </div>
+
+                                        @if ( CurrentUser.HasPermission( RoleConstants.SysAdmin ) )
+                                        {
+                                            <div class="text-muted small mt-2">
+                                                Kullanıcı Id:
+                                                <span class="font-monospace">
+                                                    @( reservation.UpdatedBy.HasValue ? reservation.UpdatedBy.Value : "—" )
+                                                </span>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -193,7 +285,9 @@
     public async Task ShowAsync()
     {
         if ( dialog is null || ReservationId is null )
+        {
             return;
+        }
 
         reservation = null;
         customerName = null;
@@ -215,7 +309,9 @@
     public async Task HideAsync()
     {
         if ( dialog is not null )
+        {
             await dialog.HideAsync();
+        }
     }
 
     private async Task LoadAsync( Guid id )
@@ -237,27 +333,86 @@
     private async Task LoadRelatedDataAsync()
     {
         if ( reservation is null )
+        {
             return;
+        }
 
         try
         {
-            var customerResult = await customerService.GetByIdAsync( Guid.Parse( reservation.CustomerId ) );
-            if ( customerResult.IsSuccessful && customerResult.Data is not null )
-                customerName = customerResult.Data.FullName;
+            if ( Guid.TryParse( reservation.CustomerId, out var customerId ) )
+            {
+                var customerResult = await customerService.GetByIdAsync( customerId );
 
-            var coolingRoomResult = await coolingRoomService.GetByIdAsync( Guid.Parse( reservation.CoolingRoomId ) );
-            if ( coolingRoomResult.IsSuccessful && coolingRoomResult.Data is not null )
-                coolingRoomName = coolingRoomResult.Data.RoomName;
+                if ( customerResult.IsSuccessful && customerResult.Data is not null )
+                {
+                    customerName = customerResult.Data.FullName;
+                }
+            }
+
+            if ( Guid.TryParse( reservation.CoolingRoomId, out var coolingRoomId ) )
+            {
+                var coolingRoomResult = await coolingRoomService.GetByIdAsync( coolingRoomId );
+
+                if ( coolingRoomResult.IsSuccessful && coolingRoomResult.Data is not null )
+                {
+                    coolingRoomName = coolingRoomResult.Data.RoomName;
+                }
+            }
         }
         catch
         {
-            // Silently handle error - related data is optional
+            customerName = null;
+            coolingRoomName = null;
         }
     }
 
     private static string Display( string? value )
         => string.IsNullOrWhiteSpace( value ) ? "—" : value;
 
+    private static string DisplayDateTime( DateTime? value )
+        => value.HasValue ? value.Value.ToString( "dd.MM.yyyy HH:mm" ) : "—";
+
     private static string FormatMoney( decimal value )
         => value.ToString( "N2" ) + " ₺";
+
+    private static decimal GetRemainingAmount( ReservationDto reservation )
+    {
+        var totalAmount = reservation.ReservationTotalAmount ?? 0;
+        var paidAmount = reservation.PaidAtReservation ?? 0;
+
+        return Math.Max( totalAmount - paidAmount, 0m );
+    }
+
+    private static string GetReservationStatusText( int status )
+        => status switch
+        {
+            ( int )ReservationOperationStatusDto.Scheduled => "Rezerve edildi",
+            ( int )ReservationOperationStatusDto.DeliveredToCustomer => "Müşteriye teslim edildi",
+            ( int )ReservationOperationStatusDto.PickedUpFromCustomer => "Müşteriden geri alındı",
+            ( int )ReservationOperationStatusDto.Completed => "Tamamlandı",
+            ( int )ReservationOperationStatusDto.Cancelled => "İptal edildi",
+            _ => "Bilinmiyor"
+        };
+
+    private static string GetReservationStatusBadgeClass( int status )
+        => status switch
+        {
+            ( int )ReservationOperationStatusDto.Scheduled => "bg-primary",
+            ( int )ReservationOperationStatusDto.DeliveredToCustomer => "bg-warning text-dark",
+            ( int )ReservationOperationStatusDto.PickedUpFromCustomer => "bg-info text-dark",
+            ( int )ReservationOperationStatusDto.Completed => "bg-success",
+            ( int )ReservationOperationStatusDto.Cancelled => "bg-danger",
+            _ => "bg-secondary"
+        };
+
+    private static string GetReservationStatusIcon( int status )
+        => status switch
+        {
+            ( int )ReservationOperationStatusDto.Scheduled => "bi-bookmark-check",
+            ( int )ReservationOperationStatusDto.DeliveredToCustomer => "bi-truck",
+            ( int )ReservationOperationStatusDto.PickedUpFromCustomer => "bi-arrow-return-left",
+            ( int )ReservationOperationStatusDto.Completed => "bi-check-circle",
+            ( int )ReservationOperationStatusDto.Cancelled => "bi-x-circle",
+            _ => "bi-info-circle"
+        };
 }
