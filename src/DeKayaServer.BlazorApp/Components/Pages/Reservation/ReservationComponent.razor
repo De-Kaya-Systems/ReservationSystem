@@ -6,10 +6,9 @@
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.DetailReservation
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.CompleteReservation
 @using DeKayaServer.Contracts.Reservations
+@using DeKayaServer.Contracts.Reservations.Enum
 @inherits UserContextComponent
 @inject IReservationService reservationService
-@inject ICustomerService customerService
-@inject ICoolingRoomService coolingRoomService
 @rendermode InteractiveServer
 
 <PageTitle>De-Kaya Systems | @PageTitleConstans.ReservationsPage</PageTitle>
@@ -18,155 +17,309 @@
             Icon="bi bi-calendar-check"
             Description="Bu sayfada seyyar soğutma odalarının rezervasyon işlemlerini yönetebilirsin." />
 
-@if ( isLoading )
+@if ( !string.IsNullOrWhiteSpace( errorMessage ) )
 {
-    <IsLoading Message="Rezervasyonlar getiriliyor, lütfen bekleyin." />
+    <div class="alert alert-danger mt-3 mb-0">
+        @errorMessage
+    </div>
 }
-else
-{
-    <DeKayaQuickGrid Title="Rezervasyonlar"
-                     ShowTitle="true"
-                     ShowSearchInput="true"
-                     ShowSearchResultCount="true"
-                     TotalItemCount="@FilteredItems.Count"
-                     SearchTerm="@searchTerm"
-                     SearchTermChanged="OnSearchTermChanged"
-                     ShowPageSizeSelector="true"
-                     PageSize="@pageSize"
-                     PageSizeChanged="OnPageSizeChanged">
 
-        <HeaderActions>
-            <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateReservationDialog">
-                <i class="bi bi-plus-circle"></i>
-                <span>Ekle</span>
-            </button>
-        </HeaderActions>
+<DeKayaQuickGrid Title="Rezervasyonlar"
+                 ShowTitle="true"
+                 ShowSearchResultCount="true"
+                 TotalItemCount="@totalItemCount"
+                 ShowPageSizeSelector="true"
+                 PageSize="@pageSize"
+                 PageSizeChanged="OnPageSizeChanged">
 
-        <QuickGridContent>
-            <QuickGrid Items="@GridItems"
-                       Pagination="pagination"
-                       Class="table table-striped table-hover table-responsive mb-0 align-middle">
+    <HeaderActions>
+        <button type="button"
+                class="btn btn-outline-success btn-sm"
+                @onclick="ShowCreateReservationDialog">
+            <i class="bi bi-plus-circle"></i>
+            <span>Ekle</span>
+        </button>
+    </HeaderActions>
 
-                <PropertyColumn Property="@(r => r.CustomerFullName)" Title="Müşteri" Sortable="true" />
-                <PropertyColumn Property="@(r => r.ReservationNumber)" Title="Rezervasyon No" Sortable="true" />
-                <PropertyColumn Property="@(r => r.CoolingRoomName)" Title="Oda" Sortable="true" />
-                <PropertyColumn Property="@(r => r.ReservationStart)" Title="Rezervasyon Başlangıç" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
-                <PropertyColumn Property="@(r => r.ReservationEnd)" Title="Rezervasyon Bitiş" Format="dd-MM-yyyy - HH:mm" Sortable="true" />
+    <QuickGridContent>
+        <div class="p-3 border-bottom bg-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label small text-body-secondary">Müşteri adı</label>
+                    <input class="form-control form-control-sm"
+                           placeholder="Müşteri ara..."
+                           @bind="customerNameFilter"
+                           @bind:event="oninput" />
+                </div>
 
-                <TemplateColumn Title="Operasyon Durumu" Context="r">
-                    <span class="badge @GetOperationStatusBadgeClass( r ) p-2">
-                        @GetOperationStatusText( r )
-                    </span>
-                </TemplateColumn>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label small text-body-secondary">Rezervasyon Başlangıç</label>
+                    <input class="form-control form-control-sm"
+                           type="date"
+                           @bind="reservationStartDateFilter" />
+                </div>
 
-                <PropertyColumn Property="@(r => r.TotalDays)" Title="Toplam Gün" Sortable="true" />
-                <PropertyColumn Property="@(r => r.TotalAmount)" Title="Toplam Tutar" Format="N2" Sortable="true" />
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label small text-body-secondary">Rezervasyon Bitiş</label>
+                    <input class="form-control form-control-sm"
+                           type="date"
+                           @bind="reservationEndDateFilter" />
+                </div>
 
-                <TemplateColumn Title="İşlemler" Context="r">
-                    <div class="d-flex gap-2 py-1 justify-content-start">
-                        <button type="button"
-                                class="btn btn-outline-secondary btn-sm"
-                                @onclick="() => ShowDetailReservationDialog( r )">
-                            <i class="bi bi-search"></i>
-                            <span>Detay</span>
-                        </button>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label small text-body-secondary">Operasyon Durumu</label>
+                    <select class="form-select form-select-sm"
+                            @bind="operationStatusFilter">
+                        <option value="">Tümü</option>
 
-                        @if ( CurrentUser.HasPermission( "reservation:edit" ) )
+                        @foreach ( var option in OperationStatusOptions )
                         {
-                            <button type="button"
-                                    class="btn btn-outline-primary btn-sm"
-                                    @onclick="() => ShowUpdateReservationDialog( r )">
-                                <i class="bi bi-pen"></i>
-                                <span>Güncelle</span>
-                            </button>
+                            <option value="@(( int )option.Value)">
+                                @option.Text
+                            </option>
                         }
-                        @if ( CurrentUser.HasPermission( "reservation:edit" ) && CanCompleteReservation( r ) )
-                        {
-                            <button type="button"
-                                    class="btn btn-outline-success btn-sm"
-                                    @onclick="() => ShowCompleteReservationDialog( r )">
-                                <i class="bi bi-check2-circle"></i>
-                                <span>Tamamla</span>
-                            </button>
-                        }
-                        @if ( CurrentUser.HasPermission( "reservation:delete" ) )
-                        {
-                            <button type="button"
-                                    class="btn btn-outline-danger btn-sm"
-                                    @onclick="() => ShowDeleteReservationDialog( r )">
-                                <i class="bi bi-trash"></i>
-                                <span>Sil</span>
-                            </button>
-                        }
-                    </div>
-                </TemplateColumn>
-            </QuickGrid>
-            <div class="p-2">
-                <Paginator State="pagination" />
+                    </select>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="button"
+                            class="btn btn-outline-primary btn-sm"
+                            @onclick="ApplyFiltersAsync">
+                        Filtrele
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            @onclick="ClearFiltersAsync">
+                        Temizle
+                    </button>
+                </div>
             </div>
-        </QuickGridContent>
-    </DeKayaQuickGrid>
-}
+        </div>
+
+        <QuickGrid 
+                TGridItem="ReservationListItemDto"
+                @ref="grid"
+                ItemsProvider="@LoadReservationsAsync"
+                Pagination="pagination"
+                Class="table table-striped table-hover table-responsive mb-0 align-middle">
+
+            <PropertyColumn Property="@(r => r.CustomerFullName)"
+                            Title="Müşteri" />
+
+            <PropertyColumn Property="@(r => r.ReservationNumber)"
+                            Title="Rezervasyon No" />
+
+            <PropertyColumn Property="@(r => r.CoolingRoomName)"
+                            Title="Oda" />
+
+            <PropertyColumn Property="@(r => r.ReservationStart)"
+                            Title="Rezervasyon Başlangıç"
+                            Format="dd-MM-yyyy - HH:mm" />
+
+            <PropertyColumn Property="@(r => r.ReservationEnd)"
+                            Title="Rezervasyon Bitiş"
+                            Format="dd-MM-yyyy - HH:mm" />
+
+            <TemplateColumn Title="Operasyon Durumu" Context="r">
+                <span class="badge @GetOperationStatusBadgeClass( r ) p-2">
+                    @Display( r.OperationStatusText )
+                </span>
+            </TemplateColumn>
+
+            <PropertyColumn Property="@(r => r.TotalDays)"
+                            Title="Toplam Gün" />
+
+            <TemplateColumn Title="Toplam Tutar" Context="r">
+                @FormatMoney( r.TotalAmount )
+            </TemplateColumn>
+
+            <TemplateColumn Title="İşlemler" Context="r">
+                <div class="d-flex gap-2 py-1 justify-content-start">
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            @onclick="() => ShowDetailReservationDialog( r )">
+                        <i class="bi bi-search"></i>
+                        <span>Detay</span>
+                    </button>
+
+                    @if ( CurrentUser.HasPermission( "reservation:edit" ) )
+                    {
+                        <button type="button"
+                                class="btn btn-outline-primary btn-sm"
+                                @onclick="() => ShowUpdateReservationDialog( r )">
+                            <i class="bi bi-pen"></i>
+                            <span>Güncelle</span>
+                        </button>
+                    }
+
+                    @if ( CurrentUser.HasPermission( "reservation:edit" ) && CanCompleteReservation( r ) )
+                    {
+                        <button type="button"
+                                class="btn btn-outline-success btn-sm"
+                                @onclick="() => ShowCompleteReservationDialog( r )">
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Tamamla</span>
+                        </button>
+                    }
+
+                    @if ( CurrentUser.HasPermission( "reservation:delete" ) )
+                    {
+                        <button type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                @onclick="() => ShowDeleteReservationDialog( r )">
+                            <i class="bi bi-trash"></i>
+                            <span>Sil</span>
+                        </button>
+                    }
+                </div>
+            </TemplateColumn>
+        </QuickGrid>
+
+        <div class="p-2">
+            <Paginator State="pagination" />
+        </div>
+    </QuickGridContent>
+</DeKayaQuickGrid>
 
 <CreateReservationDialog @ref="createReservationDialog"
-                         ReservationAdded="HandleReservationPageAsync" />
+                         ReservationAdded="RefreshGridAsync" />
+
 <DetailReservationDialog @ref="detailReservationDialog"
                          ReservationId="@selectedReservationId" />
+
 <UpdateReservationDialog @ref="updateReservationDialog"
                          ReservationId="@selectedReservationId"
-                         ReservationUpdated="HandleReservationPageAsync" />
+                         ReservationUpdated="RefreshGridAsync" />
+
 <CompleteReservationDialog @ref="completeReservationDialog"
                            ReservationId="@selectedReservationId"
-                           ReservationCompleted="HandleReservationPageAsync" />
+                           ReservationCompleted="RefreshGridAsync" />
+
 <DeleteReservationDialog @ref="deleteReservationDialog"
                          ReservationId="@selectedReservationId"
                          ReservationNumber="@selectedReservationNumber"
-                         ReservationDeleted="HandleReservationPageAsync" />
+                         ReservationDeleted="RefreshGridAsync" />
 
 @code {
-    private bool isLoading;
-    private List<ReservationViewModel> reservations = [];
-    private string searchTerm = string.Empty;
+    private QuickGrid<ReservationListItemDto>? grid;
+
+    // private bool isLoading;
+    private string? errorMessage;
+    private int totalItemCount;
     private int pageSize = 25;
     private PaginationState pagination = new() { ItemsPerPage = 25 };
+
+    private string customerNameFilter = string.Empty;
+    private DateOnly? reservationStartDateFilter;
+    private DateOnly? reservationEndDateFilter;
+    private string operationStatusFilter = string.Empty;
 
     private CreateReservationDialog? createReservationDialog;
     private DetailReservationDialog? detailReservationDialog;
     private UpdateReservationDialog? updateReservationDialog;
     private CompleteReservationDialog? completeReservationDialog;
     private DeleteReservationDialog? deleteReservationDialog;
+
     private Guid? selectedReservationId;
     private string? selectedReservationNumber;
 
-    private IReadOnlyList<ReservationViewModel> FilteredItems =>
-        ( string.IsNullOrWhiteSpace( searchTerm )
-            ? reservations
-            : reservations.Where( r =>
-                ( r.CustomerFullName != null && r.CustomerFullName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
-                ( r.ReservationNumber != null && r.ReservationNumber.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
-                ( r.CoolingRoomName != null && r.CoolingRoomName.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
-                GetOperationStatusText( r ).Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) )
-        .ToList();
+    private static readonly OperationStatusOption[] OperationStatusOptions =
+    [
+        new( ReservationOperationFilterDto.Reserved, "Rezerve edildi" ),
+        new( ReservationOperationFilterDto.WaitingDelivery, "Teslimat bekliyor" ),
+        new( ReservationOperationFilterDto.DeliveredToCustomer, "Müşteriye teslim edildi" ),
+        new( ReservationOperationFilterDto.WaitingPickup, "Geri alım bekleniyor" ),
+        new( ReservationOperationFilterDto.PickedUpFromCustomer, "Müşteriden geri alındı" ),
+        new( ReservationOperationFilterDto.Completed, "Tamamlandı" )
+    ];
 
-    private IQueryable<ReservationViewModel> GridItems => FilteredItems.AsQueryable();
-
-    protected override async Task OnInitializedAsync()
+    private ReservationOperationFilterDto? SelectedOperationStatus
     {
-        await base.OnInitializedAsync();
-        await LoadReservationsAsync();
+        get
+        {
+            if ( string.IsNullOrWhiteSpace( operationStatusFilter ) )
+            {
+                return null;
+            }
+
+            return Enum.TryParse<ReservationOperationFilterDto>( operationStatusFilter, out var status )
+                ? status
+                : null;
+        }
     }
 
-    private async Task OnSearchTermChanged( string value )
+    private async ValueTask<GridItemsProviderResult<ReservationListItemDto>> LoadReservationsAsync(
+        GridItemsProviderRequest<ReservationListItemDto> request )
     {
-        searchTerm = value;
+        errorMessage = null;
+
+        var resolvedPageSize = request.Count ?? pageSize;
+        var pageIndex = resolvedPageSize <= 0
+            ? 0
+            : request.StartIndex / resolvedPageSize;
+
+        var result = await reservationService.GetListAsync(
+            customerName: customerNameFilter,
+            reservationStartDate: reservationStartDateFilter,
+            reservationEndDate: reservationEndDateFilter,
+            operationStatus: SelectedOperationStatus,
+            pageIndex: pageIndex,
+            pageSize: resolvedPageSize,
+            cancellationToken: CancellationToken.None );
+
+        if ( !result.IsSuccessful || result.Data is null )
+        {
+            totalItemCount = 0;
+            errorMessage = result.ErrorMessages?.FirstOrDefault()
+                ?? "Rezervasyonlar getirilemedi.";
+
+            return GridItemsProviderResult.From(
+                items: Array.Empty<ReservationListItemDto>(),
+                totalItemCount: 0 );
+        }
+
+        totalItemCount = result.Data.TotalCount;
+
+        return GridItemsProviderResult.From(
+            items: result.Data.Items,
+            totalItemCount: result.Data.TotalCount );
+    }
+
+
+    private async Task ApplyFiltersAsync()
+    {
         await pagination.SetCurrentPageIndexAsync( 0 );
+        await RefreshGridAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        customerNameFilter = string.Empty;
+        reservationStartDateFilter = null;
+        reservationEndDateFilter = null;
+        operationStatusFilter = string.Empty;
+
+        await ApplyFiltersAsync();
     }
 
     private async Task OnPageSizeChanged( int value )
     {
         pageSize = value;
         pagination.ItemsPerPage = value;
+
         await pagination.SetCurrentPageIndexAsync( 0 );
+        await RefreshGridAsync();
+    }
+
+    private async Task RefreshGridAsync()
+    {
+        if ( grid is not null )
+        {
+            await grid.RefreshDataAsync();
+        }
+
+        await InvokeAsync( StateHasChanged );
     }
 
     private async Task ShowCreateReservationDialog()
@@ -179,7 +332,7 @@ else
         await createReservationDialog.ShowAsync();
     }
 
-    private async Task ShowDetailReservationDialog( ReservationViewModel reservation )
+    private async Task ShowDetailReservationDialog( ReservationListItemDto reservation )
     {
         selectedReservationId = reservation.Id;
 
@@ -194,7 +347,7 @@ else
         await detailReservationDialog.ShowAsync();
     }
 
-    private async Task ShowUpdateReservationDialog( ReservationViewModel reservation )
+    private async Task ShowUpdateReservationDialog( ReservationListItemDto reservation )
     {
         selectedReservationId = reservation.Id;
 
@@ -209,7 +362,7 @@ else
         await updateReservationDialog.ShowAsync();
     }
 
-    private async Task ShowCompleteReservationDialog( ReservationViewModel reservation )
+    private async Task ShowCompleteReservationDialog( ReservationListItemDto reservation )
     {
         selectedReservationId = reservation.Id;
 
@@ -224,30 +377,7 @@ else
         await completeReservationDialog.ShowAsync();
     }
 
-    private static bool CanCompleteReservation( ReservationViewModel reservation )
-    {
-        if ( reservation.Status is ReservationOperationStatusDto.Completed
-            or ReservationOperationStatusDto.PickedUpFromCustomer
-            or ReservationOperationStatusDto.Cancelled )
-        {
-            return false;
-        }
-
-        if ( reservation.Status == ReservationOperationStatusDto.DeliveredToCustomer )
-        {
-            return IsDueOrWithinNext24Hours( reservation.ReservationEnd );
-        }
-
-        if ( reservation.Status == ReservationOperationStatusDto.Scheduled )
-        {
-            return reservation.ReservationEnd <= DateTime.Now;
-        }
-
-        return false;
-    }
-
-
-    private async Task ShowDeleteReservationDialog( ReservationViewModel reservation )
+    private async Task ShowDeleteReservationDialog( ReservationListItemDto reservation )
     {
         selectedReservationId = reservation.Id;
         selectedReservationNumber = reservation.ReservationNumber;
@@ -263,160 +393,50 @@ else
         await deleteReservationDialog.ShowAsync();
     }
 
-    private async Task HandleReservationPageAsync()
+    private static bool CanCompleteReservation( ReservationListItemDto reservation )
     {
-        await LoadReservationsAsync();
-        await InvokeAsync( StateHasChanged );
-    }
+        var reservationStatus = ( ReservationOperationStatusDto )reservation.Status;
 
-    private async Task LoadReservationsAsync()
-    {
-        isLoading = true;
-        try
+        if ( reservationStatus is ReservationOperationStatusDto.Completed
+            or ReservationOperationStatusDto.PickedUpFromCustomer
+            or ReservationOperationStatusDto.Cancelled )
         {
-            var reservationsTask = reservationService.GetAllAsync();
-            var customersTask = customerService.GetAllAsync();
-            var roomsTask = coolingRoomService.GetAllAsync();
-
-            await Task.WhenAll( reservationsTask, customersTask, roomsTask );
-
-            var reservationsResult = await reservationsTask;
-            if ( !reservationsResult.IsSuccessful || reservationsResult.Data is null )
-            {
-                reservations = [];
-                return;
-            }
-
-            var customersResult = await customersTask;
-            var roomsResult = await roomsTask;
-
-            var customerLookup = customersResult.IsSuccessful && customersResult.Data is not null
-                ? customersResult.Data.ToDictionary( c => c.Id, c => c.FullName )
-                : new Dictionary<Guid, string>();
-
-            var roomLookup = roomsResult.IsSuccessful && roomsResult.Data is not null
-                ? roomsResult.Data.ToDictionary( r => r.Id, r => r.RoomName )
-                : new Dictionary<Guid, string>();
-
-            reservations = reservationsResult.Data
-                .Select( r => new ReservationViewModel
-                {
-                    Id = r.Id,
-                    ReservationNumber = r.ReservationNumber,
-                    CustomerFullName = ResolveName( r.CustomerId, customerLookup ),
-                    CoolingRoomName = ResolveName( r.CoolingRoomId, roomLookup ),
-                    ReservationStart = r.DeliveryTime,
-                    ReservationEnd = r.PickUpTime,
-                    Status = ( ReservationOperationStatusDto )r.Status,
-                    DeliveredAt = r.DeliveredAt,
-                    PickedUpAt = r.PickedUpAt,
-                    TotalDays = r.TotalDay,
-                    TotalAmount = r.ReservationTotalAmount ?? 0
-                } )
-                .OrderBy( r => r.ReservationStart )
-                .ToList();
-        }
-        finally
-        {
-            isLoading = false;
-            await pagination.SetCurrentPageIndexAsync( 0 );
-            await InvokeAsync( StateHasChanged );
-        }
-    }
-
-    private static string ResolveName( string idValue, IReadOnlyDictionary<Guid, string> lookup )
-    {
-        if ( Guid.TryParse( idValue, out var id )
-             && lookup.TryGetValue( id, out var name )
-             && !string.IsNullOrWhiteSpace( name ) )
-        {
-            return name;
+            return false;
         }
 
-        return idValue;
+        if ( reservation.OperationStatus == ReservationOperationFilterDto.WaitingPickup )
+        {
+            return true;
+        }
+
+        if ( reservationStatus == ReservationOperationStatusDto.Scheduled
+             && reservation.ReservationEnd <= DateTime.Now )
+        {
+            return true;
+        }
+
+        return false;
     }
 
-    private static bool IsDueOrWithinNext24Hours( DateTime targetDateTime )
-        => targetDateTime <= DateTime.Now.AddHours( 24 );
-
-    private static string GetOperationStatusText( ReservationViewModel reservation )
-    {
-        return reservation.Status switch
+    private static string GetOperationStatusBadgeClass( ReservationListItemDto reservation )
+        => reservation.OperationStatus switch
         {
-            ReservationOperationStatusDto.Scheduled when reservation.ReservationEnd <= DateTime.Now
-                => "Teslim kaydı eksik",
-
-            ReservationOperationStatusDto.Scheduled when IsDueOrWithinNext24Hours( reservation.ReservationStart )
-                => "Teslimat bekliyor",
-
-            ReservationOperationStatusDto.Scheduled
-                => "Rezerve edildi",
-
-            ReservationOperationStatusDto.DeliveredToCustomer when IsDueOrWithinNext24Hours( reservation.ReservationEnd )
-                => "Geri alım bekliyor",
-
-            ReservationOperationStatusDto.DeliveredToCustomer
-                => "Müşteriye teslim edildi",
-
-            ReservationOperationStatusDto.PickedUpFromCustomer
-                => "Müşteriden geri alındı",
-
-            ReservationOperationStatusDto.Completed
-                => "Tamamlandı",
-
-            ReservationOperationStatusDto.Cancelled
-                => "İptal edildi",
-
-            _ => "Bilinmiyor"
-        };
-    }
-
-
-    private static string GetOperationStatusBadgeClass( ReservationViewModel reservation )
-    {
-        return reservation.Status switch
-        {
-            ReservationOperationStatusDto.Scheduled when reservation.ReservationEnd <= DateTime.Now
-                => "bg-danger",
-
-            ReservationOperationStatusDto.Scheduled when IsDueOrWithinNext24Hours( reservation.ReservationStart )
-                => "bg-warning text-dark",
-
-            ReservationOperationStatusDto.Scheduled
-                => "bg-info text-dark",
-
-            ReservationOperationStatusDto.DeliveredToCustomer when IsDueOrWithinNext24Hours( reservation.ReservationEnd )
-                => "bg-warning text-dark",
-
-            ReservationOperationStatusDto.DeliveredToCustomer
-                => "bg-primary",
-
-            ReservationOperationStatusDto.PickedUpFromCustomer
-                => "bg-success",
-
-            ReservationOperationStatusDto.Completed
-                => "bg-success",
-
-            ReservationOperationStatusDto.Cancelled
-                => "bg-secondary",
-
+            ReservationOperationFilterDto.Reserved => "bg-info text-dark",
+            ReservationOperationFilterDto.WaitingDelivery => "bg-warning text-dark",
+            ReservationOperationFilterDto.DeliveredToCustomer => "bg-primary",
+            ReservationOperationFilterDto.WaitingPickup => "bg-warning text-dark",
+            ReservationOperationFilterDto.PickedUpFromCustomer => "bg-success",
+            ReservationOperationFilterDto.Completed => "bg-success",
             _ => "bg-secondary"
         };
-    }
 
+    private static string Display( string? value )
+        => string.IsNullOrWhiteSpace( value ) ? "—" : value;
 
-    public sealed class ReservationViewModel
-    {
-        public Guid Id { get; set; }
-        public string? ReservationNumber { get; set; }
-        public string CustomerFullName { get; set; } = string.Empty;
-        public string CoolingRoomName { get; set; } = string.Empty;
-        public DateTime ReservationStart { get; set; }
-        public DateTime ReservationEnd { get; set; }
-        public ReservationOperationStatusDto Status { get; set; }
-        public DateTime? DeliveredAt { get; set; }
-        public DateTime? PickedUpAt { get; set; }
-        public int TotalDays { get; set; }
-        public decimal TotalAmount { get; set; }
-    }
+    private static string FormatMoney( decimal value )
+        => value.ToString( "N2" ) + " ₺";
+
+    private sealed record OperationStatusOption(
+        ReservationOperationFilterDto Value,
+        string Text );
 }

@@ -1,4 +1,4 @@
-﻿namespace DeKayaServer.Contracts.Reservations;
+﻿namespace DeKayaServer.Contracts.Reservations.Enum;
 
 public enum ReservationOperationStatusDto
 {
