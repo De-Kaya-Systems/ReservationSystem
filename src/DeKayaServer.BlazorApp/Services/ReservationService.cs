@@ -1,6 +1,8 @@
 ﻿using DeKayaServer.BlazorApp.Constants;
 using DeKayaServer.BlazorApp.Http;
+using DeKayaServer.Contracts.Common;
 using DeKayaServer.Contracts.Reservations;
+using DeKayaServer.Contracts.Reservations.Enum;
 using TS.Result;
 
 namespace DeKayaServer.BlazorApp.Services;
@@ -13,10 +15,50 @@ public interface IReservationService
     Task<Result<ReservationDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default );
     Task<Result<List<ReservationDto>>> GetAllAsync( CancellationToken cancellationToken = default );
     Task<Result<string>> DeleteAsync( Guid id, CancellationToken cancellationToken = default );
+    Task<Result<PagedResultDto<ReservationListItemDto>>> GetListAsync(
+        string? customerName,
+        DateOnly? reservationStartDate,
+        DateOnly? reservationEndDate,
+        ReservationOperationFilterDto? operationStatus,
+        int pageIndex,
+        int pageSize,
+        CancellationToken cancellationToken = default );
 }
 
 public class ReservationService( IApiClient apiClient ) : IReservationService
 {
+
+    public Task<Result<PagedResultDto<ReservationListItemDto>>> GetListAsync(
+        string? customerName,
+        DateOnly? reservationStartDate,
+        DateOnly? reservationEndDate,
+        ReservationOperationFilterDto? operationStatus,
+        int pageIndex,
+        int pageSize,
+        CancellationToken cancellationToken = default )
+    {
+        var query = new List<string>
+        {
+            $"pageIndex={pageIndex}",
+            $"pageSize={pageSize}"
+        };
+
+        if ( !string.IsNullOrWhiteSpace( customerName ) )
+            query.Add( $"customerName={Uri.EscapeDataString( customerName.Trim() )}" );
+
+        if ( reservationStartDate is not null )
+            query.Add( $"reservationStartDate={reservationStartDate.Value:yyyy-MM-dd}" );
+
+        if ( reservationEndDate is not null )
+            query.Add( $"reservationEndDate={reservationEndDate.Value:yyyy-MM-dd}" );
+
+        if ( operationStatus is not null )
+            query.Add( $"operationStatus={( int )operationStatus.Value}" );
+
+        var url = $"{EndpointConstants.Reservations}/list?{string.Join( "&", query )}";
+
+        return apiClient.GetAsync<PagedResultDto<ReservationListItemDto>>( url, cancellationToken );
+    }
     public Task<Result<string>> CreateAsync( CreateReservationRequest request, CancellationToken cancellationToken = default )
         => apiClient.PostAsync<CreateReservationRequest, string>(
             EndpointConstants.Reservations,

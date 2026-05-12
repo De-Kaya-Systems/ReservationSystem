@@ -1,5 +1,7 @@
 ﻿using DeKayaServer.Application.Reservations;
+using DeKayaServer.Contracts.Common;
 using DeKayaServer.Contracts.Reservations;
+using DeKayaServer.Contracts.Reservations.Enum;
 using TS.MediatR;
 using TS.Result;
 
@@ -14,6 +16,31 @@ public static class ReservationModule
             .RequireRateLimiting( "fixed" )
             .RequireAuthorization()
             .WithTags( "Reservation" );
+
+        app.MapGet( "list",
+            async (
+                string? customerName,
+                DateOnly? reservationStartDate,
+                DateOnly? reservationEndDate,
+                ReservationOperationFilterDto? operationStatus,
+                int? pageIndex,
+                int? pageSize,
+                ISender sender,
+                CancellationToken cancellationToken ) =>
+            {
+                var res = await sender.Send(
+                    new ReservationListQuery(
+                        CustomerName: customerName,
+                        ReservationStartDate: reservationStartDate,
+                        ReservationEndDate: reservationEndDate,
+                        OperationStatus: operationStatus,
+                        PageIndex: pageIndex ?? 0,
+                        PageSize: pageSize ?? 25 ),
+                    cancellationToken );
+
+                return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
+            } )
+            .Produces<Result<PagedResultDto<ReservationListItemDto>>>();
 
         app.MapPost( string.Empty,
             async ( ReservationCreateCommand request, ISender sender, CancellationToken cancellationToken ) =>
