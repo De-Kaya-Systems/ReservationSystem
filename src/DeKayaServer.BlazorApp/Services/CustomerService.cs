@@ -1,5 +1,6 @@
 ﻿using DeKayaServer.BlazorApp.Constants;
 using DeKayaServer.BlazorApp.Http;
+using DeKayaServer.Contracts.Common;
 using DeKayaServer.Contracts.Customers;
 using TS.Result;
 
@@ -12,10 +13,45 @@ public interface ICustomerService
     Task<Result<CustomerDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default );
     Task<Result<List<CustomerDto>>> GetAllAsync( CancellationToken cancellationToken = default );
     Task<Result<string>> DeleteAsync( Guid id, CancellationToken cancellationToken = default );
+    Task<Result<PagedResultDto<CustomerListItemDto>>> GetListAsync(
+        string? customerName,
+        string? phoneNumber,
+        int pageIndex,
+        int pageSize,
+        CancellationToken cancellationToken = default );
 }
 
 public class CustomerService( IApiClient apiClient ) : ICustomerService
 {
+    public Task<Result<PagedResultDto<CustomerListItemDto>>> GetListAsync(
+        string? customerName,
+        string? phoneNumber,
+        int pageIndex,
+        int pageSize,
+        CancellationToken cancellationToken = default )
+    {
+        var query = new List<string>
+        {
+            $"pageIndex={pageIndex}",
+            $"pageSize={pageSize}"
+        };
+
+        if ( !string.IsNullOrWhiteSpace( customerName ) )
+        {
+            query.Add( $"customerName={Uri.EscapeDataString( customerName.Trim() )}" );
+        }
+
+        if ( !string.IsNullOrWhiteSpace( phoneNumber ) )
+        {
+            query.Add( $"phoneNumber={Uri.EscapeDataString( phoneNumber.Trim() )}" );
+        }
+
+        var url = $"{EndpointConstants.Customers}/list?{string.Join( "&", query )}";
+
+        return apiClient.GetAsync<PagedResultDto<CustomerListItemDto>>( url, cancellationToken );
+    }
+
+
     public Task<Result<string>> CreateAsync( CreateCustomerRequest request, CancellationToken cancellationToken = default )
         => apiClient.PostAsync<CreateCustomerRequest, string>(
             EndpointConstants.Customers,

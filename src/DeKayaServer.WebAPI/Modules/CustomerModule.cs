@@ -1,4 +1,5 @@
 ﻿using DeKayaServer.Application.Customers;
+using DeKayaServer.Contracts.Common;
 using DeKayaServer.Contracts.Customers;
 using TS.MediatR;
 using TS.Result;
@@ -14,6 +15,28 @@ public static class CustomerModule
             .RequireRateLimiting( "fixed" )
             .RequireAuthorization()
             .WithTags( "Customers" );
+
+        app.MapGet( "list",
+            async (
+                string? customerName,
+                string? phoneNumber,
+                int? pageIndex,
+                int? pageSize,
+                ISender sender,
+                CancellationToken cancellationToken ) =>
+            {
+                var res = await sender.Send(
+                    new CustomerListQuery(
+                        CustomerName: customerName,
+                        PhoneNumber: phoneNumber,
+                        PageIndex: pageIndex ?? 0,
+                        PageSize: pageSize ?? 25 ),
+                    cancellationToken );
+
+                return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
+            } )
+            .Produces<Result<PagedResultDto<CustomerListItemDto>>>();
+
 
         app.MapPost( string.Empty,
             async ( CustomerCreateCommand request, ISender sender, CancellationToken cancellationToken ) =>

@@ -3,6 +3,7 @@
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.DeleteCustomer
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.DetailCustomer
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.UpdateCustomer
+@using DeKayaServer.Contracts.Customers
 @using Microsoft.AspNetCore.Components.QuickGrid
 @inherits UserContextComponent
 @inject ICustomerService customerService
@@ -10,121 +11,166 @@
 
 <PageTitle>De-Kaya Systems | @PageTitleConstans.CustomersPage</PageTitle>
 
-<PageHeader
-    Title="Müşteri Yönetimi"
-    Icon="bi bi-person-vcard"
-    Description="Bu sayfada müşteri işlemlerini yönetebilirsin."/>
-    @if ( isLoading )
-    {
-        <IsLoading Message="Kullanıcılar getiriliyor, lütfen bekleyin." />
-    }
-    else
-    {
-        <DeKayaQuickGrid 
-            Title="Kullanıcı Listesi"
-            ShowTitle="true"
-            ShowSearchInput="true"
-            ShowSearchResultCount="true"
-            TotalItemCount="@FilteredItems.Count"
-            SearchTerm="@searchTerm"
-            SearchTermChanged="OnSearchTermChanged"
-            ShowPageSizeSelector="true"
-            PageSize="@pageSize"
-            PageSizeChanged="OnPageSizeChanged">
+<PageHeader Title="Müşteri Yönetimi"
+            Icon="bi bi-person-vcard"
+            Description="Bu sayfada müşteri işlemlerini yönetebilirsin." />
 
-            <HeaderActions>
-                @if ( CurrentUser.HasPermission( "customer:create" ) )
-                {
-                    <button type="button" class="btn btn-outline-success btn-sm" @onclick="ShowCreateCustomerDialog">
-                        <i class="bi bi-plus-circle"></i>
-                        <span>Ekle</span>
-                    </button>
-                }
-            </HeaderActions>
-
-            <QuickGridContent>
-                <QuickGrid
-                    Items="@GridItems"
-                    Pagination="pagination"
-                    Class="table table-striped table-hover table-responsive mb-0 align-middle">
-
-                    <PropertyColumn Property="@(c => c.FullName)" Title="Adı Soyadı" Sortable="true" />
-                    <TemplateColumn Title="Durum" Sortable="true" Context="c">
-                        <span class="badge @(c.IsActive ? "bg-success" : "bg-secondary") p-2">
-                            <i class="bi @(c.IsActive ? "bi-check-circle" : "bi-x-circle") me-1"></i>
-                            @(c.IsActive ? "Aktif" : "Pasif")
-                        </span>
-                    </TemplateColumn>
-                    <PropertyColumn Property="@(c => c.ContactPhone)" Title="Telefon numarası" Sortable="true" />
-                    <PropertyColumn Property="@(c => c.ContactEmail)" Title="E-Mail" Sortable="true" />
-                    <PropertyColumn Property="@(c => c.AddressCity)" Title="İl" Sortable="true" />
-                    <PropertyColumn Property="@(c => c.AddressDistrict)" Title="İlçe" Sortable="true" />
-                    <PropertyColumn Property="@(c => c.CreatedFullName)" Title="Oluşturan" />
-
-                <TemplateColumn Title="İşlemler" Context="c">
-                    <div class="d-flex gap-2 py-1 justify-content-start">
-                        <button type="button"
-                                class="btn btn-outline-secondary btn-sm"
-                                @onclick="(() => ShowCustomerDetailDialog(c))">
-                            <i class="bi bi-search"></i>
-                            <span>Detay</span>
-                        </button>
-
-                        @if ( CurrentUser.HasPermission( "customer:edit" ) )
-                        {
-                            <button type="button"
-                                    class="btn btn-outline-primary btn-sm"
-                                    @onclick="( () => ShowUpdateCustomerDialog( c ) )">
-                                <i class="bi bi-pen"></i>
-                                <span>Güncelle</span>
-                            </button>
-                        }
-
-                        @if ( CurrentUser.HasPermission( "customer:delete" ) )
-                        {
-                            <button type="button"
-                                    class="btn btn-outline-danger btn-sm"
-                                    @onclick="(() => ShowDeleteCustomerDialog(c))">
-                                <i class="bi bi-trash3"></i>
-                                <span>Sil</span>
-                            </button>
-                        }
-                    </div>
-                    </TemplateColumn>
-                </QuickGrid>
-                <div class="p-2">
-                    <Paginator State="pagination" />
-                </div>
-            </QuickGridContent>
-        </DeKayaQuickGrid>
-    }
-
-<CustomerDetailsDialog 
-    @ref="customerDetailsDialog" 
-    CustomerId="@selectedCustomerId" />
-
-<CreateCustomerDialog 
-    @ref="createCustomerDialog" 
-    CustomerAdded="HandleCustomerPageAsync"/>
-
-<UpdateCustomerDialog 
-    @ref="updateCustomerDialog"
-    CustomerId="@selectedCustomerId"
-    CustomerUpdated="HandleCustomerPageAsync" />
-
-<DeleteCustomerDialog 
-    @ref="deleteCustomerDialog"
-    CustomerId="@selectedCustomerId"
-    FullName="@selectedFullName"
-    CustomerDeleted="HandleCustomerPageAsync" />
-
-@code
+@if ( !string.IsNullOrWhiteSpace( errorMessage ) )
 {
-    private bool isLoading;
-    private List<CustomerViewModel> customers = [];
-    private string searchTerm = string.Empty;
+    <div class="alert alert-danger mt-3 mb-0">
+        @errorMessage
+    </div>
+}
+
+<DeKayaQuickGrid Title="Müşteri Listesi"
+                 ShowTitle="true"
+                 ShowSearchResultCount="true"
+                 TotalItemCount="@totalItemCount"
+                 ShowPageSizeSelector="true"
+                 PageSize="@pageSize"
+                 PageSizeChanged="OnPageSizeChanged">
+
+    <HeaderActions>
+        @if ( CurrentUser.HasPermission( "customer:create" ) )
+        {
+            <button type="button"
+                    class="btn btn-outline-success btn-sm"
+                    @onclick="ShowCreateCustomerDialog">
+                <i class="bi bi-plus-circle"></i>
+                <span>Ekle</span>
+            </button>
+        }
+    </HeaderActions>
+
+    <QuickGridContent>
+        <div class="p-3 border-bottom bg-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-6 col-lg-4">
+                    <label class="form-label small text-body-secondary">Müşteri adı</label>
+                    <input class="form-control form-control-sm"
+                           placeholder="Müşteri ara..."
+                           @bind="customerNameFilter"
+                           @bind:event="oninput" />
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <label class="form-label small text-body-secondary">Telefon numarası</label>
+                    <input class="form-control form-control-sm"
+                           placeholder="Telefon ara..."
+                           @bind="phoneNumberFilter"
+                           @bind:event="oninput" />
+                </div>
+
+                <div class="col-12 col-lg-4 d-flex gap-2">
+                    <button type="button"
+                            class="btn btn-outline-primary btn-sm"
+                            @onclick="ApplyFiltersAsync">
+                        Filtrele
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            @onclick="ClearFiltersAsync">
+                        Temizle
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <QuickGrid TGridItem="CustomerListItemDto"
+                   @ref="grid"
+                   ItemsProvider="@LoadCustomersAsync"
+                   Pagination="pagination"
+                   Class="table table-striped table-hover table-responsive mb-0 align-middle">
+
+            <PropertyColumn Property="@(c => c.FullName)"
+                            Title="Adı Soyadı" />
+
+            <TemplateColumn Title="Durum" Context="c">
+                <span class="badge @(c.IsActive ? "bg-success" : "bg-secondary") p-2">
+                    <i class="bi @(c.IsActive ? "bi-check-circle" : "bi-x-circle") me-1"></i>
+                    @(c.IsActive ? "Aktif" : "Pasif")
+                </span>
+            </TemplateColumn>
+
+            <PropertyColumn Property="@(c => c.PhoneNumber)"
+                            Title="Telefon numarası" />
+
+            <PropertyColumn Property="@(c => c.Email)"
+                            Title="E-Mail" />
+
+            <PropertyColumn Property="@(c => c.City)"
+                            Title="İl" />
+
+            <PropertyColumn Property="@(c => c.District)"
+                            Title="İlçe" />
+
+            <PropertyColumn Property="@(c => c.CreatedFullName)"
+                            Title="Oluşturan" />
+
+            <TemplateColumn Title="İşlemler" Context="c">
+                <div class="d-flex gap-2 py-1 justify-content-start">
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            @onclick="() => ShowCustomerDetailDialog( c )">
+                        <i class="bi bi-search"></i>
+                        <span>Detay</span>
+                    </button>
+
+                    @if ( CurrentUser.HasPermission( "customer:edit" ) )
+                    {
+                        <button type="button"
+                                class="btn btn-outline-primary btn-sm"
+                                @onclick="() => ShowUpdateCustomerDialog( c )">
+                            <i class="bi bi-pen"></i>
+                            <span>Güncelle</span>
+                        </button>
+                    }
+
+                    @if ( CurrentUser.HasPermission( "customer:delete" ) )
+                    {
+                        <button type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                @onclick="() => ShowDeleteCustomerDialog( c )">
+                            <i class="bi bi-trash3"></i>
+                            <span>Sil</span>
+                        </button>
+                    }
+                </div>
+            </TemplateColumn>
+        </QuickGrid>
+
+        <div class="p-2">
+            <Paginator State="pagination" />
+        </div>
+    </QuickGridContent>
+</DeKayaQuickGrid>
+
+<CustomerDetailsDialog @ref="customerDetailsDialog"
+                       CustomerId="@selectedCustomerId" />
+
+<CreateCustomerDialog @ref="createCustomerDialog"
+                      CustomerAdded="ReloadFromFirstPageAsync" />
+
+<UpdateCustomerDialog @ref="updateCustomerDialog"
+                      CustomerId="@selectedCustomerId"
+                      CustomerUpdated="ReloadFromFirstPageAsync" />
+
+<DeleteCustomerDialog @ref="deleteCustomerDialog"
+                      CustomerId="@selectedCustomerId"
+                      FullName="@selectedFullName"
+                      CustomerDeleted="ReloadFromFirstPageAsync" />
+
+@code {
+    private QuickGrid<CustomerListItemDto>? grid;
+
+    private int totalItemCount;
     private int pageSize = 25;
+    private string? errorMessage;
     private PaginationState pagination = new() { ItemsPerPage = 25 };
+
+    private string customerNameFilter = string.Empty;
+    private string phoneNumberFilter = string.Empty;
 
     private CreateCustomerDialog? createCustomerDialog;
     private UpdateCustomerDialog? updateCustomerDialog;
@@ -134,64 +180,106 @@
     private Guid selectedCustomerId;
     private string? selectedFullName;
 
-    private IReadOnlyList<CustomerViewModel> FilteredItems =>
-        (string.IsNullOrWhiteSpace(searchTerm)
-            ? customers
-            : customers.Where(c =>
-                (c.FullName != null && c.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                (c.AddressFull != null && c.AddressFull.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                (c.ContactPhone != null && c.ContactPhone.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                (c.ContactEmail != null && c.ContactEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                ( c.AddressCity != null && c.AddressCity.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) ) ||
-                ( c.AddressDistrict != null && c.AddressDistrict.Contains( searchTerm, StringComparison.OrdinalIgnoreCase ) )
-            ) )
-        .ToList();
-
-    private IQueryable<CustomerViewModel> GridItems => FilteredItems.AsQueryable();
-
-    protected override async Task OnInitializedAsync()
+    private async ValueTask<GridItemsProviderResult<CustomerListItemDto>> LoadCustomersAsync(
+        GridItemsProviderRequest<CustomerListItemDto> request )
     {
-        await base.OnInitializedAsync();
-        await LoadCustomersAsync();
+        errorMessage = null;
+
+        var resolvedPageSize = request.Count ?? pageSize;
+        var pageIndex = resolvedPageSize <= 0
+            ? 0
+            : request.StartIndex / resolvedPageSize;
+
+        var result = await customerService.GetListAsync(
+            customerName: customerNameFilter,
+            phoneNumber: phoneNumberFilter,
+            pageIndex: pageIndex,
+            pageSize: resolvedPageSize,
+            cancellationToken: CancellationToken.None );
+
+        if ( !result.IsSuccessful || result.Data is null )
+        {
+            totalItemCount = 0;
+            errorMessage = result.ErrorMessages?.FirstOrDefault()
+                ?? "Müşteriler getirilemedi.";
+
+            return GridItemsProviderResult.From(
+                items: Array.Empty<CustomerListItemDto>(),
+                totalItemCount: 0 );
+        }
+
+        totalItemCount = result.Data.TotalCount;
+
+        return GridItemsProviderResult.From(
+            items: result.Data.Items,
+            totalItemCount: result.Data.TotalCount );
     }
 
-    private async Task OnSearchTermChanged( string value )
+    private async Task ApplyFiltersAsync()
     {
-        searchTerm = value;
         await pagination.SetCurrentPageIndexAsync( 0 );
+        await RefreshGridAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        customerNameFilter = string.Empty;
+        phoneNumberFilter = string.Empty;
+
+        await ApplyFiltersAsync();
     }
 
     private async Task OnPageSizeChanged( int value )
     {
         pageSize = value;
         pagination.ItemsPerPage = value;
+
         await pagination.SetCurrentPageIndexAsync( 0 );
+        await RefreshGridAsync();
     }
 
-    private async Task ShowCustomerDetailDialog( CustomerViewModel customer)
+    private async Task ReloadFromFirstPageAsync()
+    {
+        await pagination.SetCurrentPageIndexAsync( 0 );
+        await RefreshGridAsync();
+    }
+
+    private async Task RefreshGridAsync()
+    {
+        if ( grid is not null )
+        {
+            await grid.RefreshDataAsync();
+        }
+
+        await InvokeAsync( StateHasChanged );
+    }
+
+    private async Task ShowCustomerDetailDialog( CustomerListItemDto customer )
     {
         selectedCustomerId = customer.Id;
 
         await InvokeAsync( StateHasChanged );
         await Task.Yield();
 
-        if(customerDetailsDialog is null)
+        if ( customerDetailsDialog is null )
         {
             return;
         }
+
         await customerDetailsDialog.ShowAsync();
     }
 
     private async Task ShowCreateCustomerDialog()
     {
-        if(createCustomerDialog is null)
+        if ( createCustomerDialog is null )
         {
             return;
         }
+
         await createCustomerDialog.ShowAsync();
     }
 
-    private async Task ShowUpdateCustomerDialog( CustomerViewModel customer )
+    private async Task ShowUpdateCustomerDialog( CustomerListItemDto customer )
     {
         selectedCustomerId = customer.Id;
 
@@ -206,53 +294,19 @@
         await updateCustomerDialog.ShowAsync();
     }
 
-    private async Task ShowDeleteCustomerDialog( CustomerViewModel customer )
+    private async Task ShowDeleteCustomerDialog( CustomerListItemDto customer )
     {
         selectedCustomerId = customer.Id;
         selectedFullName = customer.FullName;
+
+        await InvokeAsync( StateHasChanged );
+        await Task.Yield();
 
         if ( deleteCustomerDialog is null )
         {
             return;
         }
+
         await deleteCustomerDialog.ShowAsync();
-    }
-
-    private async Task HandleCustomerPageAsync()
-    {
-        await LoadCustomersAsync();
-        await InvokeAsync( StateHasChanged );
-    }
-
-    private async Task LoadCustomersAsync()
-    {
-        isLoading = true;
-        try
-        {
-            var result = await customerService.GetAllAsync();
-            if ( !result.IsSuccessful || result.Data is null )
-            {
-                customers = [];
-                return;
-            }
-
-            customers = result.Data.Select( c => new CustomerViewModel
-            {
-                Id = c.Id,
-                FullName = c.FullName,
-                AddressCity = c.City,
-                AddressDistrict = c.District,
-                ContactEmail = c.Email,
-                ContactPhone = c.PhoneNumber,
-                CreatedFullName = c.CreatedFullName,
-                IsActive = c.IsActive
-            } ).ToList() ;
-        }
-        finally
-        {
-            isLoading = false;
-            await pagination.SetCurrentPageIndexAsync( 0 );
-            await InvokeAsync( StateHasChanged );
-        }
     }
 }
