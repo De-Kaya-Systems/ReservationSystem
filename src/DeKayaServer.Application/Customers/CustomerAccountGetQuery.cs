@@ -1,9 +1,11 @@
 ﻿using DeKayaServer.Application.Behaviors;
 using DeKayaServer.Contracts.CustomerAccount;
 using DeKayaServer.Domain.CustomerBalance;
+using DeKayaServer.Domain.CustomerBalance.Enum;
 using DeKayaServer.Domain.Customers;
 using DeKayaServer.Domain.PaymentHistory;
 using DeKayaServer.Domain.PaymentTypes;
+using DeKayaServer.Domain.Reservations;
 using Microsoft.EntityFrameworkCore;
 using TS.MediatR;
 using TS.Result;
@@ -21,7 +23,8 @@ internal sealed class CustomerAccountGetQueryHandler(
     ICustomerRepository customerRepository,
     ICustomerBalanceRepository customerBalanceRepository,
     IPaymentHistoryRepository paymentHistoryRepository,
-    IPaymentTypesRepository paymentTypesRepository )
+    IPaymentTypesRepository paymentTypesRepository,
+    IReservationRepository reservationRepository )
     : IRequestHandler<CustomerAccountGetQuery, Result<CustomerAccountDto>>
 {
     public async Task<Result<CustomerAccountDto>> Handle(
@@ -112,6 +115,29 @@ internal sealed class CustomerAccountGetQueryHandler(
             payment.PaymentTypeName = paymentTypeNames.GetValueOrDefault( payment.PaymentTypeId );
         }
 
+        var reservationSourcesIds = balances
+            .Where( x => x.SourceType == BalanceSourceType.Reservation.ToString() && x.SourceId.HasValue )
+            .Select( x => x.SourceId!.Value )
+            .Concat( payments
+                .Where( x => x.SourceType == BalanceSourceType.Reservation.ToString() && x.SourceId.HasValue )
+                .Select( x => x.SourceId!.Value ) )
+            .Distinct()
+            .ToList();
+
+        var customerReservations = await reservationRepository
+            .GetAll()
+            .Where( x => x.CustomerId == request.CustomerId )
+            .Select( x => new
+            {
+                Id = x.Id.Value,
+                ReservationNumber = x.ReservationNumber.Value
+            } )
+            .ToListAsync( cancellationToken );
+
+        var reservationNumbers = customerReservations
+            .Where( x => reservationSourcesIds.Contains( x.Id ) )
+            .ToDictionary( x => x.Id, x => x.ReservationNumber );
+
         var statementEvents = balances
             .Select( x => new AccountStatementEvent(
                 TransactionDate: x.CreatedAt.DateTime,
@@ -119,6 +145,7 @@ internal sealed class CustomerAccountGetQueryHandler(
                 TransactionType: "Borç",
                 SourceType: x.SourceType,
                 SourceId: x.SourceId,
+                ReservationNumber: GetReservationNumber( reservationNumbers, x.SourceType, x.SourceId ),
                 PaymentTypeId: x.PaymentTypeId,
                 PaymentTypeName: x.PaymentTypeName,
                 Description: x.Description,
@@ -130,6 +157,7 @@ internal sealed class CustomerAccountGetQueryHandler(
                 TransactionType: "Ödeme",
                 SourceType: x.SourceType,
                 SourceId: x.SourceId,
+                ReservationNumber: GetReservationNumber( reservationNumbers, x.SourceType, x.SourceId ),
                 PaymentTypeId: x.PaymentTypeId,
                 PaymentTypeName: x.PaymentTypeName,
                 Description: x.Notes,
@@ -157,6 +185,7 @@ internal sealed class CustomerAccountGetQueryHandler(
                     TransactionType = x.TransactionType,
                     SourceType = x.SourceType,
                     SourceId = x.SourceId,
+                    ReservationNumber = x.ReservationNumber,
                     PaymentTypeId = x.PaymentTypeId,
                     PaymentTypeName = x.PaymentTypeName,
                     Description = x.Description,
@@ -193,6 +222,24 @@ internal sealed class CustomerAccountGetQueryHandler(
         };
     }
 
+    private static string? GetReservationNumber(
+        IReadOnlyDictionary<Guid, string> reservationNumbers,
+        string sourceType,
+        Guid? sourceId )
+    {
+        if ( !sourceId.HasValue )
+        {
+            return null;
+        }
+
+        if ( sourceType != BalanceSourceType.Reservation.ToString() )
+        {
+            return null;
+        }
+
+        return reservationNumbers.GetValueOrDefault( sourceId.Value );
+    }
+
     private static bool IsInPeriod(
         DateTime value,
         DateTime? periodStart,
@@ -217,6 +264,7 @@ internal sealed class CustomerAccountGetQueryHandler(
         string TransactionType,
         string SourceType,
         Guid? SourceId,
+        string? ReservationNumber,
         Guid? PaymentTypeId,
         string? PaymentTypeName,
         string? Description,

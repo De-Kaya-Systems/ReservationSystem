@@ -1,6 +1,9 @@
 ﻿@page "/customers/{CustomerId:guid}/account"
+
 @using DeKayaServer.Contracts.CustomerAccount
 @using DeKayaServer.Contracts.Customers
+@using Microsoft.AspNetCore.WebUtilities
+
 @inherits UserContextComponent
 @inject ICustomerService CustomerService
 @inject NavigationManager NavigationManager
@@ -200,7 +203,7 @@ else if ( account is not null )
                                             @item.TransactionType
                                         </span>
                                     </td>
-                                    <td>@FormatSourceType( item.SourceType )</td>
+                                    <td>@FormatStatementSource( item )</td>
                                     <td>@Display( item.Description )</td>
                                     <td class="text-end text-danger">
                                         @(item.DebitAmount > 0 ? FormatMoney( item.DebitAmount ) : "-")
@@ -323,6 +326,12 @@ else if ( account is not null )
     [Parameter]
     public Guid CustomerId { get; set; }
 
+    [SupplyParameterFromQuery( Name = "startDate" )]
+    public DateTime? StartDateQuery { get; set; }
+
+    [SupplyParameterFromQuery( Name = "endDate" )]
+    public DateTime? EndDateQuery { get; set; }
+
     private CustomerAccountDto? account;
     private string? errorMessage;
     private bool isLoading = true;
@@ -334,6 +343,9 @@ else if ( account is not null )
 
     protected override async Task OnParametersSetAsync()
     {
+        startDateFilter = StartDateQuery;
+        endDateFilter = EndDateQuery;
+
         await LoadAccountAsync();
     }
 
@@ -361,6 +373,7 @@ else if ( account is not null )
 
     private async Task ApplyPeriodFilterAsync()
     {
+        NavigateWithPeriodFilter();
         await LoadAccountAsync();
     }
 
@@ -369,7 +382,29 @@ else if ( account is not null )
         startDateFilter = null;
         endDateFilter = null;
 
+        NavigateWithPeriodFilter();
         await LoadAccountAsync();
+    }
+
+    private void NavigateWithPeriodFilter()
+    {
+        var query = new Dictionary<string, string?>();
+
+        if ( startDateFilter.HasValue )
+        {
+            query[ "startDate" ] = startDateFilter.Value.ToString( "yyyy-MM-dd" );
+        }
+
+        if ( endDateFilter.HasValue )
+        {
+            query[ "endDate" ] = endDateFilter.Value.ToString( "yyyy-MM-dd" );
+        }
+
+        var url = QueryHelpers.AddQueryString(
+            $"/customers/{CustomerId}/account",
+            query );
+
+        NavigationManager.NavigateTo( url );
     }
 
     private void GoBack()
@@ -394,6 +429,18 @@ else if ( account is not null )
             "Service" => "Hizmet",
             _ => value
         };
+
+    private static string FormatStatementSource( CustomerAccountStatementItemDto item )
+    {
+        var sourceType = FormatSourceType( item.SourceType );
+
+        if ( string.IsNullOrWhiteSpace( item.ReservationNumber ) )
+        {
+            return sourceType;
+        }
+
+        return $"{sourceType} - {item.ReservationNumber}";
+    }
 
     private static string GetTransactionBadgeClass( string transactionType )
         => transactionType switch
