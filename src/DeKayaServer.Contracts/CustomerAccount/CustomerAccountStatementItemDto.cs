@@ -6,6 +6,7 @@ public sealed class CustomerAccountStatementItemDto
     public string TransactionType { get; set; } = default!;
     public string SourceType { get; set; } = default!;
     public Guid? SourceId { get; set; }
+    public string? ReservationNumber { get; set; }
 
     public Guid? PaymentTypeId { get; set; }
     public string? PaymentTypeName { get; set; }
