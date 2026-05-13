@@ -107,6 +107,7 @@ app.MapCustomer();
 app.MapCoolingRoom();
 app.MapCoolingRoomMaintenance();
 app.MapReservation();
+app.MapDashboard();
 
 // root endpoint anonymous kalsın
 app.MapGet( "/", () => Results.Ok( Result<string>.Succeed( "OK" ) ) );

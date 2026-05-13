@@ -60,6 +60,8 @@ builder.Services.AddScoped<ICoolingRoomService, CoolingRoomService>();
 builder.Services.AddScoped<ICoolingRoomMaintenanceService, CoolingRoomMaintenanceService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IPaymentTypeService, PaymentTypeService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
 
 builder.Services.AddScoped<IAuthProbeService, AuthProbeService>();
 

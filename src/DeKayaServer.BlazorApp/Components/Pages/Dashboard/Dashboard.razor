@@ -1,70 +1,164 @@
 ﻿@page "/"
-@using DeKayaServer.BlazorApp.Models
-@inject ApiExecutor apiExecutor
 
-<PageHeader
-    Icon="bi-speedometer2"
-    Title="Dashboard"
-    Description="Sistem genel durumu ve performans göstergeleri"
-    ShowBackButton="false">
+@using DeKayaServer.Contracts.Dashboard
+@inject IDashboardService DashboardService
+@rendermode InteractiveServer
+
+<PageHeader Icon="bi-speedometer2"
+            Title="Dashboard"
+            Description="Sistem genel durumu ve önemli operasyon göstergeleri"
+            ShowBackButton="false">
     <Actions>
-        <div class="btn-group">
-            <button type="button" class="btn btn-outline-primary active">
-                <i class="bi bi-calendar-day me-1"></i>Bugün
-            </button>
-            <button type="button" class="btn btn-outline-primary">
-                <i class="bi bi-calendar-week me-1"></i>Bu Hafta
-            </button>
-            <button type="button" class="btn btn-outline-primary">
-                <i class="bi bi-calendar-month me-1"></i>Bu Ay
-            </button>
-        </div>
-        <button type="button" class="btn btn-primary">
-            <i class="bi bi-download me-1"></i>Rapor İndir
-        </button>
-        <button type="button" class="btn btn-outline-secondary" @onclick="CheckAuthAsync" disabled="@isCheckingAuth">
-            @if (isCheckingAuth)
+        <button type="button"
+                class="btn btn-outline-primary"
+                @onclick="LoadSummaryAsync"
+                disabled="@isLoading">
+            @if ( isLoading )
             {
                 <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                <span>Kontrol ediliyor...</span>
+                <span>Yenileniyor...</span>
             }
             else
             {
-                <i class="bi bi-shield-check me-1"></i>
-                <span>Auth Test</span>
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                <span>Yenile</span>
             }
         </button>
-
     </Actions>
 </PageHeader>
 
+@if ( isLoading )
+{
+    <IsLoading Message="Dashboard verileri yükleniyor, lütfen bekleyin." />
+}
+else if ( !string.IsNullOrWhiteSpace( errorMessage ) )
+{
+    <div class="alert alert-danger">
+        @errorMessage
+    </div>
+}
+else if ( summary is not null )
+{
+    <div class="dashboard-grid">
+        @foreach ( var card in MetricCards )
+        {
+            <article class="dashboard-metric-card @($"dashboard-metric-card--{card.Tone}")">
+                <div class="dashboard-metric-card__accent"></div>
+
+                <div class="dashboard-metric-card__header">
+                    <span class="dashboard-metric-card__category">@card.Category</span>
+
+                    <span class="dashboard-metric-card__icon">
+                        <i class="@card.Icon"></i>
+                    </span>
+                </div>
+
+                <div class="dashboard-metric-card__body">
+                    <div class="dashboard-metric-card__value">@card.Value</div>
+                    <div class="dashboard-metric-card__title">@card.Title</div>
+                    <p class="dashboard-metric-card__description">@card.Description</p>
+                </div>
+            </article>
+        }
+    </div>
+}
+
 @code {
-    [Inject]
-    private IAuthProbeService AuthProbeService { get; set; } = default!;
+    private DashboardSummaryDto? summary;
+    private bool isLoading;
+    private string? errorMessage;
 
-    private bool isCheckingAuth;
+    private IReadOnlyList<DashboardMetricCard> MetricCards
+        => summary is null
+            ? []
+            :
+            [
+                new(
+                    Category: "Finans",
+                    Title: "Toplam İşlem Tutarı",
+                    Value: FormatMoney( summary.Finance.TotalBilledAmount ),
+                    Description: "Sistemde oluşan toplam borç ve işlem tutarı.",
+                    Icon: "bi bi-receipt",
+                    Tone: "primary" ),
 
-    private async Task CheckAuthAsync()
+                new(
+                    Category: "Finans",
+                    Title: "Toplam Tahsilat",
+                    Value: FormatMoney( summary.Finance.TotalCollectedAmount ),
+                    Description: "Bugüne kadar alınan toplam ödeme tutarı.",
+                    Icon: "bi bi-cash-coin",
+                    Tone: "success" ),
+
+                new(
+                    Category: "Finans",
+                    Title: "Tahsil Edilmemiş Bakiye",
+                    Value: FormatMoney( summary.Finance.OutstandingDebtAmount ),
+                    Description: "Müşterilerden tahsil edilmeyi bekleyen bakiye.",
+                    Icon: "bi bi-exclamation-circle",
+                    Tone: "danger" ),
+
+                new(
+                    Category: "Operasyon",
+                    Title: "Müşterideki Odalar",
+                    Value: summary.CoolingRooms.RoomsAtCustomerCount.ToString( "N0" ),
+                    Description: "Şu anda müşteriye teslim edilmiş oda sayısı.",
+                    Icon: "bi bi-truck",
+                    Tone: "primary" ),
+
+                new(
+                    Category: "Operasyon",
+                    Title: "Bugün Teslim Edilecek Odalar",
+                    Value: summary.CoolingRooms.TodayDeliveriesCount.ToString( "N0" ),
+                    Description: "Bugün müşteriye teslim edilmesi planlanan odalar.",
+                    Icon: "bi bi-box-arrow-up-right",
+                    Tone: "warning" ),
+
+                new(
+                    Category: "Operasyon",
+                    Title: "Bugün Müşteriden Alınacak Odalar",
+                    Value: summary.CoolingRooms.TodayReturnsCount.ToString( "N0" ),
+                    Description: "Bugün müşteriden geri alınması planlanan odalar.",
+                    Icon: "bi bi-box-arrow-in-down-left",
+                    Tone: "info" )
+            ];
+
+    protected override async Task OnInitializedAsync()
     {
-        if (isCheckingAuth)
-            return;
+        await LoadSummaryAsync();
+    }
 
-        isCheckingAuth = true;
+    private async Task LoadSummaryAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
         try
         {
-            await apiExecutor.ExecuteAsync(
-                () => AuthProbeService.PingAuthorizedAsync(),
-                new ApiPresentationOptions
-                {
-                    ShowError = true,
-                    ShowSuccess = true,
-                    SuccessMessage = "Token geçerli (API authorized).",
-                    ErrorTitle = "Auth kontrol"
-                });
+            var result = await DashboardService.GetSummaryAsync();
+
+            if ( !result.IsSuccessful || result.Data is null )
+            {
+                errorMessage = result.ErrorMessages?.FirstOrDefault()
+                    ?? "Dashboard verileri getirilemedi.";
+                return;
+            }
+
+            summary = result.Data;
         }
         finally
         {
-            isCheckingAuth = false;
+            isLoading = false;
         }
     }
+
+    private static string FormatMoney( decimal value )
+        => value.ToString( "N2" ) + " ₺";
+
+    private sealed record DashboardMetricCard(
+        string Category,
+        string Title,
+        string Value,
+        string Description,
+        string Icon,
+        string Tone );
 }
