@@ -57,6 +57,23 @@ public static class CustomerModule
             } )
             .Produces<Result<CustomerAccountDto>>();
 
+        app.MapPost( "{id}/payments",
+            async (
+                Guid id,
+                ReceiveCustomerPaymentRequest request,
+                ISender sender,
+                CancellationToken cancellationToken ) =>
+            {
+                var command = ReceiveCustomerPaymentCommand.FromRequest(
+                    customerId: id,
+                    request: request );
+
+                var res = await sender.Send( command, cancellationToken );
+
+                return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
+            } )
+            .Produces<Result<string>>();
+
         app.MapPost( string.Empty,
             async ( CustomerCreateCommand request, ISender sender, CancellationToken cancellationToken ) =>
             {
