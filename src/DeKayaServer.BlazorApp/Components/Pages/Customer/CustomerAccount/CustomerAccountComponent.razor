@@ -1,5 +1,6 @@
 ﻿@page "/customers/{CustomerId:guid}/account"
 
+@using DeKayaServer.BlazorApp.Components.Pages.Customer.ReceiveCustomerPayment
 @using DeKayaServer.Contracts.CustomerAccount
 @using DeKayaServer.Contracts.Customers
 @using Microsoft.AspNetCore.WebUtilities
@@ -21,6 +22,14 @@
             @onclick="GoBack">
         <i class="bi bi-arrow-left"></i>
         <span>Müşterilere Dön</span>
+    </button>
+
+    <button type="button"
+            class="btn btn-outline-success btn-sm"
+            @onclick="ShowReceivePaymentDialogAsync"
+            disabled="@(account is null || !HasPayableBalance)">
+        <i class="bi bi-cash-coin"></i>
+        <span>Ödeme Al</span>
     </button>
 </div>
 
@@ -320,6 +329,14 @@ else if ( account is not null )
             </div>
         }
     </div>
+
+    @if ( account is not null )
+    {
+        <ReceiveCustomerPaymentDialog @ref="receivePaymentDialog"
+                                      CustomerId="@CustomerId"
+                                      BalanceItems="@account.BalanceItems"
+                                      PaymentReceived="ReloadAccountAsync" />
+    }
 }
 
 @code {
@@ -335,11 +352,13 @@ else if ( account is not null )
     private CustomerAccountDto? account;
     private string? errorMessage;
     private bool isLoading = true;
+    private ReceiveCustomerPaymentDialog? receivePaymentDialog;
 
     private DateTime? startDateFilter;
     private DateTime? endDateFilter;
 
     private AccountTab activeTab = AccountTab.Statement;
+    private bool HasPayableBalance => account?.BalanceItems.Any( x => x.OutstandingAmount > 0 ) == true;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -347,6 +366,16 @@ else if ( account is not null )
         endDateFilter = EndDateQuery;
 
         await LoadAccountAsync();
+    }
+
+    private async Task ShowReceivePaymentDialogAsync()
+    {
+        if ( receivePaymentDialog is null )
+        {
+            return;
+        }
+
+        await receivePaymentDialog.ShowAsync();
     }
 
     private async Task LoadAccountAsync()
@@ -369,6 +398,11 @@ else if ( account is not null )
 
         account = result.Data;
         isLoading = false;
+    }
+
+    private async Task ReloadAccountAsync()
+    {
+        await LoadAccountAsync();
     }
 
     private async Task ApplyPeriodFilterAsync()

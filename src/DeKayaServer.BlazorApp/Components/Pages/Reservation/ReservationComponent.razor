@@ -24,6 +24,14 @@
     </div>
 }
 
+@if ( isLoading )
+{
+    <div class="mt-3">
+        <IsLoading Message="Rezervasyonlar yükleniyor, lütfen bekleyin." />
+    </div>
+}
+
+
 <DeKayaQuickGrid Title="Rezervasyonlar"
                  ShowTitle="true"
                  ShowSearchResultCount="true"
@@ -204,7 +212,8 @@
 @code {
     private QuickGrid<ReservationListItemDto>? grid;
 
-    // private bool isLoading;
+    private bool isLoading = true;
+    private bool hasLoadedReservations;
     private string? errorMessage;
     private int totalItemCount;
     private int pageSize = 25;
@@ -254,38 +263,49 @@
     {
         errorMessage = null;
 
-        var resolvedPageSize = request.Count ?? pageSize;
-        var pageIndex = resolvedPageSize <= 0
-            ? 0
-            : request.StartIndex / resolvedPageSize;
-
-        var result = await reservationService.GetListAsync(
-            customerName: customerNameFilter,
-            reservationStartDate: reservationStartDateFilter,
-            reservationEndDate: reservationEndDateFilter,
-            operationStatus: SelectedOperationStatus,
-            pageIndex: pageIndex,
-            pageSize: resolvedPageSize,
-            cancellationToken: CancellationToken.None );
-
-        if ( !result.IsSuccessful || result.Data is null )
+        try
         {
-            totalItemCount = 0;
-            errorMessage = result.ErrorMessages?.FirstOrDefault()
-                ?? "Rezervasyonlar getirilemedi.";
+            var resolvedPageSize = request.Count ?? pageSize;
+            var pageIndex = resolvedPageSize <= 0
+                ? 0
+                : request.StartIndex / resolvedPageSize;
+
+            var result = await reservationService.GetListAsync(
+                customerName: customerNameFilter,
+                reservationStartDate: reservationStartDateFilter,
+                reservationEndDate: reservationEndDateFilter,
+                operationStatus: SelectedOperationStatus,
+                pageIndex: pageIndex,
+                pageSize: resolvedPageSize,
+                cancellationToken: CancellationToken.None );
+
+            if ( !result.IsSuccessful || result.Data is null )
+            {
+                totalItemCount = 0;
+                errorMessage = result.ErrorMessages?.FirstOrDefault()
+                    ?? "Rezervasyonlar getirilemedi.";
+
+                return GridItemsProviderResult.From(
+                    items: Array.Empty<ReservationListItemDto>(),
+                    totalItemCount: 0 );
+            }
+
+            totalItemCount = result.Data.TotalCount;
 
             return GridItemsProviderResult.From(
-                items: Array.Empty<ReservationListItemDto>(),
-                totalItemCount: 0 );
+                items: result.Data.Items,
+                totalItemCount: result.Data.TotalCount );
         }
-
-        totalItemCount = result.Data.TotalCount;
-
-        return GridItemsProviderResult.From(
-            items: result.Data.Items,
-            totalItemCount: result.Data.TotalCount );
+        finally
+        {
+            if ( !hasLoadedReservations )
+            {
+                hasLoadedReservations = true;
+                isLoading = false;
+                await InvokeAsync( StateHasChanged );
+            }
+        }
     }
-
 
     private async Task ApplyFiltersAsync()
     {
@@ -314,12 +334,21 @@
 
     private async Task RefreshGridAsync()
     {
-        if ( grid is not null )
-        {
-            await grid.RefreshDataAsync();
-        }
-
+        isLoading = true;
         await InvokeAsync( StateHasChanged );
+
+        try
+        {
+            if ( grid is not null )
+            {
+                await grid.RefreshDataAsync();
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync( StateHasChanged );
+        }
     }
 
     private async Task ShowCreateReservationDialog()
