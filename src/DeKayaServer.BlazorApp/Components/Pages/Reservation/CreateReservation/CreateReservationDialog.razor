@@ -110,7 +110,7 @@
                                     <option value="">Soğuk oda seçin</option>
                                     @foreach ( var room in rooms )
                                     {
-                                        <option value="@room.Id.ToString()">@room.Name</option>
+                                        <option value="@room.Id.ToString()">@room.DisplayName</option>
                                     }
                                 </InputSelect>
                                 <label>Soğuk oda</label>
@@ -493,7 +493,7 @@
 
             rooms = roomsResult.Data is not null
                 ? roomsResult.Data
-                    .Select( r => new CoolingRoomOption( r.Id, r.RoomName, r.DailyPrice ) )
+                    .Select( r => new CoolingRoomOption( r.Id, r.RoomName, r.DailyPrice, r.Shelf ) )
                     .OrderBy( r => r.Name )
                     .ToList()
                 : [];
@@ -737,7 +737,11 @@
         public string CustomerDisplay => $"{FullName} - {PhoneNumber}";
     }
 
-    private sealed record CoolingRoomOption( Guid Id, string Name, decimal DailyPrice );
+    private sealed record CoolingRoomOption( Guid Id, string Name, decimal DailyPrice, bool Shelf )
+    {
+        public string DisplayName => $"{Name} / {( Shelf ? "RAFLI" : "RAFSIZ" )}";
+    }
+
     private sealed record PaymentTypeOption( Guid Id, string Name );
 }
 
