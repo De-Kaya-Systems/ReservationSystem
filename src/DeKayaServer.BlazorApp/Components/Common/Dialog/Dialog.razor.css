@@ -251,3 +251,17 @@
         border-width: 2px;
     }
 }
+
+.generic-dialog.pdf-preview-dialog {
+    width: min(1280px, calc(100vw - 2rem));
+    max-height: calc(100vh - 2rem);
+}
+
+    .generic-dialog.pdf-preview-dialog .dialog-shell {
+        height: calc(100vh - 2rem);
+    }
+
+    .generic-dialog.pdf-preview-dialog .dialog-body {
+        padding: 1rem 1.5rem 1.5rem;
+        overflow: hidden;
+    }

@@ -3,4 +3,5 @@
 public interface IUserContext
 {
     Guid GetUserId();
+    string GetFullName();
 }

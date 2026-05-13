@@ -5,7 +5,7 @@ using System.Security.Claims;
 namespace DeKayaServer.Infrastructure.Services;
 
 internal sealed class UserContext(
-    IHttpContextAccessor httpContextAccessor) : IUserContext
+    IHttpContextAccessor httpContextAccessor ) : IUserContext
 {
     // Bu method, mevcut kullanıcının kimliğini (ID) alır ve bir GUID olarak döndürür. Eğer kullanıcı kimliği bulunamazsa veya geçerli bir GUID değilse, uygun istisnalar fırlatır.
     // EN: This method retrieves the current user's identity (ID) and returns it as a GUID. If the user ID cannot be found or is not a valid GUID, it throws appropriate exceptions.
@@ -13,20 +13,34 @@ internal sealed class UserContext(
     {
         var httpContext = httpContextAccessor.HttpContext!;
         var claims = httpContext.User.Claims;
-        string? userId = claims.FirstOrDefault(i => i.Type == ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null)
+        string? userId = claims.FirstOrDefault( i => i.Type == ClaimTypes.NameIdentifier )?.Value;
+        if ( userId == null )
         {
-            throw new ArgumentNullException("User ID claim not found.");
+            throw new ArgumentNullException( "User ID claim not found." );
         }
 
         try
         {
-            Guid id = Guid.Parse(userId);
+            Guid id = Guid.Parse( userId );
             return id;
         }
-        catch (Exception)
+        catch ( Exception )
         {
-            throw new ArgumentException("User ID claim is not a valid GUID.");
+            throw new ArgumentException( "User ID claim is not a valid GUID." );
         }
+    }
+
+    public string GetFullName()
+    {
+        var httpContext = httpContextAccessor.HttpContext;
+        var fullName = httpContext?
+            .User
+            .Claims
+            .FirstOrDefault( x => x.Type == "fullName" )
+            ?.Value;
+
+        return string.IsNullOrWhiteSpace( fullName )
+            ? "Sistem"
+            : fullName;
     }
 }

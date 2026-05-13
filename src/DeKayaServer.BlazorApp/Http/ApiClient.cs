@@ -13,6 +13,7 @@ public interface IApiClient
     Task<Result<T>> DeleteAsync<T>( string url, CancellationToken ct = default );
 
     Task<Result<T>> GetRawAsync<T>( string url, CancellationToken ct = default );
+    Task<Result<byte[]>> GetBytesAsync( string url, CancellationToken ct = default );
 }
 
 public sealed class ApiClient(
@@ -52,12 +53,7 @@ public sealed class ApiClient(
     {
         using var req = request;
 
-        var circuitId = circuitIdProvider.CircuitId;
-        if ( !string.IsNullOrWhiteSpace( circuitId ) )
-        {
-            req.Headers.Remove( CircuitHeaderName );
-            req.Headers.Add( CircuitHeaderName, circuitId );
-        }
+        AddCircuitHeader( req );
 
         try
         {
@@ -70,24 +66,7 @@ public sealed class ApiClient(
             // Auth errors -> logout + kullanıcı mesajı
             if ( response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden )
             {
-                await forceLogoutService.ForceLogoutAsync();
-
-                // Backend envelope dönüyorsa onu yakala
-                if ( !string.IsNullOrWhiteSpace( body ) )
-                {
-                    var authEnvelope = Deserialize<Result<object>>( body );
-                    if ( authEnvelope is not null && authEnvelope.ErrorMessages?.Count > 0 )
-                    {
-                        return new Result<T>
-                        {
-                            IsSuccessful = false,
-                            StatusCode = ( int )response.StatusCode,
-                            ErrorMessages = authEnvelope.ErrorMessages
-                        };
-                    }
-                }
-
-                return Failure<T>( ( int )response.StatusCode, "Oturum süren doldu veya yetkin yok. Lütfen tekrar giriş yap." );
+                return await CreateAuthorizationFailureAsync<T>( response, body, ct );
             }
 
             if ( !response.IsSuccessStatusCode )
@@ -95,15 +74,10 @@ public sealed class ApiClient(
                 if ( !string.IsNullOrWhiteSpace( body ) )
                 {
                     //T uyuşmazsa bile ErrorMessages'ı kaybetmemek için object ile dene
-                    var errorEnvelope = Deserialize<Result<object>>( body );
-                    if ( errorEnvelope is not null && errorEnvelope.ErrorMessages?.Count > 0 )
+                    var errorEnvelope = TryCreateEnvelopeFailure<T>( body, ( int )response.StatusCode );
+                    if ( errorEnvelope is not null )
                     {
-                        return new Result<T>
-                        {
-                            IsSuccessful = false,
-                            StatusCode = errorEnvelope.StatusCode != 0 ? errorEnvelope.StatusCode : ( int )response.StatusCode,
-                            ErrorMessages = errorEnvelope.ErrorMessages
-                        };
+                        return errorEnvelope;
                     }
 
                     // Eğer gerçekten Result<T> dönüyorsa
@@ -183,10 +157,129 @@ public sealed class ApiClient(
         catch { return default; }
     }
 
+    private void AddCircuitHeader( HttpRequestMessage request )
+    {
+        var circuitId = circuitIdProvider.CircuitId;
+        if ( string.IsNullOrWhiteSpace( circuitId ) )
+        {
+            return;
+        }
+
+        request.Headers.Remove( CircuitHeaderName );
+        request.Headers.Add( CircuitHeaderName, circuitId );
+    }
+
+    private async Task<Result<T>> CreateAuthorizationFailureAsync<T>(
+        HttpResponseMessage response,
+        string? body,
+        CancellationToken ct )
+    {
+        await forceLogoutService.ForceLogoutAsync();
+
+        body ??= response.Content is null
+            ? null
+            : await response.Content.ReadAsStringAsync( ct );
+
+        return TryCreateEnvelopeFailure<T>( body, ( int )response.StatusCode )
+            ?? Failure<T>(
+                ( int )response.StatusCode,
+                "Oturum süren doldu veya yetkin yok. Lütfen tekrar giriş yap." );
+    }
+
+    private static Result<T>? TryCreateEnvelopeFailure<T>(
+        string? body,
+        int fallbackStatusCode )
+    {
+        if ( string.IsNullOrWhiteSpace( body ) )
+        {
+            return null;
+        }
+
+        var errorEnvelope = Deserialize<Result<object>>( body );
+        if ( errorEnvelope is null
+             || errorEnvelope.ErrorMessages is null
+             || errorEnvelope.ErrorMessages.Count == 0 )
+        {
+            return null;
+        }
+
+        return new Result<T>
+        {
+            IsSuccessful = false,
+            StatusCode = errorEnvelope.StatusCode != 0
+                ? errorEnvelope.StatusCode
+                : fallbackStatusCode,
+            ErrorMessages = errorEnvelope.ErrorMessages
+        };
+    }
+
     private static Result<T> Failure<T>( int status, string message ) => new()
     {
         IsSuccessful = false,
         StatusCode = status,
         ErrorMessages = [ message ]
     };
+
+    public async Task<Result<byte[]>> GetBytesAsync(
+        string url,
+        CancellationToken ct = default )
+    {
+        using var req = new HttpRequestMessage( HttpMethod.Get, url );
+
+        AddCircuitHeader( req );
+
+        try
+        {
+            using var response = await http.SendAsync( req, ct );
+
+            if ( response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden )
+            {
+                return await CreateAuthorizationFailureAsync<byte[]>( response, body: null, ct );
+            }
+
+            if ( !response.IsSuccessStatusCode )
+            {
+                var body = response.Content is null
+                    ? null
+                    : await response.Content.ReadAsStringAsync( ct );
+
+                if ( !string.IsNullOrWhiteSpace( body ) )
+                {
+                    var errorEnvelope = TryCreateEnvelopeFailure<byte[]>( body, ( int )response.StatusCode );
+                    if ( errorEnvelope is not null )
+                    {
+                        return errorEnvelope;
+                    }
+                }
+
+                return Failure<byte[]>(
+                    ( int )response.StatusCode,
+                    string.IsNullOrWhiteSpace( body )
+                        ? "PDF oluşturulamadı."
+                        : body );
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync( ct );
+
+            return new Result<byte[]>
+            {
+                IsSuccessful = true,
+                StatusCode = ( int )response.StatusCode,
+                Data = bytes
+            };
+        }
+        catch ( TaskCanceledException ) when ( !ct.IsCancellationRequested )
+        {
+            return Failure<byte[]>( 408, "İstek zaman aşımına uğradı (timeout)." );
+        }
+        catch ( TaskCanceledException )
+        {
+            return Failure<byte[]>( 499, "İstek iptal edildi." );
+        }
+        catch ( HttpRequestException )
+        {
+            return Failure<byte[]>( 503, "Sunucuya ulaşılamadı. Bağlantını kontrol et." );
+        }
+    }
+
 }

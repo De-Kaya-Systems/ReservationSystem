@@ -6,36 +6,40 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using QuestPDF.Infrastructure;
 using Scrutor;
 
 namespace DeKayaServer.Infrastructure;
 
 public static class ServiceRegistrar
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure( this IServiceCollection services, IConfiguration configuration )
     {
-        services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
+        services.Configure<JwtOptions>( configuration.GetSection( "Jwt" ) );
         services.ConfigureOptions<JwtSetupOptions>();
         services.AddAuthentication().AddJwtBearer();
         services.AddAuthorization();
 
-        services.Configure<MailSettingOptions>(configuration.GetSection("MailSettings"));
-        services.AddSingleton(sp =>
+        QuestPDF.Settings.License = LicenseType.Community;
+        services.Configure<CompanyInformationOptions>(
+            configuration.GetSection( CompanyInformationOptions.SectionName ) );
+        services.Configure<MailSettingOptions>( configuration.GetSection( "MailSettings" ) );
+        services.AddSingleton( sp =>
         {
             var mailSettings = sp.GetRequiredService<IOptions<MailSettingOptions>>().Value;
-            return new EmailClient(mailSettings.ConnectionString);
-        });
+            return new EmailClient( mailSettings.ConnectionString );
+        } );
 
         services.AddHttpContextAccessor();
         // Infrastructure Services Registration
         // Burasi altyapi katmanina ait servislerin kaydedildigi yerdir.Ornegin: services.AddTransient<IYourService, YourServiceImplementation>();
         //EN : This is where services related to the infrastructure layer are registered.Exemple: services.AddTransient<IYourService, YourServiceImplementation>();
 
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<ApplicationDbContext>( options =>
         {
-            string connectionString = configuration.GetConnectionString("SqlServer")!;
-            options.UseSqlServer(connectionString);
-        });
+            string connectionString = configuration.GetConnectionString( "SqlServer" )!;
+            options.UseSqlServer( connectionString );
+        } );
 
         /// <summary>
         /// Burada Scrutor kullanarak tum servisleri otomatik olarak kaydediyoruz. Dependency Injection icin kolaylik saglar.
@@ -49,14 +53,14 @@ public static class ServiceRegistrar
         /// Class name and interface name match, this method automatically matches them.
         /// </summary>
         /// 
-        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IUnitOfWork>( provider => provider.GetRequiredService<ApplicationDbContext>() );
 
-        services.Scan(action => action
-        .FromAssemblies(typeof(ServiceRegistrar).Assembly)
-        .AddClasses(publicOnly: false)
-        .UsingRegistrationStrategy(RegistrationStrategy.Skip)
+        services.Scan( action => action
+        .FromAssemblies( typeof( ServiceRegistrar ).Assembly )
+        .AddClasses( publicOnly: false )
+        .UsingRegistrationStrategy( RegistrationStrategy.Skip )
         .AsImplementedInterfaces()
-        .WithScopedLifetime());
+        .WithScopedLifetime() );
 
         return services;
     }
