@@ -713,14 +713,12 @@
         public DateOnly? DeliveryDate { get; set; }
 
         [Required( ErrorMessage = "Rezervasyon saati girin!" )]
-        [RegularExpression( @"^\d{2}:\d{2}$", ErrorMessage = "Saat formatı HH:mm olmalı." )]
         public string DeliveryTime { get; set; } = "11:00";
 
         [Required( ErrorMessage = "Rezervasyon bitiş tarihi seçin!" )]
         public DateOnly? PickUpDate { get; set; }
 
         [Required( ErrorMessage = "Rezervasyon bitiş saati girin!" )]
-        [RegularExpression( @"^\d{2}:\d{2}$", ErrorMessage = "Saat formatı HH:mm olmalı." )]
         public string PickUpTime { get; set; } = "11:00";
 
         [Required( ErrorMessage = "Ödeme tipi seçin!" )]
