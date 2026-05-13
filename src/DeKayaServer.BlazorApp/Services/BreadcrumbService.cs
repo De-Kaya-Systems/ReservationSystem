@@ -104,7 +104,15 @@ public class BreadcrumbService : IBreadcrumbService
         for (int i = 0; i < segments.Length; i++)
         {
             currentPath += "/" + segments[i];
-            var title = FormatTitle(segments[i]);
+
+            if (IsRouteIdSegment(segments[i]))
+            {
+                continue;
+            }
+
+            var title = _cache.TryGetValue(currentPath, out var menuItem)
+                ? menuItem.Title
+                : FormatTitle(segments[i]);
 
             breadcrumbs.Add(new BreadcrumbItemViewModel
             {
@@ -115,8 +123,16 @@ public class BreadcrumbService : IBreadcrumbService
         }
     }
 
+    private static bool IsRouteIdSegment(string segment)
+        => Guid.TryParse(segment, out _);
+
     private string FormatTitle(string segment)
     {
+        if (string.Equals(segment, "account", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Ekstre";
+        }
+
         return segment
             .Replace("-", " ")
             .Replace("_", " ")
