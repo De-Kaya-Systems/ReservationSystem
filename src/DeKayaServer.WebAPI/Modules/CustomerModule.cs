@@ -2,6 +2,7 @@
 using DeKayaServer.Contracts.Common;
 using DeKayaServer.Contracts.CustomerAccount;
 using DeKayaServer.Contracts.Customers;
+using Microsoft.AspNetCore.Http.HttpResults;
 using TS.MediatR;
 using TS.Result;
 
@@ -56,6 +57,34 @@ public static class CustomerModule
                 return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
             } )
             .Produces<Result<CustomerAccountDto>>();
+
+        app.MapGet( "{id}/account/pdf",
+            async (
+                Guid id,
+                DateTime? startDate,
+                DateTime? endDate,
+                ISender sender,
+                CancellationToken cancellationToken ) =>
+            {
+                var res = await sender.Send(
+                    new CustomerAccountStatementPdfGetQuery(
+                        CustomerId: id,
+                        StartDate: startDate,
+                        EndDate: endDate ),
+                    cancellationToken );
+
+                if ( !res.IsSuccessful || res.Data is null )
+                {
+                    return Results.InternalServerError( res );
+                }
+
+                return Results.File(
+                    fileContents: res.Data.Content,
+                    contentType: res.Data.ContentType,
+                    fileDownloadName: res.Data.FileName );
+            } )
+            .Produces<FileContentHttpResult>( StatusCodes.Status200OK, "application/pdf" );
+
 
         app.MapPost( "{id}/payments",
             async (

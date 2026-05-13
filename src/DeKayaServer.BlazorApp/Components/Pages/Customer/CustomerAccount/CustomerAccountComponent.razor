@@ -4,7 +4,7 @@
 @using DeKayaServer.Contracts.CustomerAccount
 @using DeKayaServer.Contracts.Customers
 @using Microsoft.AspNetCore.WebUtilities
-
+@using System.IO
 @inherits UserContextComponent
 @inject ICustomerService CustomerService
 @inject NavigationManager NavigationManager
@@ -30,6 +30,14 @@
             disabled="@(account is null || !HasPayableBalance)">
         <i class="bi bi-cash-coin"></i>
         <span>Ödeme Al</span>
+    </button>
+
+    <button type="button"
+            class="btn btn-outline-danger btn-sm"
+            @onclick="ShowPdfPreviewDialogAsync"
+            disabled="@(account is null)">
+        <i class="bi bi-filetype-pdf"></i>
+        <span>PDF Önizle</span>
     </button>
 </div>
 
@@ -337,6 +345,12 @@ else if ( account is not null )
                                       BalanceItems="@account.BalanceItems"
                                       PaymentReceived="ReloadAccountAsync" />
     }
+
+    <CustomerAccountPdfPreviewDialog @ref="pdfPreviewDialog"
+                                     CustomerId="@CustomerId"
+                                     StartDate="@startDateFilter"
+                                     EndDate="@endDateFilter"
+                                     FileName="@BuildPdfFileName()" />
 }
 
 @code {
@@ -353,6 +367,7 @@ else if ( account is not null )
     private string? errorMessage;
     private bool isLoading = true;
     private ReceiveCustomerPaymentDialog? receivePaymentDialog;
+    private CustomerAccountPdfPreviewDialog? pdfPreviewDialog;
 
     private DateTime? startDateFilter;
     private DateTime? endDateFilter;
@@ -378,6 +393,16 @@ else if ( account is not null )
         await receivePaymentDialog.ShowAsync();
     }
 
+    private async Task ShowPdfPreviewDialogAsync()
+    {
+        if ( pdfPreviewDialog is null )
+        {
+            return;
+        }
+
+        await pdfPreviewDialog.ShowAsync();
+    }
+
     private async Task LoadAccountAsync()
     {
         isLoading = true;
@@ -398,6 +423,18 @@ else if ( account is not null )
 
         account = result.Data;
         isLoading = false;
+    }
+
+    private string BuildPdfFileName()
+    {
+        var customerName = account?.CustomerFullName ?? "musteri";
+
+        foreach ( var invalidChar in Path.GetInvalidFileNameChars() )
+        {
+            customerName = customerName.Replace( invalidChar, '-' );
+        }
+
+        return $"musteri-ekstresi-{customerName}-{DateTime.Now:yyyyMMddHHmm}.pdf";
     }
 
     private async Task ReloadAccountAsync()

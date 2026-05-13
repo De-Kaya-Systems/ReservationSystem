@@ -1,0 +1,173 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@implements IAsyncDisposable
+@inject ICustomerService CustomerService
+@inject IJSRuntime JsRuntime
+@rendermode InteractiveServer
+
+<Dialog @ref="dialog"
+        Title="Müşteri Ekstresi PDF Önizleme"
+        Class="pdf-preview-dialog"
+        ParentMethod="HandleDialogClosedAsync">
+    <ChildContent>
+        @if ( isLoading )
+        {
+            <IsLoading Message="PDF hazırlanıyor, lütfen bekleyin." />
+        }
+        else if ( !string.IsNullOrWhiteSpace( errorMessage ) )
+        {
+            <div class="alert alert-danger mb-0">
+                @errorMessage
+            </div>
+        }
+        else if ( !string.IsNullOrWhiteSpace( pdfObjectUrl ) )
+        {
+            <div class="d-flex justify-content-end gap-2 mb-2">
+                <button type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        @onclick="DownloadAsync">
+                    <i class="bi bi-download"></i>
+                    <span>İndir</span>
+                </button>
+            </div>
+
+            <iframe src="@PdfPreviewUrl"
+                    title="Müşteri ekstresi PDF önizleme"
+                    style="display: block; width: 100%; height: calc(100vh - 11rem); border: 1px solid #e9ecef; border-radius: 6px; background: #f8f9fa;">
+            </iframe>
+        }
+    </ChildContent>
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+    private bool isLoading;
+    private string? errorMessage;
+    private string? pdfObjectUrl;
+
+    private string? PdfPreviewUrl
+        => string.IsNullOrWhiteSpace( pdfObjectUrl )
+            ? null
+            : $"{pdfObjectUrl}#toolbar=0&navpanes=0&scrollbar=1&page=1&zoom=100";
+
+    [Parameter]
+    public Guid CustomerId { get; set; }
+
+    [Parameter]
+    public DateTime? StartDate { get; set; }
+
+    [Parameter]
+    public DateTime? EndDate { get; set; }
+
+    [Parameter]
+    public string FileName { get; set; } = "musteri-ekstresi.pdf";
+
+    public async Task ShowAsync()
+    {
+        if ( dialog is null )
+        {
+            return;
+        }
+
+        await RevokePdfObjectUrlAsync();
+        ResetState();
+
+        await dialog.ShowAsync();
+        await InvokeAsync( StateHasChanged );
+
+        await LoadPdfAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await RevokePdfObjectUrlAsync();
+
+        if ( dialog is not null )
+        {
+            await dialog.HideAsync();
+        }
+    }
+
+    private async Task HandleDialogClosedAsync( DialogResultEnum _ )
+    {
+        await RevokePdfObjectUrlAsync();
+    }
+
+    private async Task LoadPdfAsync()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
+
+            var result = await CustomerService.GetAccountPdfAsync(
+                CustomerId,
+                StartDate,
+                EndDate );
+
+            if ( !result.IsSuccessful || result.Data is null )
+            {
+                errorMessage = result.ErrorMessages?.FirstOrDefault()
+                    ?? "PDF oluşturulamadı.";
+                return;
+            }
+
+            pdfObjectUrl = await JsRuntime.InvokeAsync<string>(
+                "deKayaFiles.createObjectUrl",
+                result.Data,
+                "application/pdf" );
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync( StateHasChanged );
+        }
+    }
+
+    private async Task DownloadAsync()
+    {
+        if ( string.IsNullOrWhiteSpace( pdfObjectUrl ) )
+        {
+            return;
+        }
+
+        await JsRuntime.InvokeVoidAsync(
+            "deKayaFiles.downloadObjectUrl",
+            pdfObjectUrl,
+            FileName );
+    }
+
+    private async Task RevokePdfObjectUrlAsync()
+    {
+        if ( string.IsNullOrWhiteSpace( pdfObjectUrl ) )
+        {
+            return;
+        }
+
+        await JsRuntime.InvokeVoidAsync(
+            "deKayaFiles.revokeObjectUrl",
+            pdfObjectUrl );
+
+        pdfObjectUrl = null;
+    }
+
+    private void ResetState()
+    {
+        isLoading = true;
+        errorMessage = null;
+        pdfObjectUrl = null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await RevokePdfObjectUrlAsync();
+        }
+        catch ( JSDisconnectedException )
+        {
+        }
+        catch ( ObjectDisposedException )
+        {
+        }
+    }
+}

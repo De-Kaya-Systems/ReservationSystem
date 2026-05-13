@@ -213,3 +213,31 @@
         showNotification: (typeof showNotification !== 'undefined') ? showNotification : undefined
     };
 })();
+
+window.deKayaFiles = {
+    createObjectUrl: function (bytes, contentType) {
+        const blob = new Blob([new Uint8Array(bytes)], { type: contentType });
+        return URL.createObjectURL(blob);
+    },
+
+    revokeObjectUrl: function (url) {
+        if (!url) {
+            return;
+        }
+
+        URL.revokeObjectURL(url);
+    },
+
+    downloadObjectUrl: function (url, fileName) {
+        if (!url) {
+            return;
+        }
+
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = fileName || "download";
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+    }
+};

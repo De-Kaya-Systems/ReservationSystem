@@ -22,6 +22,12 @@ public interface ICustomerService
         int pageIndex,
         int pageSize,
         CancellationToken cancellationToken = default );
+
+    Task<Result<byte[]>> GetAccountPdfAsync(
+        Guid customerId,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        CancellationToken cancellationToken = default );
 }
 
 public class CustomerService( IApiClient apiClient ) : ICustomerService
@@ -60,24 +66,7 @@ public class CustomerService( IApiClient apiClient ) : ICustomerService
         DateTime? endDate = null,
         CancellationToken cancellationToken = default )
     {
-        var query = new List<string>();
-
-        if ( startDate.HasValue )
-        {
-            query.Add( $"startDate={startDate.Value:yyyy-MM-dd}" );
-        }
-
-        if ( endDate.HasValue )
-        {
-            query.Add( $"endDate={endDate.Value:yyyy-MM-dd}" );
-        }
-
-        var url = $"{EndpointConstants.Customers}/{customerId}/account";
-
-        if ( query.Count > 0 )
-        {
-            url += $"?{string.Join( "&", query )}";
-        }
+        var url = BuildAccountUrl( customerId, resource: null, startDate, endDate );
 
         return apiClient.GetAsync<CustomerAccountDto>( url, cancellationToken );
     }
@@ -129,6 +118,50 @@ public class CustomerService( IApiClient apiClient ) : ICustomerService
 
     public Task<Result<string>> DeleteAsync( Guid id, CancellationToken cancellationToken = default )
         => apiClient.DeleteAsync<string>( $"{EndpointConstants.Customers}/{id}", cancellationToken );
+
+    public Task<Result<byte[]>> GetAccountPdfAsync(
+        Guid customerId,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        CancellationToken cancellationToken = default )
+    {
+        var url = BuildAccountUrl( customerId, resource: "pdf", startDate, endDate );
+
+        return apiClient.GetBytesAsync( url, cancellationToken );
+    }
+
+    private static string BuildAccountUrl(
+        Guid customerId,
+        string? resource,
+        DateTime? startDate,
+        DateTime? endDate )
+    {
+        var query = new List<string>();
+
+        if ( startDate.HasValue )
+        {
+            query.Add( $"startDate={startDate.Value:yyyy-MM-dd}" );
+        }
+
+        if ( endDate.HasValue )
+        {
+            query.Add( $"endDate={endDate.Value:yyyy-MM-dd}" );
+        }
+
+        var url = $"{EndpointConstants.Customers}/{customerId}/account";
+
+        if ( !string.IsNullOrWhiteSpace( resource ) )
+        {
+            url += $"/{resource}";
+        }
+
+        if ( query.Count > 0 )
+        {
+            url += $"?{string.Join( "&", query )}";
+        }
+
+        return url;
+    }
 
     private sealed class ODataEnvelope<T>
     {
