@@ -1,5 +1,6 @@
 ﻿using DeKayaServer.Application.Customers;
 using DeKayaServer.Contracts.Common;
+using DeKayaServer.Contracts.CustomerAccount;
 using DeKayaServer.Contracts.Customers;
 using TS.MediatR;
 using TS.Result;
@@ -37,6 +38,24 @@ public static class CustomerModule
             } )
             .Produces<Result<PagedResultDto<CustomerListItemDto>>>();
 
+        app.MapGet( "{id}/account",
+            async (
+                Guid id,
+                DateTime? startDate,
+                DateTime? endDate,
+                ISender sender,
+                CancellationToken cancellationToken ) =>
+            {
+                var res = await sender.Send(
+                    new CustomerAccountGetQuery(
+                        CustomerId: id,
+                        StartDate: startDate,
+                        EndDate: endDate ),
+                    cancellationToken );
+
+                return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
+            } )
+            .Produces<Result<CustomerAccountDto>>();
 
         app.MapPost( string.Empty,
             async ( CustomerCreateCommand request, ISender sender, CancellationToken cancellationToken ) =>

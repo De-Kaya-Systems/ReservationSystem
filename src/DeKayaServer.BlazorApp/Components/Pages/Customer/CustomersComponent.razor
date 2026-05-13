@@ -5,6 +5,8 @@
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.UpdateCustomer
 @using DeKayaServer.Contracts.Customers
 @using Microsoft.AspNetCore.Components.QuickGrid
+
+@inject NavigationManager NavigationManager
 @inherits UserContextComponent
 @inject ICustomerService customerService
 @rendermode InteractiveServer
@@ -111,6 +113,13 @@
             <TemplateColumn Title="İşlemler" Context="c">
                 <div class="d-flex gap-2 py-1 justify-content-start">
                     <button type="button"
+                            class="btn btn-outline-dark btn-sm"
+                            @onclick="() => GoToCustomerAccount( c )">
+                        <i class="bi bi-receipt"></i>
+                        <span>Ekstre</span>
+                    </button>
+
+                    <button type="button"
                             class="btn btn-outline-secondary btn-sm"
                             @onclick="() => ShowCustomerDetailDialog( c )">
                         <i class="bi bi-search"></i>
@@ -179,6 +188,11 @@
 
     private Guid selectedCustomerId;
     private string? selectedFullName;
+
+    private void GoToCustomerAccount( CustomerListItemDto customer )
+    {
+        NavigationManager.NavigateTo( $"/customers/{customer.Id}/account" );
+    }
 
     private async ValueTask<GridItemsProviderResult<CustomerListItemDto>> LoadCustomersAsync(
         GridItemsProviderRequest<CustomerListItemDto> request )

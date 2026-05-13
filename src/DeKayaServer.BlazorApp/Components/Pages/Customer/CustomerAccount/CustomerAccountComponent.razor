@@ -1,0 +1,427 @@
+﻿@page "/customers/{CustomerId:guid}/account"
+@using DeKayaServer.Contracts.CustomerAccount
+@using DeKayaServer.Contracts.Customers
+@inherits UserContextComponent
+@inject ICustomerService CustomerService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>De-Kaya Systems | Müşteri Ekstresi</PageTitle>
+
+<PageHeader Title="Müşteri Ekstresi"
+            Icon="bi bi-receipt"
+            Description="Müşterinin hesap hareketlerini, borç durumunu ve ödeme geçmişini görüntüleyebilirsin." />
+
+<div class="mt-3 mb-3 d-flex gap-2">
+    <button type="button"
+            class="btn btn-outline-secondary btn-sm"
+            @onclick="GoBack">
+        <i class="bi bi-arrow-left"></i>
+        <span>Müşterilere Dön</span>
+    </button>
+</div>
+
+@if ( isLoading )
+{
+    <div class="d-flex align-items-center gap-2 text-body-secondary">
+        <div class="spinner-border spinner-border-sm" role="status"></div>
+        <span>Ekstre yükleniyor...</span>
+    </div>
+}
+else if ( !string.IsNullOrWhiteSpace( errorMessage ) )
+{
+    <div class="alert alert-danger">
+        @errorMessage
+    </div>
+}
+else if ( account is not null )
+{
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-lg-4">
+            <div class="border rounded p-3 h-100 bg-body">
+                <div class="text-body-secondary small">Müşteri</div>
+                <div class="fw-semibold fs-5">@account.CustomerFullName</div>
+                <div class="text-body-secondary small mt-2">@Display( account.PhoneNumber )</div>
+                <div class="text-body-secondary small">@Display( account.Email )</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4 col-lg-2">
+            <div class="border rounded p-3 h-100 bg-body">
+                <div class="text-body-secondary small">Güncel Borç</div>
+                <div class="fw-semibold fs-5 text-danger">
+                    @FormatMoney( account.CurrentOutstandingAmount )
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4 col-lg-2">
+            <div class="border rounded p-3 h-100 bg-body">
+                <div class="text-body-secondary small">Toplam Ödeme</div>
+                <div class="fw-semibold fs-5 text-success">
+                    @FormatMoney( account.TotalPaidAmount )
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4 col-lg-4">
+            <div class="border rounded p-3 h-100 bg-body">
+                <div class="text-body-secondary small">Son Ödeme Tarihi</div>
+                <div class="fw-semibold fs-5">
+                    @FormatDateTime( account.LastPaymentDate )
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="border rounded p-3 mb-3 bg-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-4">
+                <label class="form-label small text-body-secondary">Başlangıç tarihi</label>
+                <input class="form-control form-control-sm"
+                       type="date"
+                       @bind="startDateFilter"
+                       @bind:format="yyyy-MM-dd" />
+            </div>
+
+            <div class="col-12 col-md-4">
+                <label class="form-label small text-body-secondary">Bitiş tarihi</label>
+                <input class="form-control form-control-sm"
+                       type="date"
+                       @bind="endDateFilter"
+                       @bind:format="yyyy-MM-dd" />
+            </div>
+
+            <div class="col-12 col-md-4 d-flex gap-2">
+                <button type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        @onclick="ApplyPeriodFilterAsync">
+                    Filtrele
+                </button>
+
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        @onclick="ClearPeriodFilterAsync">
+                    Temizle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-3">
+            <div class="border rounded p-3 h-100 bg-body">
+                <div class="text-body-secondary small">Devir Bakiyesi</div>
+                <div class="fw-semibold">@FormatMoney( account.OpeningBalance )</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <div class="border rounded p-3 h-100 bg-body">
+                <div class="text-body-secondary small">Dönem Borcu</div>
+                <div class="fw-semibold text-danger">@FormatMoney( account.PeriodDebtAmount )</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <div class="border rounded p-3 h-100 bg-body">
+                <div class="text-body-secondary small">Dönem Ödemesi</div>
+                <div class="fw-semibold text-success">@FormatMoney( account.PeriodPaidAmount )</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <div class="border rounded p-3 h-100 bg-body">
+                <div class="text-body-secondary small">Dönem Sonu Bakiye</div>
+                <div class="fw-semibold">@FormatMoney( account.ClosingBalance )</div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == AccountTab.Statement ? "active" : "")"
+                    type="button"
+                    @onclick="() => activeTab = AccountTab.Statement">
+                Hesap Hareketleri
+            </button>
+        </li>
+
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == AccountTab.Balances ? "active" : "")"
+                    type="button"
+                    @onclick="() => activeTab = AccountTab.Balances">
+                Borç Kalemleri
+            </button>
+        </li>
+
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == AccountTab.Payments ? "active" : "")"
+                    type="button"
+                    @onclick="() => activeTab = AccountTab.Payments">
+                Ödeme Geçmişi
+            </button>
+        </li>
+    </ul>
+
+    <div class="border border-top-0 rounded-bottom bg-body">
+        @if ( activeTab == AccountTab.Statement )
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>İşlem</th>
+                            <th>Kaynak</th>
+                            <th>Açıklama</th>
+                            <th class="text-end">Borç</th>
+                            <th class="text-end">Ödeme</th>
+                            <th class="text-end">Bakiye</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if ( account.StatementItems.Count == 0 )
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-body-secondary py-4">
+                                    Hesap hareketi bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach ( var item in account.StatementItems )
+                            {
+                                <tr>
+                                    <td>@FormatDateTime( item.TransactionDate )</td>
+                                    <td>
+                                        <span class="badge @GetTransactionBadgeClass( item.TransactionType )">
+                                            @item.TransactionType
+                                        </span>
+                                    </td>
+                                    <td>@FormatSourceType( item.SourceType )</td>
+                                    <td>@Display( item.Description )</td>
+                                    <td class="text-end text-danger">
+                                        @(item.DebitAmount > 0 ? FormatMoney( item.DebitAmount ) : "-")
+                                    </td>
+                                    <td class="text-end text-success">
+                                        @(item.CreditAmount > 0 ? FormatMoney( item.CreditAmount ) : "-")
+                                    </td>
+                                    <td class="text-end fw-semibold">
+                                        @FormatMoney( item.BalanceAfterTransaction )
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-semibold">
+                            <td colspan="4" class="text-end">Toplam</td>
+                            <td class="text-end text-danger">@FormatMoney( account.PeriodDebtAmount )</td>
+                            <td class="text-end text-success">@FormatMoney( account.PeriodPaidAmount )</td>
+                            <td class="text-end">@FormatMoney( account.ClosingBalance )</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else if ( activeTab == AccountTab.Balances )
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Kaynak</th>
+                            <th>Açıklama</th>
+                            <th>Durum</th>
+                            <th class="text-end">Toplam</th>
+                            <th class="text-end">Ödenen</th>
+                            <th class="text-end">Kalan</th>
+                            <th>Son Ödeme</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if ( account.BalanceItems.Count == 0 )
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-body-secondary py-4">
+                                    Borç kaydı bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach ( var item in account.BalanceItems )
+                            {
+                                <tr>
+                                    <td>@FormatSourceType( item.SourceType )</td>
+                                    <td>@Display( item.Description )</td>
+                                    <td>
+                                        <span class="badge @GetBalanceBadgeClass( item )">
+                                            @item.BalanceStatus
+                                        </span>
+                                    </td>
+                                    <td class="text-end">@FormatMoney( item.TotalAmount )</td>
+                                    <td class="text-end">@FormatMoney( item.PaidAmount )</td>
+                                    <td class="text-end fw-semibold">@FormatMoney( item.OutstandingAmount )</td>
+                                    <td>@FormatDateTime( item.LastPaymentAt )</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Kaynak</th>
+                            <th>Ödeme Tipi</th>
+                            <th>Not</th>
+                            <th class="text-end">Ödeme</th>
+                            <th class="text-end">Kalan Borç</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if ( account.PaymentHistories.Count == 0 )
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-body-secondary py-4">
+                                    Ödeme kaydı bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach ( var item in account.PaymentHistories )
+                            {
+                                <tr>
+                                    <td>@FormatDateTime( item.PaymentDate )</td>
+                                    <td>@FormatSourceType( item.SourceType )</td>
+                                    <td>@Display( item.PaymentTypeName )</td>
+                                    <td>@Display( item.Notes )</td>
+                                    <td class="text-end text-success fw-semibold">
+                                        @FormatMoney( item.PaymentAmount )
+                                    </td>
+                                    <td class="text-end">@FormatMoney( item.RemainingBalance )</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid CustomerId { get; set; }
+
+    private CustomerAccountDto? account;
+    private string? errorMessage;
+    private bool isLoading = true;
+
+    private DateTime? startDateFilter;
+    private DateTime? endDateFilter;
+
+    private AccountTab activeTab = AccountTab.Statement;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAccountAsync();
+    }
+
+    private async Task LoadAccountAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        var result = await CustomerService.GetAccountAsync(
+            CustomerId,
+            startDateFilter,
+            endDateFilter );
+
+        if ( !result.IsSuccessful || result.Data is null )
+        {
+            errorMessage = result.ErrorMessages?.FirstOrDefault()
+                ?? "Müşteri ekstresi getirilemedi.";
+            isLoading = false;
+            return;
+        }
+
+        account = result.Data;
+        isLoading = false;
+    }
+
+    private async Task ApplyPeriodFilterAsync()
+    {
+        await LoadAccountAsync();
+    }
+
+    private async Task ClearPeriodFilterAsync()
+    {
+        startDateFilter = null;
+        endDateFilter = null;
+
+        await LoadAccountAsync();
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo( "/customers" );
+    }
+
+    private static string FormatMoney( decimal value )
+        => value.ToString( "N2" ) + " ₺";
+
+    private static string FormatDateTime( DateTime? value )
+        => value.HasValue ? value.Value.ToString( "dd-MM-yyyy HH:mm" ) : "-";
+
+    private static string Display( string? value )
+        => string.IsNullOrWhiteSpace( value ) ? "-" : value;
+
+    private static string FormatSourceType( string value )
+        => value switch
+        {
+            "Reservation" => "Rezervasyon",
+            "Product" => "Ürün",
+            "Service" => "Hizmet",
+            _ => value
+        };
+
+    private static string GetTransactionBadgeClass( string transactionType )
+        => transactionType switch
+        {
+            "Borç" => "bg-danger",
+            "Ödeme" => "bg-success",
+            _ => "bg-secondary"
+        };
+
+    private static string GetBalanceBadgeClass( CustomerAccountBalanceItemDto item )
+    {
+        if ( item.OutstandingAmount <= 0 )
+        {
+            return "bg-success";
+        }
+
+        if ( item.PaidAmount > 0 )
+        {
+            return "bg-warning text-dark";
+        }
+
+        return "bg-danger";
+    }
+
+    private enum AccountTab
+    {
+        Statement,
+        Balances,
+        Payments
+    }
+}
