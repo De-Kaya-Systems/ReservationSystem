@@ -5,6 +5,7 @@
 @using System.Text.Json.Serialization
 @using DeKayaServer.Contracts.Customers
 @using DeKayaServer.Contracts.Dto
+@using DeKayaServer.BlazorApp.Validations
 @inject ICustomerService customerService
 @inject IApiResultPresenter apiResultPresenter
 @inject ToastService toastService
@@ -264,7 +265,7 @@
                 {
                     PhoneNumber = model.PhoneNumber,
                     PhoneNumber2 = model.PhoneNumber2,
-                    Email = model.Email
+                    Email = string.IsNullOrWhiteSpace( model.Email ) ? null : model.Email.Trim()
                 },
                 IsActive = true
             };
@@ -332,7 +333,7 @@
         [RegularExpression( @"^\+905\d{9}$", ErrorMessage = "Telefon formatı hatalı. Örn: +905XXXXXXXXX" )]
         public string? PhoneNumber2 { get; set; }
 
-        [EmailAddress( ErrorMessage = "Geçerli bir e-posta adresi giriniz!" )]
+        [OptionalEmailAddress( ErrorMessage = "Geçerli bir e-posta adresi giriniz!" )]
         public string? Email { get; set; }
     }
 }
