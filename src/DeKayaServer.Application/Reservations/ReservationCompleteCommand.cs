@@ -186,6 +186,8 @@ internal sealed class ReservationCompleteCommandHandler(
         decimal paymentAmount,
         CancellationToken cancellationToken )
     {
+        var remainingBalanceAfterPayment = newOutstandingAmount;
+
         var customerBalance = await customerBalanceRepository.FirstOrDefaultAsync(
             x => x.SourceType == BalanceSourceType.Reservation
                 && x.SourceId == reservation.Id,
@@ -193,10 +195,20 @@ internal sealed class ReservationCompleteCommandHandler(
 
         if ( customerBalance is not null )
         {
+            var adjustmentAmount = customerBalance.AdjustmentAmount.Value;
+            var adjustedOutstandingAmount = totalAmount - newPaidAmount - adjustmentAmount;
+
+            if ( adjustedOutstandingAmount < 0 )
+            {
+                return Result<string>.Failure( "Alınan ödeme kalan borçtan büyük olamaz." );
+            }
+
+            remainingBalanceAfterPayment = adjustedOutstandingAmount;
+
             customerBalance.SetAmounts(
                 totalAmount: new TotalAmount( totalAmount ),
                 paidAmount: new PaidAmount( newPaidAmount ),
-                outstandingAmount: new OutstandingAmount( newOutstandingAmount ) );
+                outstandingAmount: new OutstandingAmount( adjustedOutstandingAmount ) );
 
             customerBalance.SetDescription(
                 new Domain.CustomerBalance.ValueObjects.Description( $"Rezervasyon borcu - RezervasyonNo: {reservation.ReservationNumber.Value}" ) );
@@ -243,7 +255,7 @@ internal sealed class ReservationCompleteCommandHandler(
                 sourceId: reservation.Id,
                 paymentTypeId: new IdentityId( request.PaymentTypeId.Value ),
                 paymentAmount: paymentAmount,
-                remainingBalance: newOutstandingAmount,
+                remainingBalance: remainingBalanceAfterPayment,
                 paymentDate: DateTime.Now,
                 notes: $"Rezervasyon tamamlanırken alınan ödeme - Rezervasyon no: {reservation.ReservationNumber.Value}" );
 
@@ -252,6 +264,7 @@ internal sealed class ReservationCompleteCommandHandler(
 
         return Result<string>.Succeed( string.Empty );
     }
+
 
     private async Task<Result<string>> UpdateCoolingRoomStatusAsync(
         CoolingRoom coolingRoom,
