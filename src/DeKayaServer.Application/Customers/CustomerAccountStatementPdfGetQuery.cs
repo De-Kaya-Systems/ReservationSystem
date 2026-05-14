@@ -66,6 +66,7 @@ internal sealed class CustomerAccountStatementPdfGetQueryHandler(
             OpeningBalance = account.OpeningBalance,
             PeriodDebtAmount = account.PeriodDebtAmount,
             PeriodPaidAmount = account.PeriodPaidAmount,
+            PeriodAdjustmentAmount = account.PeriodAdjustmentAmount,
             ClosingBalance = account.ClosingBalance,
 
             Lines = account.StatementItems

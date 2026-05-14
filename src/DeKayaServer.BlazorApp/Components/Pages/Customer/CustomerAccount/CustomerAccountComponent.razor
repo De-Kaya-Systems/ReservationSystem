@@ -1,5 +1,6 @@
 ﻿@page "/customers/{CustomerId:guid}/account"
 
+@using DeKayaServer.BlazorApp.Components.Pages.Customer.ApplyCustomerBalanceDiscount
 @using DeKayaServer.BlazorApp.Components.Pages.Customer.ReceiveCustomerPayment
 @using DeKayaServer.Contracts.CustomerAccount
 @using DeKayaServer.Contracts.Customers
@@ -30,6 +31,14 @@
             disabled="@(account is null || !HasPayableBalance)">
         <i class="bi bi-cash-coin"></i>
         <span>Ödeme Al</span>
+    </button>
+
+    <button type="button"
+            class="btn btn-outline-primary btn-sm"
+            @onclick="ShowApplyDiscountDialogAsync"
+            disabled="@(account is null || !HasPayableBalance)">
+        <i class="bi bi-percent"></i>
+        <span>İndirim Uygula</span>
     </button>
 
     <button type="button"
@@ -129,28 +138,35 @@ else if ( account is not null )
     </div>
 
     <div class="row g-3 mb-3">
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-6 col-xl">
             <div class="border rounded p-3 h-100 bg-body">
                 <div class="text-body-secondary small">Devir Bakiyesi</div>
                 <div class="fw-semibold">@FormatMoney( account.OpeningBalance )</div>
             </div>
         </div>
 
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-6 col-xl">
             <div class="border rounded p-3 h-100 bg-body">
                 <div class="text-body-secondary small">Dönem Borcu</div>
                 <div class="fw-semibold text-danger">@FormatMoney( account.PeriodDebtAmount )</div>
             </div>
         </div>
 
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-6 col-xl">
             <div class="border rounded p-3 h-100 bg-body">
                 <div class="text-body-secondary small">Dönem Ödemesi</div>
                 <div class="fw-semibold text-success">@FormatMoney( account.PeriodPaidAmount )</div>
             </div>
         </div>
 
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-6 col-xl">
+            <div class="border rounded p-3 h-100 bg-body">
+                <div class="text-body-secondary small">Dönem İndirimi/Düzeltmesi</div>
+                <div class="fw-semibold text-success">@FormatMoney( account.PeriodAdjustmentAmount )</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl">
             <div class="border rounded p-3 h-100 bg-body">
                 <div class="text-body-secondary small">Dönem Sonu Bakiye</div>
                 <div class="fw-semibold">@FormatMoney( account.ClosingBalance )</div>
@@ -197,6 +213,7 @@ else if ( account is not null )
                             <th>Açıklama</th>
                             <th class="text-end">Borç</th>
                             <th class="text-end">Ödeme</th>
+                            <th class="text-end">İndirim</th>
                             <th class="text-end">Bakiye</th>
                         </tr>
                     </thead>
@@ -204,7 +221,7 @@ else if ( account is not null )
                         @if ( account.StatementItems.Count == 0 )
                         {
                             <tr>
-                                <td colspan="7" class="text-center text-body-secondary py-4">
+                                <td colspan="8" class="text-center text-body-secondary py-4">
                                     Hesap hareketi bulunamadı.
                                 </td>
                             </tr>
@@ -226,8 +243,17 @@ else if ( account is not null )
                                         @(item.DebitAmount > 0 ? FormatMoney( item.DebitAmount ) : "-")
                                     </td>
                                     <td class="text-end text-success">
-                                        @(item.CreditAmount > 0 ? FormatMoney( item.CreditAmount ) : "-")
+                                        @( IsPaymentTransaction( item )
+                                            ? FormatMoney( item.CreditAmount )
+                                            : "-" )
                                     </td>
+
+                                    <td class="text-end text-success">
+                                        @( IsAdjustmentTransaction( item )
+                                            ? FormatMoney( item.CreditAmount )
+                                            : "-" )
+                                    </td>
+
                                     <td class="text-end fw-semibold">
                                         @FormatMoney( item.BalanceAfterTransaction )
                                     </td>
@@ -235,15 +261,43 @@ else if ( account is not null )
                             }
                         }
                     </tbody>
-                    <tfoot>
-                        <tr class="fw-semibold">
-                            <td colspan="4" class="text-end">Toplam</td>
-                            <td class="text-end text-danger">@FormatMoney( account.PeriodDebtAmount )</td>
-                            <td class="text-end text-success">@FormatMoney( account.PeriodPaidAmount )</td>
-                            <td class="text-end">@FormatMoney( account.ClosingBalance )</td>
-                        </tr>
-                    </tfoot>
                 </table>
+            </div>
+
+            <div class="border-top p-3">
+                <div class="row justify-content-end">
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="d-grid gap-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-body-secondary">Toplam Borç</span>
+                                <span class="fw-semibold text-danger">
+                                    @FormatMoney( account.PeriodDebtAmount )
+                                </span>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-body-secondary">Yapılan Ödeme</span>
+                                <span class="fw-semibold text-success">
+                                    @FormatMoney( account.PeriodPaidAmount )
+                                </span>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-body-secondary">Yapılan İndirim</span>
+                                <span class="fw-semibold text-success">
+                                    @FormatMoney( account.PeriodAdjustmentAmount )
+                                </span>
+                            </div>
+
+                            <div class="border-top pt-2 mt-1 d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold">Kalan Borç</span>
+                                <span class="fw-bold">
+                                    @FormatMoney( account.ClosingBalance )
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         }
         else if ( activeTab == AccountTab.Balances )
@@ -257,6 +311,7 @@ else if ( account is not null )
                             <th>Durum</th>
                             <th class="text-end">Toplam</th>
                             <th class="text-end">Ödenen</th>
+                            <th class="text-end">İndirim/Düzeltme</th>
                             <th class="text-end">Kalan</th>
                             <th>Son Ödeme</th>
                         </tr>
@@ -265,7 +320,7 @@ else if ( account is not null )
                         @if ( account.BalanceItems.Count == 0 )
                         {
                             <tr>
-                                <td colspan="7" class="text-center text-body-secondary py-4">
+                                <td colspan="8" class="text-center text-body-secondary py-4">
                                     Borç kaydı bulunamadı.
                                 </td>
                             </tr>
@@ -284,6 +339,7 @@ else if ( account is not null )
                                     </td>
                                     <td class="text-end">@FormatMoney( item.TotalAmount )</td>
                                     <td class="text-end">@FormatMoney( item.PaidAmount )</td>
+                                    <td class="text-end text-success">@FormatMoney( item.AdjustmentAmount )</td>
                                     <td class="text-end fw-semibold">@FormatMoney( item.OutstandingAmount )</td>
                                     <td>@FormatDateTime( item.LastPaymentAt )</td>
                                 </tr>
@@ -344,6 +400,11 @@ else if ( account is not null )
                                       CustomerId="@CustomerId"
                                       BalanceItems="@account.BalanceItems"
                                       PaymentReceived="ReloadAccountAsync" />
+    
+        <ApplyCustomerBalanceDiscountDialog @ref="applyDiscountDialog"
+                                    CustomerId="@CustomerId"
+                                    BalanceItems="@account.BalanceItems"
+                                    DiscountApplied="ReloadAccountAsync" />
     }
 
     <CustomerAccountPdfPreviewDialog @ref="pdfPreviewDialog"
@@ -368,6 +429,7 @@ else if ( account is not null )
     private bool isLoading = true;
     private ReceiveCustomerPaymentDialog? receivePaymentDialog;
     private CustomerAccountPdfPreviewDialog? pdfPreviewDialog;
+    private ApplyCustomerBalanceDiscountDialog? applyDiscountDialog;
 
     private DateTime? startDateFilter;
     private DateTime? endDateFilter;
@@ -391,6 +453,16 @@ else if ( account is not null )
         }
 
         await receivePaymentDialog.ShowAsync();
+    }
+
+    private async Task ShowApplyDiscountDialogAsync()
+    {
+        if ( applyDiscountDialog is null )
+        {
+            return;
+        }
+
+        await applyDiscountDialog.ShowAsync();
     }
 
     private async Task ShowPdfPreviewDialogAsync()
@@ -513,11 +585,23 @@ else if ( account is not null )
         return $"{sourceType} - {item.ReservationNumber}";
     }
 
+    private static bool IsPaymentTransaction( CustomerAccountStatementItemDto item )
+    => item.TransactionType == "Ödeme" && item.CreditAmount > 0;
+
+    private static bool IsAdjustmentTransaction( CustomerAccountStatementItemDto item )
+        => item.TransactionType is "İndirim" or "Mahsup" or "Alacak kapama"
+           && item.CreditAmount > 0;
+
     private static string GetTransactionBadgeClass( string transactionType )
         => transactionType switch
         {
             "Borç" => "bg-danger",
             "Ödeme" => "bg-success",
+            "İndirim" => "bg-info",
+            "Mahsup" => "bg-info",
+            "Düzeltme" => "bg-warning text-dark",
+            "İptal" => "bg-secondary",
+            "Alacak kapama" => "bg-secondary",
             _ => "bg-secondary"
         };
 

@@ -11,6 +11,7 @@ public interface ICustomerService
 {
     Task<Result<CustomerAccountDto>> GetAccountAsync( Guid customerId, DateTime? startDate = null, DateTime? endDate = null, CancellationToken cancellationToken = default );
     Task<Result<string>> ReceivePaymentAsync( Guid customerId, ReceiveCustomerPaymentRequest request, CancellationToken cancellationToken = default );
+    Task<Result<string>> ApplyBalanceDiscountAsync( Guid customerId, Guid customerBalanceId, ApplyCustomerBalanceDiscountRequest request, CancellationToken cancellationToken = default );
     Task<Result<string>> CreateAsync( CreateCustomerRequest request, CancellationToken cancellationToken = default );
     Task<Result<string>> UpdateAsync( Guid Id, UpdateCustomerRequest request, CancellationToken cancellationToken = default );
     Task<Result<CustomerDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default );
@@ -77,6 +78,16 @@ public class CustomerService( IApiClient apiClient ) : ICustomerService
         CancellationToken cancellationToken = default )
         => apiClient.PostAsync<ReceiveCustomerPaymentRequest, string>(
             $"{EndpointConstants.Customers}/{customerId}/payments",
+            request,
+            cancellationToken );
+
+    public Task<Result<string>> ApplyBalanceDiscountAsync(
+        Guid customerId,
+        Guid customerBalanceId,
+        ApplyCustomerBalanceDiscountRequest request,
+        CancellationToken cancellationToken = default )
+        => apiClient.PostAsync<ApplyCustomerBalanceDiscountRequest, string>(
+            $"{EndpointConstants.Customers}/{customerId}/balances/{customerBalanceId}/discounts",
             request,
             cancellationToken );
 

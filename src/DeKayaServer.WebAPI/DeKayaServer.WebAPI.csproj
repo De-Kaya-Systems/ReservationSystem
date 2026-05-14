@@ -9,10 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<!--
+
     <PackageReference Include="Aspire.Dashboard.Sdk.win-x64" Version="13.2.4" />
     <PackageReference Include="Aspire.Hosting.AppHost" Version="13.2.4" />
-    <PackageReference Include="Aspire.Hosting.Orchestration.win-x64" Version="13.2.4" /> -->
+    <PackageReference Include="Aspire.Hosting.Orchestration.win-x64" Version="13.2.4" /> 
     <PackageReference Include="Microsoft.AspNetCore.OData" Version="9.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">

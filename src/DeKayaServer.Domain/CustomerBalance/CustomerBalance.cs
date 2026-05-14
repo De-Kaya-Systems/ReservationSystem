@@ -35,6 +35,7 @@ public sealed class CustomerBalance : Entity
     public TotalAmount TotalAmount { get; private set; } = default!;
     public OutstandingAmount OutstandingAmount { get; private set; } = new( 0 );
     public PaidAmount PaidAmount { get; private set; } = new( 0 );
+    public AdjustmentAmount AdjustmentAmount { get; private set; } = new( 0 );
     public Description? Description { get; private set; }
     public BalanceStatus BalanceStatus { get; private set; } = BalanceStatus.Pending;
     public LastPaymentAt? LastPaymentAt { get; private set; }
@@ -121,16 +122,39 @@ public sealed class CustomerBalance : Entity
         EnsureInvariantsAndSyncStatus();
     }
 
+    public void ApplyBalanceDecreaseAdjustment( AdjustmentAmount adjustmentAmount )
+    {
+        if ( adjustmentAmount.Value <= 0 )
+        {
+            throw new ArgumentException( "Düzeltme tutarı sıfırdan büyük olmalıdır." );
+        }
+
+        if ( adjustmentAmount.Value > OutstandingAmount.Value )
+        {
+            throw new ArgumentException( "Düzeltme tutarı kalan borçtan büyük olamaz." );
+        }
+
+        AdjustmentAmount = new AdjustmentAmount( AdjustmentAmount.Value + adjustmentAmount.Value );
+        OutstandingAmount = new OutstandingAmount( OutstandingAmount.Value - adjustmentAmount.Value );
+
+        EnsureInvariantsAndSyncStatus();
+    }
+
+
     private void EnsureInvariantsAndSyncStatus()
     {
-        if ( TotalAmount.Value < 0 || PaidAmount.Value < 0 || OutstandingAmount.Value < 0 )
+        if ( TotalAmount.Value < 0
+         || PaidAmount.Value < 0
+         || AdjustmentAmount.Value < 0
+         || OutstandingAmount.Value < 0 )
         {
             throw new ArgumentException( "Tutar alanları negatif olamaz." );
         }
 
-        if ( PaidAmount.Value + OutstandingAmount.Value != TotalAmount.Value )
+        if ( PaidAmount.Value + AdjustmentAmount.Value + OutstandingAmount.Value != TotalAmount.Value )
         {
-            throw new ArgumentException( "Kural ihlali: PaidAmount + OutstandingAmount, TotalAmount'a eşit olmalı." );
+            throw new ArgumentException(
+                "Kural ihlali: PaidAmount + AdjustmentAmount + OutstandingAmount, TotalAmount'a eşit olmalı." );
         }
 
         if ( OutstandingAmount.Value == 0 )
