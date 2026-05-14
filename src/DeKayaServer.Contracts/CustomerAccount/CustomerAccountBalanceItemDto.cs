@@ -11,6 +11,7 @@ public sealed class CustomerAccountBalanceItemDto
 
     public decimal TotalAmount { get; set; }
     public decimal PaidAmount { get; set; }
+    public decimal AdjustmentAmount { get; set; }
     public decimal OutstandingAmount { get; set; }
 
     public string BalanceStatus { get; set; } = default!;

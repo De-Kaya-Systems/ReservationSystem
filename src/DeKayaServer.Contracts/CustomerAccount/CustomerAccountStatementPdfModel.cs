@@ -14,6 +14,7 @@ public sealed class CustomerAccountStatementPdfModel
     public decimal OpeningBalance { get; set; }
     public decimal PeriodDebtAmount { get; set; }
     public decimal PeriodPaidAmount { get; set; }
+    public decimal PeriodAdjustmentAmount { get; set; }
     public decimal ClosingBalance { get; set; }
 
     public List<CustomerAccountStatementPdfLineModel> Lines { get; set; } = [];

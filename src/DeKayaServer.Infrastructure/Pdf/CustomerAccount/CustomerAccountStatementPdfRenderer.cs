@@ -38,6 +38,10 @@ internal sealed class CustomerAccountStatementPdfRenderer(
                             column.Item()
                                 .PaddingTop( 12 )
                                 .Element( item => ComposeStatementTable( item, model ) );
+
+                            column.Item()
+                                .PaddingTop( 10 )
+                                .Element( item => ComposeStatementTotals( item, model ) );
                         } );
                     } );
             } );
@@ -115,6 +119,7 @@ internal sealed class CustomerAccountStatementPdfRenderer(
             AddSummaryBox( row, "Devir Bakiyesi", model.OpeningBalance );
             AddSummaryBox( row, "Dönem Borcu", model.PeriodDebtAmount );
             AddSummaryBox( row, "Dönem Ödemesi", model.PeriodPaidAmount );
+            AddSummaryBox( row, "Dönem İndirimi", model.PeriodAdjustmentAmount );
             AddSummaryBox( row, "Dönem Sonu Bakiye", model.ClosingBalance );
         } );
     }
@@ -154,13 +159,14 @@ internal sealed class CustomerAccountStatementPdfRenderer(
         {
             table.ColumnsDefinition( columns =>
             {
-                columns.ConstantColumn( 62 );
-                columns.ConstantColumn( 45 );
-                columns.ConstantColumn( 80 );
+                columns.ConstantColumn( 56 );
+                columns.ConstantColumn( 42 );
+                columns.ConstantColumn( 72 );
                 columns.RelativeColumn();
-                columns.ConstantColumn( 62 );
-                columns.ConstantColumn( 62 );
-                columns.ConstantColumn( 68 );
+                columns.ConstantColumn( 58 );
+                columns.ConstantColumn( 58 );
+                columns.ConstantColumn( 58 );
+                columns.ConstantColumn( 64 );
             } );
 
             table.Header( header =>
@@ -171,6 +177,7 @@ internal sealed class CustomerAccountStatementPdfRenderer(
                 AddHeaderCell( header, "Açıklama" );
                 AddHeaderCell( header, "Borç" );
                 AddHeaderCell( header, "Ödeme" );
+                AddHeaderCell( header, "İndirim" );
                 AddHeaderCell( header, "Bakiye" );
             } );
 
@@ -181,16 +188,59 @@ internal sealed class CustomerAccountStatementPdfRenderer(
                 AddBodyCell( table, FormatSource( line ) );
                 AddBodyCell( table, Display( line.Description ) );
                 AddMoneyCell( table, line.DebitAmount );
-                AddMoneyCell( table, line.CreditAmount );
+                AddMoneyCell( table, GetPaymentAmount( line ) );
+                AddMoneyCell( table, GetAdjustmentAmount( line ) );
                 AddMoneyCell( table, line.BalanceAfterTransaction );
             }
-
-            AddFooterCell( table, "Toplam", 4 );
-            AddMoneyFooterCell( table, model.PeriodDebtAmount );
-            AddMoneyFooterCell( table, model.PeriodPaidAmount );
-            AddMoneyFooterCell( table, model.ClosingBalance );
         } );
     }
+
+    private static void ComposeStatementTotals(
+    IContainer container,
+    CustomerAccountStatementPdfModel model )
+    {
+        container.AlignRight()
+            .Width( 210 )
+            .Column( column =>
+            {
+                AddTotalLine( column, "Toplam Borç", model.PeriodDebtAmount, DeKayaPdfTheme.TextColor );
+                AddTotalLine( column, "Yapılan Ödeme", model.PeriodPaidAmount, DeKayaPdfTheme.TextColor );
+                AddTotalLine( column, "Yapılan İndirim", model.PeriodAdjustmentAmount, DeKayaPdfTheme.TextColor );
+
+                column.Item()
+                    .PaddingTop( 5 )
+                    .LineHorizontal( 1 )
+                    .LineColor( DeKayaPdfTheme.BorderColor );
+
+                AddTotalLine( column, "Kalan Borç", model.ClosingBalance, DeKayaPdfTheme.TextColor, isStrong: true );
+            } );
+    }
+
+    private static void AddTotalLine(
+        ColumnDescriptor column,
+        string label,
+        decimal value,
+        string color,
+        bool isStrong = false )
+    {
+        column.Item()
+            .PaddingVertical( 2 )
+            .Row( row =>
+            {
+                row.RelativeItem()
+                    .Text( label )
+                    .FontSize( isStrong ? 8.5f : 8 )
+                    .SemiBold();
+
+                row.ConstantItem( 86 )
+                    .AlignRight()
+                    .Text( FormatMoney( value ) )
+                    .FontSize( isStrong ? 8.5f : 8 )
+                    .SemiBold()
+                    .FontColor( color );
+            } );
+    }
+
 
     private static void AddHeaderCell(
         TableCellDescriptor cell,
@@ -234,40 +284,6 @@ internal sealed class CustomerAccountStatementPdfRenderer(
             .FontSize( 8 );
     }
 
-    private static void AddFooterCell(
-        TableDescriptor table,
-        string text,
-        uint columnSpan )
-    {
-        table.Cell()
-            .ColumnSpan( columnSpan )
-            .BorderTop( 1 )
-            .BorderColor( DeKayaPdfTheme.BorderColor )
-            .PaddingVertical( 7 )
-            .PaddingHorizontal( 4 )
-            .AlignRight()
-            .Text( text )
-            .SemiBold()
-            .FontSize( 8 )
-            .FontColor( DeKayaPdfTheme.TextColor );
-    }
-
-    private static void AddMoneyFooterCell(
-        TableDescriptor table,
-        decimal value )
-    {
-        table.Cell()
-            .BorderTop( 1 )
-            .BorderColor( DeKayaPdfTheme.BorderColor )
-            .PaddingVertical( 7 )
-            .PaddingHorizontal( 4 )
-            .AlignRight()
-            .Text( FormatMoney( value ) )
-            .SemiBold()
-            .FontSize( 8 )
-            .FontColor( DeKayaPdfTheme.TextColor );
-    }
-
     private static string BuildFileName(
         CustomerAccountStatementPdfModel model )
     {
@@ -303,4 +319,17 @@ internal sealed class CustomerAccountStatementPdfRenderer(
 
     private static string Display( string? value )
         => string.IsNullOrWhiteSpace( value ) ? "-" : value;
+
+    private static decimal GetPaymentAmount(
+    CustomerAccountStatementPdfLineModel line )
+    => line.TransactionType == "Ödeme"
+        ? line.CreditAmount
+        : 0;
+
+    private static decimal GetAdjustmentAmount(
+        CustomerAccountStatementPdfLineModel line )
+        => line.TransactionType is "İndirim" or "Mahsup" or "Alacak kapama"
+            ? line.CreditAmount
+            : 0;
+
 }

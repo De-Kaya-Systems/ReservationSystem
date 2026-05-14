@@ -17,6 +17,7 @@ public sealed class CustomerAccountDto
     public decimal OpeningBalance { get; set; }
     public decimal PeriodDebtAmount { get; set; }
     public decimal PeriodPaidAmount { get; set; }
+    public decimal PeriodAdjustmentAmount { get; set; }
     public decimal PeriodNetAmount { get; set; }
     public decimal ClosingBalance { get; set; }
 

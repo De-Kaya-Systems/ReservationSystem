@@ -14,14 +14,15 @@ internal class CustomerBalanceConfiguration : IEntityTypeConfiguration<CustomerB
         builder.Property( x => x.SourceType ).IsRequired();
         builder.Property( x => x.SourceId );
         builder.Property( x => x.PaymentTypeId ).IsRequired();
-        
+
         builder.OwnsOne( x => x.TotalAmount );
         builder.OwnsOne( x => x.OutstandingAmount );
         builder.OwnsOne( x => x.PaidAmount );
+        builder.OwnsOne( x => x.AdjustmentAmount );
         builder.OwnsOne( x => x.Description );
         builder.OwnsOne( x => x.BalanceStatus );
         builder.OwnsOne( x => x.LastPaymentAt );
-        
+
         builder.HasIndex( x => x.CustomerId );
         builder.HasIndex( x => new { x.CustomerId, x.SourceType } );
     }

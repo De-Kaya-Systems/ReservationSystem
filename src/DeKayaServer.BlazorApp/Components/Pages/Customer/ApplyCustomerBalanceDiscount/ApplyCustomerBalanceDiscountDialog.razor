@@ -1,0 +1,276 @@
+﻿@using DeKayaServer.BlazorApp.Components.Common.Dialog
+@using DeKayaServer.BlazorApp.Models
+@using DeKayaServer.Contracts.CustomerAccount
+@inject ICustomerService CustomerService
+@inject IApiResultPresenter ApiResultPresenter
+@inject ToastService ToastService
+@rendermode InteractiveServer
+
+<Dialog @ref="dialog"
+        Title="İndirim Uygula">
+    <ChildContent>
+        @if ( DiscountableBalanceItems.Count == 0 )
+        {
+            <div class="alert alert-warning mb-0">
+                İndirim uygulanabilecek açık borç kalemi bulunamadı.
+            </div>
+        }
+        else
+        {
+            <EditForm Model="@model" OnValidSubmit="HandleValidSubmitAsync">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label">Borç kalemi</label>
+                    <InputSelect class="form-select"
+                                 @bind-Value="model.CustomerBalanceId"
+                                 @bind-Value:after="OnBalanceChanged">
+                        <option value="">Borç kalemi seçin</option>
+
+                        @foreach ( var balance in DiscountableBalanceItems )
+                        {
+                            <option value="@balance.Id.ToString()">
+                                @BuildBalanceOptionText( balance )
+                            </option>
+                        }
+                    </InputSelect>
+                </div>
+
+                @if ( SelectedBalance is not null )
+                {
+                    <div class="alert alert-light border py-2 px-3 mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Toplam borç</span>
+                            <span class="fw-semibold">@FormatMoney( SelectedBalance.TotalAmount )</span>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span>Ödenen</span>
+                            <span class="fw-semibold">@FormatMoney( SelectedBalance.PaidAmount )</span>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span>Uygulanan indirim</span>
+                            <span class="fw-semibold">@FormatMoney( SelectedBalance.AdjustmentAmount )</span>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span>Kalan borç</span>
+                            <span class="fw-bold">@FormatMoney( SelectedBalance.OutstandingAmount )</span>
+                        </div>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">İndirim tutarı</label>
+                    <div class="input-group">
+                        <InputNumber class="form-control"
+                                     @bind-Value="model.Amount" />
+                        <span class="input-group-text">₺</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">İndirim sebebi</label>
+                    <InputText class="form-control"
+                               @bind-Value="model.Reason"
+                               placeholder="Örn. müşteri sadakat indirimi" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Not</label>
+                    <InputTextArea class="form-control"
+                                   @bind-Value="model.Note"
+                                   placeholder="Opsiyonel açıklama" />
+                </div>
+
+                <div class="d-flex gap-3 justify-content-end mt-4 pt-3 border-top">
+                    <button type="button"
+                            class="btn btn-outline-secondary px-4 py-2 fw-semibold"
+                            @onclick="HideAsync"
+                            disabled="@isSubmit">
+                        İptal
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-outline-primary px-4 py-2 fw-semibold"
+                            disabled="@isSubmit">
+                        İndirimi Kaydet
+                    </button>
+                </div>
+            </EditForm>
+        }
+    </ChildContent>
+</Dialog>
+
+@code {
+    private Dialog? dialog;
+    private bool isSubmit;
+
+    private DiscountViewModel model = new();
+
+    [Parameter]
+    public Guid CustomerId { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<CustomerAccountBalanceItemDto> BalanceItems { get; set; } = [];
+
+    [Parameter]
+    public EventCallback DiscountApplied { get; set; }
+
+    private IReadOnlyList<CustomerAccountBalanceItemDto> DiscountableBalanceItems
+        => BalanceItems
+            .Where( x => x.OutstandingAmount > 0 )
+            .OrderByDescending( x => x.CreatedAt )
+            .ToList();
+
+    private CustomerAccountBalanceItemDto? SelectedBalance
+        => model.CustomerBalanceId.HasValue
+            ? DiscountableBalanceItems.FirstOrDefault( x => x.Id == model.CustomerBalanceId.Value )
+            : null;
+
+    public async Task ShowAsync()
+    {
+        if ( dialog is null )
+        {
+            return;
+        }
+
+        InitForm();
+
+        if ( DiscountableBalanceItems.Count == 1 )
+        {
+            model.CustomerBalanceId = DiscountableBalanceItems[ 0 ].Id;
+        }
+
+        await dialog.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        if ( dialog is null )
+        {
+            return;
+        }
+
+        await dialog.HideAsync();
+    }
+
+    private void InitForm()
+    {
+        model = new DiscountViewModel();
+    }
+
+    private void OnBalanceChanged()
+    {
+        model.Amount = 0;
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if ( model.CustomerBalanceId is null )
+        {
+            ToastService.ShowError( "İndirim uygulanacak borç kalemi seçilmelidir." );
+            return;
+        }
+
+        if ( model.Amount <= 0 )
+        {
+            ToastService.ShowError( "İndirim tutarı 0'dan büyük olmalıdır." );
+            return;
+        }
+
+        if ( SelectedBalance is null )
+        {
+            ToastService.ShowError( "Seçilen borç kalemi bulunamadı." );
+            return;
+        }
+
+        if ( model.Amount > SelectedBalance.OutstandingAmount )
+        {
+            ToastService.ShowError( "İndirim tutarı kalan borçtan büyük olamaz." );
+            return;
+        }
+
+        if ( string.IsNullOrWhiteSpace( model.Reason ) )
+        {
+            ToastService.ShowError( "İndirim sebebi zorunludur." );
+            return;
+        }
+
+        if ( model.Reason.Length > 250 )
+        {
+            ToastService.ShowError( "İndirim sebebi en fazla 250 karakter olabilir." );
+            return;
+        }
+
+        if ( !string.IsNullOrWhiteSpace( model.Note ) && model.Note.Length > 500 )
+        {
+            ToastService.ShowError( "Not en fazla 500 karakter olabilir." );
+            return;
+        }
+
+        try
+        {
+            isSubmit = true;
+
+            var request = new ApplyCustomerBalanceDiscountRequest
+            {
+                Amount = model.Amount,
+                Reason = model.Reason.Trim(),
+                Note = string.IsNullOrWhiteSpace( model.Note ) ? null : model.Note.Trim()
+            };
+
+            var result = await CustomerService.ApplyBalanceDiscountAsync(
+                CustomerId,
+                model.CustomerBalanceId.Value,
+                request );
+
+            ApiResultPresenter.Present(
+                result,
+                new ApiPresentationOptions { ShowSuccess = true } );
+
+            if ( !result.IsSuccessful )
+            {
+                return;
+            }
+
+            await HideAsync();
+
+            if ( DiscountApplied.HasDelegate )
+            {
+                await DiscountApplied.InvokeAsync();
+            }
+        }
+        finally
+        {
+            isSubmit = false;
+        }
+    }
+
+    private static string BuildBalanceOptionText( CustomerAccountBalanceItemDto balance )
+    {
+        var description = string.IsNullOrWhiteSpace( balance.Description )
+            ? FormatSourceType( balance.SourceType )
+            : balance.Description;
+
+        return $"{description} - Kalan: {FormatMoney( balance.OutstandingAmount )}";
+    }
+
+    private static string FormatMoney( decimal value )
+        => value.ToString( "N2" ) + " ₺";
+
+    private static string FormatSourceType( string value )
+        => value switch
+        {
+            "Reservation" => "Rezervasyon",
+            "Product" => "Ürün",
+            "Service" => "Hizmet",
+            _ => value
+        };
+
+    private sealed class DiscountViewModel
+    {
+        public Guid? CustomerBalanceId { get; set; }
+        public decimal Amount { get; set; }
+        public string Reason { get; set; } = string.Empty;
+        public string? Note { get; set; }
+    }
+}

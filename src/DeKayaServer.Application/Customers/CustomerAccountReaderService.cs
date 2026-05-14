@@ -1,4 +1,6 @@
 ﻿using DeKayaServer.Contracts.CustomerAccount;
+using DeKayaServer.Domain.CustomerAccountAdjustments;
+using DeKayaServer.Domain.CustomerAccountAdjustments.Enum;
 using DeKayaServer.Domain.CustomerBalance;
 using DeKayaServer.Domain.CustomerBalance.Enum;
 using DeKayaServer.Domain.Customers;
@@ -15,7 +17,8 @@ internal sealed class CustomerAccountReaderService(
     ICustomerBalanceRepository customerBalanceRepository,
     IPaymentHistoryRepository paymentHistoryRepository,
     IPaymentTypesRepository paymentTypesRepository,
-    IReservationRepository reservationRepository )
+    IReservationRepository reservationRepository,
+    ICustomerAccountAdjustmentRepository customerAccountAdjustmentRepository )
     : ICustomerAccountReaderService
 {
     public async Task<Result<CustomerAccountDto>> GetAccountAsync(
@@ -73,6 +76,7 @@ internal sealed class CustomerAccountReaderService(
                 PaymentTypeId = x.PaymentTypeId.Value,
                 TotalAmount = x.TotalAmount.Value,
                 PaidAmount = x.PaidAmount.Value,
+                AdjustmentAmount = x.AdjustmentAmount.Value,
                 OutstandingAmount = x.OutstandingAmount.Value,
                 BalanceStatus = x.BalanceStatus.Value,
                 Description = x.Description != null ? x.Description.Value : null,
@@ -98,6 +102,25 @@ internal sealed class CustomerAccountReaderService(
             } )
             .ToListAsync( cancellationToken );
 
+        var adjustments = await customerAccountAdjustmentRepository
+            .GetAll()
+            .Where( x => x.CustomerId == customerId )
+            .OrderByDescending( x => x.CreatedAt )
+            .Select( x => new AccountAdjustmentRow(
+                x.Id.Value,
+                x.CustomerBalanceId.Value,
+                x.SourceType.ToString(),
+                x.SourceId == null ? null : ( Guid? )x.SourceId.Value,
+                x.AdjustmentType,
+                x.Direction,
+                x.Amount.Value,
+                x.Reason.Value,
+                x.Note != null ? x.Note.Value : null,
+                x.BalanceBeforeAdjustment,
+                x.BalanceAfterAdjustment,
+                x.CreatedAt ) )
+            .ToListAsync( cancellationToken );
+
         foreach ( var balance in balances )
         {
             balance.PaymentTypeName = paymentTypeNames.GetValueOrDefault( balance.PaymentTypeId );
@@ -112,6 +135,9 @@ internal sealed class CustomerAccountReaderService(
             .Where( x => x.SourceType == BalanceSourceType.Reservation.ToString() && x.SourceId.HasValue )
             .Select( x => x.SourceId!.Value )
             .Concat( payments
+                .Where( x => x.SourceType == BalanceSourceType.Reservation.ToString() && x.SourceId.HasValue )
+                .Select( x => x.SourceId!.Value ) )
+            .Concat( adjustments
                 .Where( x => x.SourceType == BalanceSourceType.Reservation.ToString() && x.SourceId.HasValue )
                 .Select( x => x.SourceId!.Value ) )
             .Distinct()
@@ -156,6 +182,18 @@ internal sealed class CustomerAccountReaderService(
                 Description: x.Notes,
                 DebitAmount: 0,
                 CreditAmount: x.PaymentAmount ) ) )
+            .Concat( adjustments.Select( x => new AccountStatementEvent(
+                TransactionDate: x.CreatedAt.DateTime,
+                SortOrder: 2,
+                TransactionType: GetAdjustmentTransactionType( x.AdjustmentType ),
+                SourceType: x.SourceType,
+                SourceId: x.SourceId,
+                ReservationNumber: GetReservationNumber( reservationNumbers, x.SourceType, x.SourceId ),
+                PaymentTypeId: null,
+                PaymentTypeName: null,
+                Description: BuildAdjustmentDescription( x.Reason, x.Note ),
+                DebitAmount: x.Direction == CustomerAccountAdjustmentDirection.IncreaseBalance ? x.Amount : 0,
+                CreditAmount: x.Direction == CustomerAccountAdjustmentDirection.DecreaseBalance ? x.Amount : 0 ) ) )
             .OrderBy( x => x.TransactionDate )
             .ThenBy( x => x.SortOrder )
             .ToList();
@@ -205,7 +243,12 @@ internal sealed class CustomerAccountReaderService(
 
             OpeningBalance = openingBalance,
             PeriodDebtAmount = statementItems.Sum( x => x.DebitAmount ),
-            PeriodPaidAmount = statementItems.Sum( x => x.CreditAmount ),
+            PeriodPaidAmount = statementItems
+                .Where( x => x.TransactionType == "Ödeme" )
+                .Sum( x => x.CreditAmount ),
+            PeriodAdjustmentAmount = statementItems
+                .Where( x => x.TransactionType != "Ödeme" && x.CreditAmount > 0 )
+                .Sum( x => x.CreditAmount ),
             PeriodNetAmount = statementItems.Sum( x => x.DebitAmount - x.CreditAmount ),
             ClosingBalance = runningBalance,
 
@@ -250,6 +293,44 @@ internal sealed class CustomerAccountReaderService(
 
         return true;
     }
+
+    private static string GetAdjustmentTransactionType(
+    CustomerAccountAdjustmentType adjustmentType )
+    => adjustmentType switch
+    {
+        CustomerAccountAdjustmentType.Discount => "İndirim",
+        CustomerAccountAdjustmentType.Correction => "Düzeltme",
+        CustomerAccountAdjustmentType.Offset => "Mahsup",
+        CustomerAccountAdjustmentType.Cancellation => "İptal",
+        CustomerAccountAdjustmentType.WriteOff => "Alacak kapama",
+        _ => "Düzeltme"
+    };
+
+    private static string BuildAdjustmentDescription(
+        string reason,
+        string? note )
+    {
+        if ( string.IsNullOrWhiteSpace( note ) )
+        {
+            return reason;
+        }
+
+        return $"{reason} - Not: {note}";
+    }
+
+    private sealed record AccountAdjustmentRow(
+    Guid Id,
+    Guid CustomerBalanceId,
+    string SourceType,
+    Guid? SourceId,
+    CustomerAccountAdjustmentType AdjustmentType,
+    CustomerAccountAdjustmentDirection Direction,
+    decimal Amount,
+    string Reason,
+    string? Note,
+    decimal BalanceBeforeAdjustment,
+    decimal BalanceAfterAdjustment,
+    DateTimeOffset CreatedAt );
 
     private sealed record AccountStatementEvent(
         DateTime TransactionDate,

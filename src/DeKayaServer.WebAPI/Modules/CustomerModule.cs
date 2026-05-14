@@ -85,7 +85,6 @@ public static class CustomerModule
             } )
             .Produces<FileContentHttpResult>( StatusCodes.Status200OK, "application/pdf" );
 
-
         app.MapPost( "{id}/payments",
             async (
                 Guid id,
@@ -100,6 +99,27 @@ public static class CustomerModule
                 var res = await sender.Send( command, cancellationToken );
 
                 return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
+            } )
+            .Produces<Result<string>>();
+
+        app.MapPost( "{customerId}/balances/{balanceId}/discounts",
+            async (
+                Guid customerId,
+                Guid balanceId,
+                ApplyCustomerBalanceDiscountRequest request,
+                ISender sender,
+                CancellationToken cancellationToken ) =>
+            {
+                var command = ApplyCustomerBalanceDiscountCommand.FromRequest(
+                    customerId: customerId,
+                    customerBalanceId: balanceId,
+                    request: request );
+
+                var res = await sender.Send( command, cancellationToken );
+
+                return res.IsSuccessful
+                    ? Results.Ok( res )
+                    : Results.InternalServerError( res );
             } )
             .Produces<Result<string>>();
 
