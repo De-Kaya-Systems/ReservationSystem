@@ -25,5 +25,9 @@ public sealed class ReservationListItemDto
     public DateTime? PickedUpAt { get; set; }
 
     public int TotalDays { get; set; }
+    public decimal BaseDailyPrice { get; set; }
+    public decimal AppliedDailyPrice { get; set; }
+    public bool HasPriceOverride { get; set; }
+    public string? PriceOverrideReason { get; set; }
     public decimal TotalAmount { get; set; }
 }

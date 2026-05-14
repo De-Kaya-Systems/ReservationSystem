@@ -26,6 +26,9 @@ public sealed record ReservationCreateCommand(
     DateOnly PickUpDate,
     TimeOnly PickUpTime,
     Guid CoolingRoomId,
+    decimal AppliedDailyPrice,
+    string? PriceOverrideReason,
+    string? PriceOverrideNote,
     Guid PaymentTypeId,
     decimal PaidAtReservation,
     string? Note ) : IRequest<Result<string>>;
@@ -45,6 +48,18 @@ public sealed class ReservationCreateCommandValidator : AbstractValidator<Reserv
         RuleFor( x => x.DeliveryLocation )
             .NotEmpty()
             .WithMessage( "Teslimat konumu boş olamaz." );
+
+        RuleFor( x => x.AppliedDailyPrice )
+            .GreaterThan( 0 )
+            .WithMessage( "Uygulanan günlük fiyat sıfırdan büyük olmalıdır." );
+
+        RuleFor( x => x.PriceOverrideReason )
+            .MaximumLength( 250 )
+            .WithMessage( "Fiyat değişikliği sebebi en fazla 250 karakter olabilir." );
+
+        RuleFor( x => x.PriceOverrideNote )
+            .MaximumLength( 500 )
+            .WithMessage( "Fiyat değişikliği notu en fazla 500 karakter olabilir." );
 
         RuleFor( x => x.PaidAtReservation )
             .GreaterThanOrEqualTo( 0 )
@@ -102,12 +117,30 @@ internal sealed class ReservationCreateCommandHandler(
         var hasOverlap = await reservationRepository.AnyAsync(
             x => x.CoolingRoomId == request.CoolingRoomId
             && x.DeliveryDate.Value <= request.PickUpDate
-            && request.DeliveryDate <= x.PickUpDate.Value, cancellationToken );
+            && request.DeliveryDate <= x.PickUpDate.Value,
+            cancellationToken );
 
         if ( hasOverlap )
         {
             return Result<string>.Failure( "Seçilen soğuk oda bu tarihler arasında rezerve edilmiş!" );
         }
+
+        var baseDailyPrice = coolingRoom.DailyPrice.Value;
+        var appliedDailyPrice = request.AppliedDailyPrice;
+        var hasPriceOverride = appliedDailyPrice != baseDailyPrice;
+
+        if ( hasPriceOverride && string.IsNullOrWhiteSpace( request.PriceOverrideReason ) )
+        {
+            return Result<string>.Failure( "Fiyat değişikliği sebebi zorunludur." );
+        }
+
+        PriceOverrideReason? priceOverrideReason = hasPriceOverride
+            ? new PriceOverrideReason( request.PriceOverrideReason!.Trim() )
+            : null;
+
+        PriceOverrideNote? priceOverrideNote = hasPriceOverride && !string.IsNullOrWhiteSpace( request.PriceOverrideNote )
+            ? new PriceOverrideNote( request.PriceOverrideNote.Trim() )
+            : null;
 
         var reservationCount = await reservationRepository.CountAsync( cancellationToken );
         var reservationNumber = new ReservationNumber( $"DK-{( reservationCount + 1 ):D6}" );
@@ -121,7 +154,10 @@ internal sealed class ReservationCreateCommandHandler(
             pickUpDate: new PickUpDate( request.PickUpDate ),
             pickUpTime: new PickUpTime( request.PickUpTime ),
             coolingRoomId: new IdentityId( request.CoolingRoomId ),
-            coolingRoomDailyPrice: new CoolingRoomDailyPrice( coolingRoom.DailyPrice.Value ),
+            coolingRoomBaseDailyPrice: new CoolingRoomBaseDailyPrice( baseDailyPrice ),
+            coolingRoomDailyPrice: new CoolingRoomDailyPrice( appliedDailyPrice ),
+            priceOverrideReason: priceOverrideReason,
+            priceOverrideNote: priceOverrideNote,
             paidAtReservation: new PaidAtReservation( request.PaidAtReservation ),
             note: string.IsNullOrWhiteSpace( request.Note ) ? null : new Note( request.Note ) );
 
@@ -138,7 +174,7 @@ internal sealed class ReservationCreateCommandHandler(
         var targetStatusName = CoolingRoomStatusConstants.Reserved;
 
         var targetStatus = await coolingRoomStatusRepository
-           .FirstOrDefaultAsync( x => x.StatusName.Value == targetStatusName, cancellationToken );
+            .FirstOrDefaultAsync( x => x.StatusName.Value == targetStatusName, cancellationToken );
 
         if ( targetStatus is null )
         {
@@ -167,7 +203,6 @@ internal sealed class ReservationCreateCommandHandler(
 
             if ( paidAmount > 0 )
             {
-                // Payment history entry oluştur
                 var paymentHistory = PaymentHistory.Create(
                     customerId: new IdentityId( request.CustomerId ),
                     sourceType: BalanceSourceType.Reservation,

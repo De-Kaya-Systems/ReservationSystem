@@ -17,7 +17,13 @@ public sealed class ReservationDto : EntityDto
     public DateTime? PickedUpAt { get; set; }
     public string CoolingRoomId { get; set; } = default!;
     public int TotalDay { get; set; }
-    public decimal CoolingRoomDailyPrice { get; set; } = default!;
+
+    public decimal CoolingRoomBaseDailyPrice { get; set; }
+    public decimal CoolingRoomDailyPrice { get; set; }
+    public bool HasPriceOverride { get; set; }
+    public string? PriceOverrideReason { get; set; }
+    public string? PriceOverrideNote { get; set; }
+
     public decimal? ReservationTotalAmount { get; set; }
     public string? Note { get; set; }
     public decimal? PaidAtReservation { get; set; }

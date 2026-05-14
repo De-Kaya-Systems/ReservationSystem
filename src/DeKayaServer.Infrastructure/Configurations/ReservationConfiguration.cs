@@ -9,9 +9,15 @@ internal class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
     public void Configure( EntityTypeBuilder<Reservation> builder )
     {
         builder.ToTable( "Reservations" );
+
         builder.HasKey( x => x.Id );
-        builder.Property( x => x.CustomerId ).IsRequired();
-        builder.Property( x => x.CoolingRoomId ).IsRequired();
+
+        builder.Property( x => x.CustomerId )
+            .IsRequired();
+
+        builder.Property( x => x.CoolingRoomId )
+            .IsRequired();
+
         builder.Property( x => x.Status )
             .HasConversion<int>()
             .IsRequired();
@@ -24,7 +30,33 @@ internal class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
         builder.OwnsOne( x => x.DeliveredAt );
         builder.OwnsOne( x => x.PickedUpAt );
         builder.OwnsOne( x => x.TotalDay );
-        builder.OwnsOne( x => x.CoolingRoomDailyPrice );
+
+        builder.OwnsOne( x => x.CoolingRoomBaseDailyPrice, price =>
+        {
+            price.Property( x => x.Value )
+                .HasColumnType( "decimal(18,2)" )
+                .IsRequired();
+        } );
+
+        builder.OwnsOne( x => x.CoolingRoomDailyPrice, price =>
+        {
+            price.Property( x => x.Value )
+                .HasColumnType( "decimal(18,2)" )
+                .IsRequired();
+        } );
+
+        builder.OwnsOne( x => x.PriceOverrideReason, reason =>
+        {
+            reason.Property( x => x.Value )
+                .HasMaxLength( 250 );
+        } );
+
+        builder.OwnsOne( x => x.PriceOverrideNote, note =>
+        {
+            note.Property( x => x.Value )
+                .HasMaxLength( 500 );
+        } );
+
         builder.OwnsOne( x => x.ReservationTotalAmount );
         builder.OwnsOne( x => x.PaidAtReservation );
         builder.OwnsOne( x => x.Note );

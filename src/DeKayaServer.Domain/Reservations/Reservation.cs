@@ -16,7 +16,10 @@ public sealed class Reservation : Entity
         PickUpDate pickUpDate,
         PickUpTime pickUpTime,
         IdentityId coolingRoomId,
+        CoolingRoomBaseDailyPrice coolingRoomBaseDailyPrice,
         CoolingRoomDailyPrice coolingRoomDailyPrice,
+        PriceOverrideReason? priceOverrideReason,
+        PriceOverrideNote? priceOverrideNote,
         PaidAtReservation paidAtReservation,
         Note? note )
     {
@@ -30,7 +33,11 @@ public sealed class Reservation : Entity
         SetPickUpTime( pickUpTime );
 
         SetCoolingRoomId( coolingRoomId );
-        SetCoolingRoomDailyPrice( coolingRoomDailyPrice );
+        SetPricing(
+            coolingRoomBaseDailyPrice,
+            coolingRoomDailyPrice,
+            priceOverrideReason,
+            priceOverrideNote );
 
         SetPaidAtReservation( paidAtReservation );
         SetNote( note );
@@ -50,7 +57,10 @@ public sealed class Reservation : Entity
         PickUpDate pickUpDate,
         PickUpTime pickUpTime,
         IdentityId coolingRoomId,
+        CoolingRoomBaseDailyPrice coolingRoomBaseDailyPrice,
         CoolingRoomDailyPrice coolingRoomDailyPrice,
+        PriceOverrideReason? priceOverrideReason,
+        PriceOverrideNote? priceOverrideNote,
         PaidAtReservation paidAtReservation,
         Note? note )
     {
@@ -63,7 +73,10 @@ public sealed class Reservation : Entity
             pickUpDate,
             pickUpTime,
             coolingRoomId,
+            coolingRoomBaseDailyPrice,
             coolingRoomDailyPrice,
+            priceOverrideReason,
+            priceOverrideNote,
             paidAtReservation,
             note );
         return reservation;
@@ -81,7 +94,10 @@ public sealed class Reservation : Entity
     public PickedUpAt? PickedUpAt { get; private set; }
     public TotalDay TotalDay { get; private set; } = default!;
     public IdentityId CoolingRoomId { get; private set; } = default!;
+    public CoolingRoomBaseDailyPrice CoolingRoomBaseDailyPrice { get; private set; } = default!;
     public CoolingRoomDailyPrice CoolingRoomDailyPrice { get; private set; } = default!;
+    public PriceOverrideReason? PriceOverrideReason { get; private set; }
+    public PriceOverrideNote? PriceOverrideNote { get; private set; }
     public ReservationTotalAmount ReservationTotalAmount { get; private set; } = default!;
     public Note? Note { get; private set; }
     public PaidAtReservation PaidAtReservation { get; private set; } = new( 0 );
@@ -185,6 +201,36 @@ public sealed class Reservation : Entity
     public void SetCoolingRoomDailyPrice( CoolingRoomDailyPrice coolingRoomDailyPrice )
     {
         CoolingRoomDailyPrice = coolingRoomDailyPrice;
+    }
+
+    public void SetPricing(
+        CoolingRoomBaseDailyPrice baseDailyPrice,
+        CoolingRoomDailyPrice appliedDailyPrice,
+        PriceOverrideReason? priceOverrideReason,
+        PriceOverrideNote? priceOverrideNote )
+    {
+        if ( baseDailyPrice.Value <= 0 )
+        {
+            throw new ArgumentException( "Standart günlük fiyat sıfırdan büyük olmalıdır." );
+        }
+
+        if ( appliedDailyPrice.Value <= 0 )
+        {
+            throw new ArgumentException( "Uygulanan günlük fiyat sıfırdan büyük olmalıdır." );
+        }
+
+        var hasPriceOverride = appliedDailyPrice.Value != baseDailyPrice.Value;
+
+        if ( hasPriceOverride
+             && string.IsNullOrWhiteSpace( priceOverrideReason?.Value ) )
+        {
+            throw new ArgumentException( "Fiyat değişikliği sebebi zorunludur." );
+        }
+
+        CoolingRoomBaseDailyPrice = baseDailyPrice;
+        CoolingRoomDailyPrice = appliedDailyPrice;
+        PriceOverrideReason = priceOverrideReason;
+        PriceOverrideNote = priceOverrideNote;
     }
 
     public void SetNote( Note? note )

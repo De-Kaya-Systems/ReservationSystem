@@ -136,7 +136,7 @@
                                 <div class="form-floating">
                                     <InputSelect class="form-select"
                                                  @bind-Value="model.CoolingRoomId"
-                                                 @bind-Value:after="OnPricingInputChanged"
+                                                 @bind-Value:after="OnCoolingRoomChanged"
                                                  disabled="@(!DatesSelected || IsDateRangeInvalid || isLoadingRooms || isEditingDates)">
                                         <option value="">Soğuk oda seçin</option>
                                         @foreach ( var room in rooms )
@@ -158,6 +158,58 @@
                                 }
                             </div>
                         </div>
+
+                        @if ( SelectedRoom is not null )
+                        {
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Standart günlük fiyat</label>
+                                    <div class="input-group">
+                                        <input class="form-control"
+                                               value="@SelectedRoom.DailyPrice.ToString( "N2" )"
+                                               disabled />
+                                        <span class="input-group-text">₺</span>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Uygulanacak günlük fiyat</label>
+                                    <div class="input-group">
+                                        <InputNumber class="form-control"
+                                                     @bind-Value="model.AppliedDailyPrice"
+                                                     @bind-Value:after="OnPricingInputChanged" />
+                                        <span class="input-group-text">₺</span>
+                                    </div>
+                                    <ValidationMessage For="@(() => model.AppliedDailyPrice)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                                </div>
+                            </div>
+
+                            @if ( HasPriceOverride )
+                            {
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12 col-md-6">
+                                        <div class="form-floating">
+                                            <InputText class="form-control"
+                                                       @bind-Value="model.PriceOverrideReason"
+                                                       @bind-Value:after="ValidatePriceOverrideReason"
+                                                       placeholder="Fiyat değişikliği sebebi" />
+                                            <label>Fiyat değişikliği sebebi</label>
+                                        </div>
+                                        <ValidationMessage For="@(() => model.PriceOverrideReason)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <div class="form-floating">
+                                            <InputText class="form-control"
+                                                       @bind-Value="model.PriceOverrideNote"
+                                                       placeholder="Fiyat değişikliği notu" />
+                                            <label>Fiyat değişikliği notu</label>
+                                        </div>
+                                        <ValidationMessage For="@(() => model.PriceOverrideNote)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
+                                    </div>
+                                </div>
+                            }
+                        }
 
                         <div class="mb-3">
                             <div class="form-floating">
@@ -202,6 +254,7 @@
                                     </div>
                                 }
                             </div>
+
                             @if ( paymentReceived )
                             {
                                 <div class="col-12 col-md-6">
@@ -224,23 +277,23 @@
                             <div class="alert alert-info py-2 px-3 mb-3">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="fw-semibold">Toplam rezervasyon bedeli</span>
-                                    <span class="fs-5 fw-bold">@totalReservationAmount.ToString("N2") ₺</span>
+                                    <span class="fs-5 fw-bold">@totalReservationAmount.ToString( "N2" ) ₺</span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-2">
                                     <span>Daha önce alınan ödeme</span>
-                                    <span class="fw-semibold">@existingPaidAtReservation.ToString("N2") ₺</span>
+                                    <span class="fw-semibold">@existingPaidAtReservation.ToString( "N2" ) ₺</span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-1">
                                     <span>Bu güncellemede alınan ödeme</span>
-                                    <span class="fw-semibold">@CurrentUpdatePaidAmount.ToString("N2") ₺</span>
+                                    <span class="fw-semibold">@CurrentUpdatePaidAmount.ToString( "N2" ) ₺</span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-1">
                                     <span>Toplam alınan ödeme</span>
-                                    <span class="fw-semibold">@TotalPaidAtReservation.ToString("N2") ₺</span>
+                                    <span class="fw-semibold">@TotalPaidAtReservation.ToString( "N2" ) ₺</span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-1">
                                     <span>Kalan borç</span>
-                                    <span class="fw-bold">@Math.Max( totalReservationAmount - TotalPaidAtReservation, 0 ).ToString("N2") ₺</span>
+                                    <span class="fw-bold">@Math.Max( totalReservationAmount - TotalPaidAtReservation, 0 ).ToString( "N2" ) ₺</span>
                                 </div>
                             </div>
                         }
@@ -301,6 +354,7 @@
     private bool paymentReceived;
     private Guid? noPayPaymentTypeId;
     private bool hasPaidAmountExceedsTotalError;
+    private bool hasPriceOverrideReasonError;
     private decimal existingPaidAtReservation;
 
     private bool SubmitDisabled =>
@@ -308,6 +362,7 @@
         || isLoading
         || ReservationId is null
         || hasPaidAmountExceedsTotalError
+        || hasPriceOverrideReasonError
         || ( submitAttempted && editContext.GetValidationMessages().Any() );
 
     private bool ShowCustomerSuggestions
@@ -315,6 +370,16 @@
 
     private decimal? ComputedReservationTotalAmount
         => TryGetTotalReservationAmount( out var totalReservationAmount ) ? totalReservationAmount : null;
+
+    private CoolingRoomOption? SelectedRoom
+        => model.CoolingRoomId is null
+            ? null
+            : rooms.FirstOrDefault( x => x.Id == model.CoolingRoomId.Value );
+
+    private bool HasPriceOverride
+        => SelectedRoom is not null
+           && model.AppliedDailyPrice > 0
+           && model.AppliedDailyPrice != SelectedRoom.DailyPrice;
 
     private decimal CurrentUpdatePaidAmount
         => paymentReceived ? model.PaidAtReservation : 0;
@@ -390,7 +455,7 @@
         await LoadLookupsAsync();
         await LoadReservationAsync( ReservationId.Value );
         await LoadAvailableRoomsAsync();
-        ValidatePaidAtReservationAgainstTotalAmount();
+        ValidateReservationPricing();
 
         isLoading = false;
         await InvokeAsync( StateHasChanged );
@@ -417,6 +482,7 @@
         showCustomerSuggestions = false;
         paymentReceived = false;
         hasPaidAmountExceedsTotalError = false;
+        hasPriceOverrideReasonError = false;
         existingPaidAtReservation = 0;
         rooms = [];
         roomsInfoMessage = SelectDatesMessage;
@@ -446,6 +512,9 @@
             DeliveryTime = TimeOnly.FromDateTime( reservation.DeliveryTime ).ToString( "HH:mm" ),
             PickUpDate = reservation.PickUpDate,
             PickUpTime = TimeOnly.FromDateTime( reservation.PickUpTime ).ToString( "HH:mm" ),
+            AppliedDailyPrice = reservation.CoolingRoomDailyPrice,
+            PriceOverrideReason = reservation.PriceOverrideReason,
+            PriceOverrideNote = reservation.PriceOverrideNote,
             Status = ( ReservationOperationStatusDto )reservation.Status,
             PaidAtReservation = 0,
             Note = reservation.Note
@@ -489,10 +558,13 @@
     private void ResetAvailableRooms( string message, bool clearSelectedRoom = true )
     {
         rooms = [];
+
         if ( clearSelectedRoom )
         {
             model.CoolingRoomId = null;
+            ResetPricing();
         }
+
         roomsInfoMessage = message;
     }
 
@@ -541,7 +613,7 @@
             }
         }
 
-        ValidatePaidAtReservationAgainstTotalAmount();
+        ValidateReservationPricing();
     }
 
     private async Task LoadLookupsAsync()
@@ -632,6 +704,7 @@
                 else
                 {
                     model.CoolingRoomId = null;
+                    ResetPricing();
                 }
             }
 
@@ -640,7 +713,7 @@
                 roomsInfoMessage = "Seçilen tarih aralığında uygun oda yok.";
             }
 
-            ValidatePaidAtReservationAgainstTotalAmount();
+            ValidateReservationPricing();
         }
         finally
         {
@@ -657,12 +730,49 @@
     {
         await LoadAvailableRoomsAsync();
         isEditingDates = false;
-        ValidatePaidAtReservationAgainstTotalAmount();
+        ValidateReservationPricing();
         await InvokeAsync( StateHasChanged );
     }
 
+    private void OnCoolingRoomChanged()
+    {
+        if ( SelectedRoom is null )
+        {
+            ResetPricing();
+            ValidateReservationPricing();
+            return;
+        }
+
+        model.AppliedDailyPrice = SelectedRoom.DailyPrice;
+        model.PriceOverrideReason = null;
+        model.PriceOverrideNote = null;
+
+        ValidateReservationPricing();
+    }
+
     private void OnPricingInputChanged()
-        => ValidatePaidAtReservationAgainstTotalAmount();
+        => ValidateReservationPricing();
+
+    private void ValidateReservationPricing()
+    {
+        ValidatePriceOverrideReason();
+        ValidatePaidAtReservationAgainstTotalAmount();
+    }
+
+    private void ValidatePriceOverrideReason()
+    {
+        var priceOverrideReasonField = FieldIdentifier.Create( () => model.PriceOverrideReason );
+        validationMessageStore.Clear( priceOverrideReasonField );
+        hasPriceOverrideReasonError = false;
+
+        if ( HasPriceOverride && string.IsNullOrWhiteSpace( model.PriceOverrideReason ) )
+        {
+            validationMessageStore.Add( priceOverrideReasonField, "Fiyat değişikliği sebebi zorunludur." );
+            hasPriceOverrideReasonError = true;
+        }
+
+        editContext.NotifyValidationStateChanged();
+    }
 
     private void ValidatePaidAtReservationAgainstTotalAmount()
     {
@@ -687,6 +797,7 @@
         if ( model.CoolingRoomId is null
              || model.DeliveryDate is null
              || model.PickUpDate is null
+             || model.AppliedDailyPrice <= 0
              || !TimeOnly.TryParse( model.DeliveryTime, out var deliveryTime )
              || !TimeOnly.TryParse( model.PickUpTime, out var pickUpTime ) )
         {
@@ -707,7 +818,7 @@
         }
 
         var totalDays = CalculateTotalDays( deliveryDateTime, pickUpDateTime );
-        totalReservationAmount = selectedRoom.DailyPrice * totalDays;
+        totalReservationAmount = model.AppliedDailyPrice * totalDays;
         return true;
     }
 
@@ -724,6 +835,13 @@
         return sameDayExtraAllowed ? totalDays : totalDays + 1;
     }
 
+    private void ResetPricing()
+    {
+        model.AppliedDailyPrice = 0;
+        model.PriceOverrideReason = null;
+        model.PriceOverrideNote = null;
+    }
+
     private static bool IsNoPay( string? name )
         => string.Equals( name?.Trim(), "NoPay", StringComparison.OrdinalIgnoreCase );
 
@@ -733,6 +851,8 @@
     private void HandleInvalidSubmit()
     {
         submitAttempted = true;
+        ValidateReservationPricing();
+
         var validationMessage = editContext.GetValidationMessages().FirstOrDefault();
         if ( !string.IsNullOrWhiteSpace( validationMessage ) )
         {
@@ -789,6 +909,14 @@
         try
         {
             isSubmit = true;
+            submitAttempted = true;
+
+            ValidateReservationPricing();
+
+            if ( hasPaidAmountExceedsTotalError || hasPriceOverrideReasonError )
+            {
+                return;
+            }
 
             if ( model.DeliveryDate is null || model.PickUpDate is null )
             {
@@ -834,6 +962,9 @@
                 DeliveryTime = deliveryTime,
                 PickUpDate = model.PickUpDate.Value,
                 PickUpTime = pickUpTime,
+                AppliedDailyPrice = model.AppliedDailyPrice,
+                PriceOverrideReason = HasPriceOverride ? model.PriceOverrideReason?.Trim() : null,
+                PriceOverrideNote = HasPriceOverride ? model.PriceOverrideNote?.Trim() : null,
                 Status = ( int )model.Status,
                 PaymentTypeId = paymentTypeId,
                 PaidAtReservation = paidAtReservation,
@@ -852,13 +983,13 @@
             {
                 await ReservationUpdated.InvokeAsync();
             }
+
+            await HideAsync();
+            InitForm();
         }
         finally
         {
             isSubmit = false;
-            submitAttempted = false;
-            InitForm();
-            await HideAsync();
         }
     }
 
@@ -887,6 +1018,15 @@
         [RegularExpression( @"^\d{2}:\d{2}$", ErrorMessage = "Saat formatı HH:mm olmalı." )]
         public string PickUpTime { get; set; } = "09:00";
 
+        [Range( 0.01, double.MaxValue, ErrorMessage = "Uygulanacak günlük fiyat sıfırdan büyük olmalıdır." )]
+        public decimal AppliedDailyPrice { get; set; }
+
+        [StringLength( 250, ErrorMessage = "Fiyat değişikliği sebebi en fazla 250 karakter olabilir." )]
+        public string? PriceOverrideReason { get; set; }
+
+        [StringLength( 500, ErrorMessage = "Fiyat değişikliği notu en fazla 500 karakter olabilir." )]
+        public string? PriceOverrideNote { get; set; }
+
         public ReservationOperationStatusDto Status { get; set; } = ReservationOperationStatusDto.Scheduled;
 
         [Required( ErrorMessage = "Ödeme tipi seçin!" )]
@@ -904,6 +1044,7 @@
     }
 
     private sealed record CoolingRoomOption( Guid Id, string Name, decimal DailyPrice );
+
     private sealed record PaymentTypeOption( Guid Id, string Name );
 }
 

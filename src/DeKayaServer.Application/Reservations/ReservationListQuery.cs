@@ -155,6 +155,10 @@ internal sealed class ReservationListQueryHandler(
                     PickedUpAt = x.PickedUpAt,
 
                     TotalDays = x.TotalDay,
+                    BaseDailyPrice = x.CoolingRoomBaseDailyPrice,
+                    AppliedDailyPrice = x.CoolingRoomDailyPrice,
+                    HasPriceOverride = x.HasPriceOverride,
+                    PriceOverrideReason = x.PriceOverrideReason,
                     TotalAmount = x.ReservationTotalAmount ?? 0
                 };
             } )
