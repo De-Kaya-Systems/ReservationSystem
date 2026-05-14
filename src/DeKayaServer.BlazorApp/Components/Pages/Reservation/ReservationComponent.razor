@@ -31,7 +31,6 @@
     </div>
 }
 
-
 <DeKayaQuickGrid Title="Rezervasyonlar"
                  ShowTitle="true"
                  ShowSearchResultCount="true"
@@ -173,8 +172,12 @@
 
                     @if ( CurrentUser.HasPermission( "reservation:delete" ) )
                     {
+                        var canDeleteReservation = CanDeleteReservation( r );
+
                         <button type="button"
                                 class="btn btn-outline-danger btn-sm"
+                                disabled="@(!canDeleteReservation)"
+                                title="@GetDeleteButtonTitle( r )"
                                 @onclick="() => ShowDeleteReservationDialog( r )">
                             <i class="bi bi-trash"></i>
                             <span>Sil</span>
@@ -445,6 +448,29 @@
         }
 
         return false;
+    }
+
+    private bool CanDeleteReservation( ReservationListItemDto reservation )
+    {
+        if ( CurrentUser.IsSysAdmin )
+        {
+            return true;
+        }
+
+        return !IsCompletedReservation( reservation );
+    }
+
+    private static bool IsCompletedReservation( ReservationListItemDto reservation )
+        => ( ReservationOperationStatusDto )reservation.Status == ReservationOperationStatusDto.Completed;
+
+    private string GetDeleteButtonTitle( ReservationListItemDto reservation )
+    {
+        if ( CanDeleteReservation( reservation ) )
+        {
+            return "Rezervasyonu sil";
+        }
+
+        return "Tamamlanmış rezervasyonları sadece sys_admin silebilir.";
     }
 
     private static string GetOperationStatusBadgeClass( ReservationListItemDto reservation )
