@@ -385,13 +385,41 @@
 
             rooms = res.Data
                 .Select( MapToViewModel )
-                .OrderBy( x => x.Name )
+                .OrderBy( x => GetRoomNamePrefix( x.Name ), StringComparer.CurrentCultureIgnoreCase )
+                .ThenBy( x => GetRoomNameNumber( x.Name ) )
+                .ThenBy( x => x.Name, StringComparer.CurrentCultureIgnoreCase )
                 .ToList();
         }
         finally
         {
             isLoading = false;
         }
+    }
+
+    private static string GetRoomNamePrefix( string? name )
+    {
+        if ( string.IsNullOrWhiteSpace( name ) )
+        {
+            return string.Empty;
+        }
+
+        return System.Text.RegularExpressions.Regex
+            .Replace( name, @"\d+\s*$", string.Empty )
+            .Trim();
+    }
+
+    private static int GetRoomNameNumber( string? name )
+    {
+        if ( string.IsNullOrWhiteSpace( name ) )
+        {
+            return int.MaxValue;
+        }
+
+        var match = System.Text.RegularExpressions.Regex.Match( name, @"\d+\s*$" );
+
+        return match.Success && int.TryParse( match.Value, out var number )
+            ? number
+            : int.MaxValue;
     }
 
     private void ClearFilters()
