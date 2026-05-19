@@ -3,6 +3,7 @@
 @using DeKayaServer.Contracts.Reservations
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Components.Forms
+@using TS.Result
 @inject IReservationService reservationService
 @inject ICustomerService customerService
 @inject ICoolingRoomService coolingRoomService
@@ -13,7 +14,7 @@
 
 <div class="create-reservation-diaolg">
     <Dialog @ref="dialog"
-            Title="Rezervasyon Ekle">
+            Title=@DialogTitle>
         <ChildContent>
             @if ( isLoading )
             {
@@ -25,14 +26,24 @@
                           OnValidSubmit="HandleValidSubmit"
                           OnInvalidSubmit="HandleInvalidSubmit">
                     <DataAnnotationsValidator />
-
+                    @if ( !string.IsNullOrWhiteSpace( dialogResultMessage ) )
+                    {
+                        <div class="alert @dialogResultCssClass py-2 px-3 mb-3">
+                            @dialogResultMessage
+                        </div>
+                    }
+                    @if ( AllowPastReservationDates )
+                    {
+                        <div class="alert alert-warning py-2 px-3 mb-3">
+                            Geçmiş tarihli rezervasyon modu aktiftir. Bu işlem yalnızca test ve düzeltme amaçlı kullanılmalıdır.
+                        </div>
+                    }
                     <div class="row g-3 mb-3">
                         <div class="col-12 col-md-3">
                             <label class="form-label">Başlangıç tarihi</label>
                             <InputDate class="form-control"
                                        @bind-Value="model.DeliveryDate"
                                        @bind-Value:after="OnDeliveryDateChanged"
-                                       @onfocus="OnDatesFocus"
                                        @attributes="DeliveryDateAttributes" />
                             <ValidationMessage For="@(() => model.DeliveryDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
                         </div>
@@ -51,7 +62,6 @@
                             <InputDate class="form-control"
                                        @bind-Value="model.PickUpDate"
                                        @bind-Value:after="OnDatesChanged"
-                                       @onfocus="OnDatesFocus"
                                        @attributes="PickUpDateAttributes" />
                             <ValidationMessage For="@(() => model.PickUpDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
                         </div>
@@ -106,7 +116,7 @@
                                 <InputSelect class="form-select"
                                              @bind-Value="model.CoolingRoomId"
                                              @bind-Value:after="OnCoolingRoomChanged"
-                                             disabled="@(!DatesSelected || IsDateRangeInvalid || isLoadingRooms || isEditingDates)">
+                                             disabled="@(!DatesSelected || IsDateRangeInvalid || isLoadingRooms )">
                                     <option value="">Soğuk oda seçin</option>
                                     @foreach ( var room in rooms )
                                     {
@@ -263,12 +273,12 @@
                                 class="btn btn-outline-secondary px-4 py-2 fw-semibold"
                                 @onclick="HideAsync"
                                 disabled="@isSubmit">
-                            İptal
+                            @(operationCompleted ? "Kapat" : "İptal")
                         </button>
 
                         <button type="submit"
                                 class="btn btn-primary px-4 py-2 fw-semibold shadow-sm"
-                                disabled="@SubmitDisabled">
+                                disabled="@(SubmitDisabled || operationCompleted)">
                             Rezervasyonu Oluştur
                         </button>
                     </div>
@@ -283,8 +293,10 @@
     private bool isSubmit;
     private bool isLoading;
     private bool isLoadingRooms;
-    private bool isEditingDates;
     private string? roomsInfoMessage;
+
+    [Parameter] public bool AllowPastReservationDates { get; set; }
+    [Parameter] public string DialogTitle { get; set; } = "Rezervasyon Ekle";
 
     private CreateReservationViewModel model = new();
     private EditContext editContext = default!;
@@ -301,6 +313,10 @@
     private Guid? noPayPaymentTypeId;
     private bool hasPaidAmountExceedsTotalError;
     private bool hasPriceOverrideReasonError;
+
+    private string? dialogResultMessage;
+    private string dialogResultCssClass = "alert-info";
+    private bool operationCompleted;
 
     private bool SubmitDisabled =>
         isSubmit
@@ -345,10 +361,12 @@
             : new Dictionary<string, object>();
 
     private IReadOnlyDictionary<string, object> DeliveryDateAttributes
-        => new Dictionary<string, object>
-        {
-            [ "min" ] = ReservationStartDateControl.ToString( "yyyy-MM-dd" )
-        };
+        => AllowPastReservationDates
+            ? new Dictionary<string, object>()
+            : new Dictionary<string, object>
+            {
+                [ "min" ] = ReservationStartDateControl.ToString( "yyyy-MM-dd" )
+            };
 
     private IReadOnlyList<CustomerOption> FilteredCustomers
         => string.IsNullOrWhiteSpace( customerSearchTerm )
@@ -419,8 +437,12 @@
         hasPriceOverrideReasonError = false;
         rooms = [];
         roomsInfoMessage = "Önce rezervasyon başlangıç ve bitiş tarihlerini seçin.";
-        isEditingDates = false;
+
+        dialogResultMessage = null;
+        dialogResultCssClass = "alert-info";
+        operationCompleted = false;
     }
+
 
     private void OnCustomerSearchInput( ChangeEventArgs e )
     {
@@ -522,6 +544,7 @@
             model.CoolingRoomId = null;
             ResetPricing();
             roomsInfoMessage = "Önce rezervasyon başlangıç ve bitiş tarihlerini seçin.";
+            ClearDialogResultMessage();
             return;
         }
 
@@ -530,7 +553,10 @@
             rooms = [];
             model.CoolingRoomId = null;
             ResetPricing();
-            roomsInfoMessage = "Rezervasyon başlangıç tarihi, bitiş tarihinden önce olamaz.";
+
+            var message = "Rezervasyon başlangıç tarihi, bitiş tarihinden önce olamaz.";
+            roomsInfoMessage = message;
+            ShowDialogError( message );
             return;
         }
 
@@ -543,6 +569,7 @@
             model.CoolingRoomId = null;
             ResetPricing();
             roomsInfoMessage = "Tarihler eksik.";
+            ClearDialogResultMessage();
             return;
         }
 
@@ -557,7 +584,12 @@
                 rooms = [];
                 model.CoolingRoomId = null;
                 ResetPricing();
-                roomsInfoMessage = roomsResult.ErrorMessages?.FirstOrDefault() ?? "Uygun odalar getirilemedi.";
+
+                var message = roomsResult.ErrorMessages?.FirstOrDefault()
+                    ?? "Uygun odalar getirilemedi.";
+
+                roomsInfoMessage = message;
+                ShowDialogError( message );
                 return;
             }
 
@@ -570,7 +602,13 @@
 
             if ( rooms.Count == 0 )
             {
-                roomsInfoMessage = "Seçilen tarih aralığında uygun oda yok.";
+                var message = "Seçilen tarih aralığında uygun oda yok.";
+                roomsInfoMessage = message;
+                ShowDialogWarning( message );
+            }
+            else
+            {
+                ClearDialogResultMessage();
             }
 
             if ( model.CoolingRoomId is not null && !rooms.Any( r => r.Id == model.CoolingRoomId ) )
@@ -587,15 +625,9 @@
         }
     }
 
-    private void OnDatesFocus()
-    {
-        isEditingDates = true;
-    }
-
     private async Task OnDatesChanged()
     {
         await LoadAvailableRoomsAsync();
-        isEditingDates = false;
         ValidateReservationPricing();
         await InvokeAsync( StateHasChanged );
     }
@@ -743,6 +775,13 @@
     {
         submitAttempted = true;
         ValidateReservationPricing();
+
+        var validationMessage = editContext.GetValidationMessages().FirstOrDefault();
+
+        if ( !string.IsNullOrWhiteSpace( validationMessage ) )
+        {
+            ShowDialogError( validationMessage );
+        }
     }
 
     private async Task HandleValidSubmit()
@@ -761,30 +800,31 @@
 
             if ( model.DeliveryDate is null || model.PickUpDate is null )
             {
-                toastService.ShowError( "Lütfen rezervasyon başlangıç ve bitiş tarihlerini seçin." );
+                ShowDialogError( "Lütfen rezervasyon başlangıç ve bitiş tarihlerini seçin." );
                 return;
             }
 
             if ( !TimeOnly.TryParse( model.DeliveryTime, out var deliveryTime ) )
             {
-                toastService.ShowError( "Rezervasyon saatini doğru giriniz!" );
+                ShowDialogError( "Rezervasyon saatini doğru giriniz!" );
                 return;
             }
 
             if ( !TimeOnly.TryParse( model.PickUpTime, out var pickUpTime ) )
             {
-                toastService.ShowError( "Rezervasyon alma saatini doğru giriniz!" );
+                ShowDialogError( "Rezervasyon alma saatini doğru giriniz!" );
                 return;
             }
 
             if ( !paymentReceived && noPayPaymentTypeId is null )
             {
-                toastService.ShowError( "NoPay ödeme tipi bulunamadı." );
+                ShowDialogError( "NoPay ödeme tipi bulunamadı." );
                 return;
             }
 
             if ( model.CustomerId is null || model.CoolingRoomId is null || model.PaymentTypeId is null )
             {
+                ShowDialogError( "Müşteri, soğuk oda ve ödeme tipi seçilmelidir." );
                 return;
             }
 
@@ -808,23 +848,30 @@
             var result = await reservationService.CreateAsync( request );
             apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = true } );
 
+            var resultMessage = GetResultMessage(
+                result,
+                result.IsSuccessful
+                    ? "Rezervasyon başarıyla oluşturuldu."
+                    : "Rezervasyon oluşturulamadı." );
+
             if ( !result.IsSuccessful )
             {
+                ShowDialogResultMessage( resultMessage, "alert-danger" );
                 return;
             }
+
+            ShowDialogResultMessage( resultMessage, "alert-success" );
+            operationCompleted = true;
 
             if ( ReservationAdded.HasDelegate )
             {
                 await ReservationAdded.InvokeAsync();
             }
-
-            await HideAsync();
         }
         finally
         {
             isSubmit = false;
             submitAttempted = false;
-            InitForm();
         }
     }
 
@@ -869,6 +916,50 @@
         public string? Note { get; set; }
     }
 
+    private void ShowDialogError( string message )
+    {
+        ShowDialogResultMessage( message, "alert-danger" );
+        toastService.ShowError( message );
+    }
+
+    private void ShowDialogWarning( string message )
+    {
+        ShowDialogResultMessage( message, "alert-warning" );
+        toastService.ShowWarning( message );
+    }
+
+    private void ShowDialogSuccess( string message )
+    {
+        ShowDialogResultMessage( message, "alert-success" );
+        toastService.ShowSuccess( message );
+    }
+
+    private void ShowDialogResultMessage( string message, string cssClass )
+    {
+        dialogResultMessage = message;
+        dialogResultCssClass = cssClass;
+    }
+
+    private void ClearDialogResultMessage()
+    {
+        dialogResultMessage = null;
+        dialogResultCssClass = "alert-info";
+    }
+
+    private static string GetResultMessage( Result<string> result, string fallback )
+    {
+        if ( result.IsSuccessful )
+        {
+            return string.IsNullOrWhiteSpace( result.Data )
+                ? fallback
+                : result.Data;
+        }
+
+        return result.ErrorMessages?.FirstOrDefault( x => !string.IsNullOrWhiteSpace( x ) )
+            ?? fallback;
+    }
+
+
     private sealed record CustomerOption( Guid Id, string FullName, string PhoneNumber )
     {
         public string CustomerDisplay => $"{FullName} - {PhoneNumber}";
@@ -876,7 +967,7 @@
 
     private sealed record CoolingRoomOption( Guid Id, string Name, decimal DailyPrice, bool Shelf )
     {
-        public string DisplayName => $"{Name} / {( Shelf ? "RAFLI" : "RAFSIZ" )}";
+        public string DisplayName => $"{Name} -> {( Shelf ? "RAFLI" : "RAFSIZ" )}";
     }
 
     private sealed record PaymentTypeOption( Guid Id, string Name );

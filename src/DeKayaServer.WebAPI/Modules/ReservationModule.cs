@@ -77,6 +77,18 @@ public static class ReservationModule
             } )
             .Produces<Result<string>>();
 
+        app.MapPut( "{id}/mark-delivered",
+            async ( Guid id, MarkReservationDeliveredRequest request, ISender sender, CancellationToken cancellationToken ) =>
+            {
+                var command = new ReservationMarkAsDeliveredCommand(
+                    Id: id,
+                    DeliveredAt: request.DeliveredAt );
+
+                var res = await sender.Send( command, cancellationToken );
+                return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
+            } )
+            .Produces<Result<string>>();
+
         app.MapDelete( "{id}",
             async ( Guid id, ISender sender, CancellationToken cancellationToken ) =>
             {

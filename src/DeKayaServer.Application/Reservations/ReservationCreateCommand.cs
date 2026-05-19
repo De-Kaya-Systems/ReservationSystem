@@ -1,8 +1,7 @@
 ﻿using DeKayaServer.Application.Behaviors;
+using DeKayaServer.Application.CoolingRooms.Services;
 using DeKayaServer.Domain.Abstractions;
-using DeKayaServer.Domain.Constants;
 using DeKayaServer.Domain.CoolingRooms;
-using DeKayaServer.Domain.CoolingRoomStatus;
 using DeKayaServer.Domain.CustomerBalance;
 using DeKayaServer.Domain.CustomerBalance.Enum;
 using DeKayaServer.Domain.CustomerBalance.ValueObjects;
@@ -84,7 +83,7 @@ internal sealed class ReservationCreateCommandHandler(
     IReservationRepository reservationRepository,
     ICustomerRepository customerRepository,
     ICoolingRoomRepository coolingRoomRepository,
-    ICoolingRoomStatusRepository coolingRoomStatusRepository,
+    ICoolingRoomAvailabilityService coolingRoomAvailabilityService,
     ICustomerBalanceRepository customerBalanceRepository,
     IPaymentHistoryRepository paymentHistoryRepository,
     IUnitOfWork unitOfWork ) : IRequestHandler<ReservationCreateCommand, Result<string>>
@@ -103,26 +102,16 @@ internal sealed class ReservationCreateCommandHandler(
             return Result<string>.Failure( "Soğuk oda bulunamadı!" );
         }
 
-        var currentStatus = await coolingRoomStatusRepository.FirstOrDefaultAsync( x => x.Id == coolingRoom.RoomStatusId, cancellationToken );
-        if ( currentStatus is null )
-        {
-            return Result<string>.Failure( "Soğuk oda durumu bulunamadı!" );
-        }
-
-        if ( IsFaultyStatus( currentStatus.StatusName.Value ) )
-        {
-            return Result<string>.Failure( "Seçilen soğuk oda arıza/bakımda!" );
-        }
-
-        var hasOverlap = await reservationRepository.AnyAsync(
-            x => x.CoolingRoomId == request.CoolingRoomId
-            && x.DeliveryDate.Value <= request.PickUpDate
-            && request.DeliveryDate <= x.PickUpDate.Value,
+        var availabilityResult = await coolingRoomAvailabilityService.EnsureCanReserveAsync(
+            request.CoolingRoomId,
+            request.DeliveryDate,
+            request.PickUpDate,
+            excludedReservationId: null,
             cancellationToken );
 
-        if ( hasOverlap )
+        if ( !availabilityResult.IsSuccessful )
         {
-            return Result<string>.Failure( "Seçilen soğuk oda bu tarihler arasında rezerve edilmiş!" );
+            return availabilityResult;
         }
 
         var baseDailyPrice = coolingRoom.DailyPrice.Value;
@@ -171,19 +160,6 @@ internal sealed class ReservationCreateCommandHandler(
 
         reservationRepository.Add( reservation );
 
-        var targetStatusName = CoolingRoomStatusConstants.Reserved;
-
-        var targetStatus = await coolingRoomStatusRepository
-            .FirstOrDefaultAsync( x => x.StatusName.Value == targetStatusName, cancellationToken );
-
-        if ( targetStatus is null )
-        {
-            return Result<string>.Failure( $"Durum bulunamadı: {targetStatusName}" );
-        }
-
-        coolingRoom.SetRoomStatusId( targetStatus.Id );
-        coolingRoomRepository.Update( coolingRoom );
-
         var outstandingBalance = totalAmount - paidAmount;
 
         if ( outstandingBalance > 0 )
@@ -220,7 +196,4 @@ internal sealed class ReservationCreateCommandHandler(
         await unitOfWork.SaveChangesAsync( cancellationToken );
         return "Rezervasyon başarıyla oluşturuldu";
     }
-
-    private static bool IsFaultyStatus( string? statusName )
-        => string.Equals( statusName?.Trim(), CoolingRoomStatusConstants.Faulty, StringComparison.OrdinalIgnoreCase );
 }

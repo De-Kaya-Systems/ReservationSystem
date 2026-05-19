@@ -5,6 +5,7 @@
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.DeleteReservation
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.DetailReservation
 @using DeKayaServer.BlazorApp.Components.Pages.Reservation.CompleteReservation
+@using DeKayaServer.BlazorApp.Components.Pages.Reservation.MarkDeliveredReservation
 @using DeKayaServer.Contracts.Reservations
 @using DeKayaServer.Contracts.Reservations.Enum
 @inherits UserContextComponent
@@ -46,6 +47,14 @@
             <i class="bi bi-plus-circle"></i>
             <span>Ekle</span>
         </button>
+        @if ( CurrentUser.HasPermission( "reservation:create-past" ) )
+        {
+            <button type="button"
+                    class="btn btn-outline-warning btn-sm"
+                    @onclick="ShowCreatePastReservationDialog">
+                Geçmiş Tarihli Rezervasyon Gir
+            </button>
+        }
     </HeaderActions>
 
     <QuickGridContent>
@@ -170,6 +179,16 @@
                         </button>
                     }
 
+                    @if ( CurrentUser.HasPermission( "reservation:edit" ) && CanMarkAsDelivered( r ) )
+                    {
+                        <button type="button"
+                                class="btn btn-outline-warning btn-sm"
+                                @onclick="() => ShowMarkDeliveredReservationDialog( r )">
+                            <i class="bi bi-truck"></i>
+                            <span>Teslim Kaydı</span>
+                        </button>
+                    }
+
                     @if ( CurrentUser.HasPermission( "reservation:delete" ) )
                     {
                         var canDeleteReservation = CanDeleteReservation( r );
@@ -194,6 +213,13 @@
 </DeKayaQuickGrid>
 
 <CreateReservationDialog @ref="createReservationDialog"
+                         DialogTitle="Rezervasyon Ekle"
+                         AllowPastReservationDates="false"
+                         ReservationAdded="RefreshGridAsync" />
+
+<CreateReservationDialog @ref="createPastReservationDialog"
+                         DialogTitle="Geçmiş Tarihli Rezervasyon Gir"
+                         AllowPastReservationDates="true"
                          ReservationAdded="RefreshGridAsync" />
 
 <DetailReservationDialog @ref="detailReservationDialog"
@@ -206,6 +232,10 @@
 <CompleteReservationDialog @ref="completeReservationDialog"
                            ReservationId="@selectedReservationId"
                            ReservationCompleted="RefreshGridAsync" />
+
+<MarkDeliveredReservationDialog @ref="markDeliveredReservationDialog"
+                                ReservationId="@selectedReservationId"
+                                ReservationDelivered="RefreshGridAsync" />
 
 <DeleteReservationDialog @ref="deleteReservationDialog"
                          ReservationId="@selectedReservationId"
@@ -228,9 +258,11 @@
     private string operationStatusFilter = string.Empty;
 
     private CreateReservationDialog? createReservationDialog;
+    private CreateReservationDialog? createPastReservationDialog;
     private DetailReservationDialog? detailReservationDialog;
     private UpdateReservationDialog? updateReservationDialog;
     private CompleteReservationDialog? completeReservationDialog;
+    private MarkDeliveredReservationDialog? markDeliveredReservationDialog;
     private DeleteReservationDialog? deleteReservationDialog;
 
     private Guid? selectedReservationId;
@@ -364,6 +396,14 @@
         await createReservationDialog.ShowAsync();
     }
 
+    private async Task ShowCreatePastReservationDialog()
+    {
+        if ( createPastReservationDialog is not null )
+        {
+            await createPastReservationDialog.ShowAsync();
+        }
+    }
+
     private async Task ShowDetailReservationDialog( ReservationListItemDto reservation )
     {
         selectedReservationId = reservation.Id;
@@ -409,6 +449,21 @@
         await completeReservationDialog.ShowAsync();
     }
 
+    private async Task ShowMarkDeliveredReservationDialog( ReservationListItemDto reservation )
+    {
+        selectedReservationId = reservation.Id;
+
+        await InvokeAsync( StateHasChanged );
+        await Task.Yield();
+
+        if ( markDeliveredReservationDialog is null )
+        {
+            return;
+        }
+
+        await markDeliveredReservationDialog.ShowAsync();
+    }
+
     private async Task ShowDeleteReservationDialog( ReservationListItemDto reservation )
     {
         selectedReservationId = reservation.Id;
@@ -436,19 +491,14 @@
             return false;
         }
 
-        if ( reservation.OperationStatus == ReservationOperationFilterDto.WaitingPickup )
-        {
-            return true;
-        }
-
-        if ( reservationStatus == ReservationOperationStatusDto.Scheduled
-             && reservation.ReservationEnd <= DateTime.Now )
-        {
-            return true;
-        }
-
-        return false;
+        return reservationStatus == ReservationOperationStatusDto.DeliveredToCustomer
+               || reservation.OperationStatus == ReservationOperationFilterDto.WaitingPickup;
     }
+
+    private static bool CanMarkAsDelivered( ReservationListItemDto reservation )
+        => ( ReservationOperationStatusDto )reservation.Status == ReservationOperationStatusDto.Scheduled
+           && reservation.DeliveredAt is null
+           && reservation.ReservationStart <= DateTime.Now;
 
     private bool CanDeleteReservation( ReservationListItemDto reservation )
     {

@@ -1,11 +1,19 @@
 @using DeKayaServer.BlazorApp.Components.Common.Dialog
 @using DeKayaServer.BlazorApp.Models
+@using TS.Result
 @inject IReservationService reservationService
 @inject IApiResultPresenter apiResultPresenter
 
 <Dialog @ref="dialog"
         Title="Rezervasyonu sil">
     <ChildContent>
+        @if ( !string.IsNullOrWhiteSpace( dialogResultMessage ) )
+        {
+            <div class="alert @dialogResultCssClass py-2 px-3 mb-3">
+                @dialogResultMessage
+            </div>
+        }
+
         <div class="py-3">
             <p>Rezervasyon numarası ( <span class="fw-bolder">@ReservationNumber</span> ) silmek istediğinize emin misiniz?</p>
         </div>
@@ -14,12 +22,12 @@
                     class="btn btn-outline-secondary px-4 py-2 fw-semibold"
                     @onclick="HideAsync"
                     disabled="@isSubmit">
-                İptal
+                @( operationCompleted ? "Kapat" : "İptal" )
             </button>
             <button type="button"
                     class="btn btn-danger px-4 py-2 fw-semibold shadow-sm"
                     @onclick="HandleDeleteAsync"
-                    disabled="@isSubmit">
+                    disabled="@(isSubmit || operationCompleted)">
                 Sil
             </button>
         </div>
@@ -29,6 +37,9 @@
 @code {
     private Dialog? dialog;
     private bool isSubmit;
+    private string? dialogResultMessage;
+    private string dialogResultCssClass = "alert-info";
+    private bool operationCompleted;
 
     [Parameter] public Guid? ReservationId { get; set; }
     [Parameter] public string? ReservationNumber { get; set; }
@@ -36,8 +47,14 @@
 
     public async Task ShowAsync()
     {
-        if ( dialog is not null )
-            await dialog.ShowAsync();
+        if ( dialog is null )
+        {
+            return;
+        }
+
+        ClearDialogResultMessage();
+        operationCompleted = false;
+        await dialog.ShowAsync();
     }
 
     public async Task HideAsync()
@@ -49,7 +66,10 @@
     private async Task HandleDeleteAsync()
     {
         if ( ReservationId is null )
+        {
+            ShowDialogResultMessage( "Silinecek rezervasyon bulunamadı.", "alert-danger" );
             return;
+        }
 
         try
         {
@@ -58,16 +78,54 @@
 
             apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = true } );
 
+            var resultMessage = GetResultMessage(
+                result,
+                result.IsSuccessful
+                    ? "Rezervasyon başarıyla silindi."
+                    : "Rezervasyon silinemedi." );
+
             if ( !result.IsSuccessful )
+            {
+                ShowDialogResultMessage( resultMessage, "alert-danger" );
                 return;
+            }
+
+            ShowDialogResultMessage( resultMessage, "alert-success" );
+            operationCompleted = true;
 
             if ( ReservationDeleted.HasDelegate )
+            {
                 await ReservationDeleted.InvokeAsync();
+            }
         }
         finally
         {
             isSubmit = false;
-            await HideAsync();
         }
+    }
+
+    private void ShowDialogResultMessage( string message, string cssClass )
+    {
+        dialogResultMessage = message;
+        dialogResultCssClass = cssClass;
+    }
+
+    private void ClearDialogResultMessage()
+    {
+        dialogResultMessage = null;
+        dialogResultCssClass = "alert-info";
+    }
+
+    private static string GetResultMessage( Result<string> result, string fallback )
+    {
+        if ( result.IsSuccessful )
+        {
+            return string.IsNullOrWhiteSpace( result.Data )
+                ? fallback
+                : result.Data;
+        }
+
+        return result.ErrorMessages?.FirstOrDefault( x => !string.IsNullOrWhiteSpace( x ) )
+            ?? fallback;
     }
 }

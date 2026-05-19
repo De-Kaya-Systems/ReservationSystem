@@ -79,7 +79,7 @@
                                 <dd class="col-7 mb-2">@GetOperationText( room )</dd>
 
                                 <dt class="col-5 text-muted fw-normal">Sistem Durumu</dt>
-                                <dd class="col-7 mb-2">@Display( room.StatusName )</dd>
+                                <dd class="col-7 mb-2">@DisplayPhysicalStatus( room.StatusName )</dd>
 
                                 <dt class="col-5 text-muted fw-normal">Raf</dt>
                                 <dd class="col-7 mb-2">@(room.Shelf ? "Raflı" : "Rafsız")</dd>
@@ -291,6 +291,13 @@
 
         if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.DeliveredToCustomer
              && room.CurrentReservationEnd is not null
+             && room.CurrentReservationEnd.Value <= DateTime.Now )
+        {
+            return "Geri alım gecikti";
+        }
+
+        if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.DeliveredToCustomer
+             && room.CurrentReservationEnd is not null
              && room.CurrentReservationEnd.Value <= DateTime.Now.AddHours( 24 ) )
         {
             return "Geri alım bekliyor";
@@ -315,27 +322,22 @@
             return "Teslimat bekliyor";
         }
 
-        if ( IsAvailable( room ) )
-        {
-            return "Uygun";
-        }
-
-        if ( IsReserved( room ) )
+        if ( room.NextReservationStart is not null )
         {
             return "Rezerve";
         }
 
-        return Display( room.StatusName );
+        return "Uygun";
     }
 
     private static bool IsAvailable( CoolingRoomOverviewDto room )
-        => IsStatus( room.StatusName, "uygun" );
-
-    private static bool IsReserved( CoolingRoomOverviewDto room )
-        => IsStatus( room.StatusName, "reserve", "rezerve" );
+        => GetOperationText( room ) == "Uygun";
 
     private static bool IsFaulty( CoolingRoomOverviewDto room )
-        => IsStatus( room.StatusName, "arıza/bakım", "ariza/bakim", "arıza", "ariza", "bakım", "bakim" );
+        => IsFaultyStatusName( room.StatusName );
+
+    private static bool IsFaultyStatusName( string? statusName )
+        => IsStatus( statusName, "arıza/bakım", "ariza/bakim", "arıza", "ariza", "bakım", "bakim" );
 
     private static bool IsStatus( string? statusName, params string[] values )
     {
@@ -346,6 +348,21 @@
 
     private static string Display( string? value )
         => string.IsNullOrWhiteSpace( value ) ? "—" : value;
+
+    private static string DisplayPhysicalStatus( string? statusName )
+    {
+        if ( IsFaultyStatusName( statusName ) )
+        {
+            return "Arıza/Bakım";
+        }
+
+        if ( IsStatus( statusName, "uygun", "reserve", "rezerve", "booked" ) )
+        {
+            return "Uygun";
+        }
+
+        return Display( statusName );
+    }
 
     private static string DisplayDateTime( DateTime? value )
         => value.HasValue ? value.Value.ToString( "dd.MM.yyyy HH:mm" ) : "—";
@@ -364,6 +381,7 @@
             "Müşteride" => "bg-warning text-dark",
             "Teslimat bekliyor" => "bg-warning text-dark",
             "Geri alım bekliyor" => "bg-warning text-dark",
+            "Geri alım gecikti" => "bg-danger",
             "Teslim kaydı eksik" => "bg-danger",
             "Arıza/Bakım" => "bg-danger",
             _ => "bg-secondary"
@@ -377,6 +395,7 @@
             "Müşteride" => "bi-hourglass-split",
             "Teslimat bekliyor" => "bi-truck",
             "Geri alım bekliyor" => "bi-arrow-return-left",
+            "Geri alım gecikti" => "bi-exclamation-triangle",
             "Teslim kaydı eksik" => "bi-exclamation-triangle",
             "Arıza/Bakım" => "bi-exclamation-octagon",
             _ => "bi-info-circle"

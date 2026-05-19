@@ -4,6 +4,7 @@
 @using DeKayaServer.Contracts.Reservations.Enum
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
+@using TS.Result
 @inject IReservationService reservationService
 @inject ICustomerService customerService
 @inject ICoolingRoomService coolingRoomService
@@ -27,6 +28,13 @@
                           OnInvalidSubmit="HandleInvalidSubmit">
                     <DataAnnotationsValidator />
 
+                    @if ( !string.IsNullOrWhiteSpace( dialogResultMessage ) )
+                    {
+                        <div class="alert @dialogResultCssClass py-2 px-3 mb-3">
+                            @dialogResultMessage
+                        </div>
+                    }
+
                     <fieldset disabled="@IsReservationEnded">
                         @if ( IsReservationEnded )
                         {
@@ -41,7 +49,6 @@
                                 <InputDate class="form-control"
                                            @bind-Value="model.DeliveryDate"
                                            @bind-Value:after="OnDatesChanged"
-                                           @onfocus="OnDatesFocus"
                                            disabled="@IsDeliveryDateTimeInPast" />
                                 <ValidationMessage For="@(() => model.DeliveryDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
                             </div>
@@ -61,7 +68,6 @@
                                 <InputDate class="form-control"
                                            @bind-Value="model.PickUpDate"
                                            @bind-Value:after="OnDatesChanged"
-                                           @onfocus="OnDatesFocus"
                                            @attributes="PickUpDateAttributes" />
                                 <ValidationMessage For="@(() => model.PickUpDate)" class="fw-light fs-6 my-1 py-2 alert alert-danger" />
                             </div>
@@ -137,7 +143,7 @@
                                     <InputSelect class="form-select"
                                                  @bind-Value="model.CoolingRoomId"
                                                  @bind-Value:after="OnCoolingRoomChanged"
-                                                 disabled="@(!DatesSelected || IsDateRangeInvalid || isLoadingRooms || isEditingDates)">
+                                                 disabled="@(!DatesSelected || IsDateRangeInvalid || isLoadingRooms )">
                                         <option value="">Soğuk oda seçin</option>
                                         @foreach ( var room in rooms )
                                         {
@@ -313,12 +319,12 @@
                                 class="btn btn-outline-secondary px-4 py-2 fw-semibold"
                                 @onclick="HideAsync"
                                 disabled="@isSubmit">
-                            İptal
+                            @( operationCompleted ? "Kapat" : "İptal" )
                         </button>
 
                         <button type="submit"
                                 class="btn btn-primary px-4 py-2 fw-semibold shadow-sm"
-                                disabled="@(SubmitDisabled || IsReservationEnded)">
+                                disabled="@(SubmitDisabled || IsReservationEnded || operationCompleted)">
                             Güncelle
                         </button>
                     </div>
@@ -337,7 +343,6 @@
     private bool isSubmit;
     private bool isLoading;
     private bool isLoadingRooms;
-    private bool isEditingDates;
     private string? roomsInfoMessage;
 
     private UpdateReservationViewModel model = new();
@@ -356,6 +361,9 @@
     private bool hasPaidAmountExceedsTotalError;
     private bool hasPriceOverrideReasonError;
     private decimal existingPaidAtReservation;
+    private string? dialogResultMessage;
+    private string dialogResultCssClass = "alert-info";
+    private bool operationCompleted;
 
     private bool SubmitDisabled =>
         isSubmit
@@ -486,7 +494,9 @@
         existingPaidAtReservation = 0;
         rooms = [];
         roomsInfoMessage = SelectDatesMessage;
-        isEditingDates = false;
+        dialogResultMessage = null;
+        dialogResultCssClass = "alert-info";
+        operationCompleted = false;
     }
 
     private async Task LoadReservationAsync( Guid reservationId )
@@ -496,6 +506,7 @@
         {
             model = new UpdateReservationViewModel();
             RebindEditContext();
+            ShowDialogError( result.ErrorMessages?.FirstOrDefault() ?? "Rezervasyon bilgileri getirilemedi." );
             return;
         }
 
@@ -650,12 +661,14 @@
         if ( !DatesSelected )
         {
             ResetAvailableRooms( SelectDatesMessage );
+            ClearDialogResultMessage();
             return;
         }
 
         if ( IsDateRangeInvalid )
         {
             ResetAvailableRooms( DateRangeInvalidMessage );
+            ShowDialogError( DateRangeInvalidMessage );
             return;
         }
 
@@ -665,6 +678,7 @@
         if ( deliveryDate is null || pickUpDate is null )
         {
             ResetAvailableRooms( DatesMissingMessage );
+            ClearDialogResultMessage();
             return;
         }
 
@@ -672,13 +686,20 @@
 
         try
         {
-            var roomsResult = await coolingRoomService.GetAvailableAsync( deliveryDate.Value, pickUpDate.Value );
+            var roomsResult = await coolingRoomService.GetAvailableAsync(
+                deliveryDate.Value,
+                pickUpDate.Value,
+                ReservationId );
 
             if ( !roomsResult.IsSuccessful )
             {
+                var message = roomsResult.ErrorMessages?.FirstOrDefault() ?? "Uygun odalar getirilemedi.";
+
                 ResetAvailableRooms(
-                    message: roomsResult.ErrorMessages?.FirstOrDefault() ?? "Uygun odalar getirilemedi.",
+                    message: message,
                     clearSelectedRoom: false );
+
+                ShowDialogError( message );
                 return;
             }
 
@@ -688,29 +709,27 @@
                     .OrderBy( r => r.Name )
                     .ToList()
                 : [];
+            
+            var selectedRoomWasCleared = false;
 
-            if ( model.CoolingRoomId is not null && !rooms.Any( r => r.Id == model.CoolingRoomId ) )
+            if ( model.CoolingRoomId is not null
+                 && !rooms.Any( r => r.Id == model.CoolingRoomId.Value ) )
             {
-                var allRoomsResult = await coolingRoomService.GetAllAsync();
-                var selectedRoom = allRoomsResult.IsSuccessful && allRoomsResult.Data is not null
-                    ? allRoomsResult.Data.FirstOrDefault( x => x.Id == model.CoolingRoomId.Value )
-                    : null;
+                model.CoolingRoomId = null;
+                ResetPricing();
+                selectedRoomWasCleared = true;
 
-                if ( selectedRoom is not null )
-                {
-                    rooms.Add( new CoolingRoomOption( selectedRoom.Id, selectedRoom.RoomName, selectedRoom.DailyPrice ) );
-                    rooms = rooms.OrderBy( r => r.Name ).ToList();
-                }
-                else
-                {
-                    model.CoolingRoomId = null;
-                    ResetPricing();
-                }
+                ShowDialogWarning( "Seçili soğuk oda bu tarih aralığında uygun değil. Lütfen başka bir oda seçin." );
             }
 
             if ( rooms.Count == 0 )
             {
                 roomsInfoMessage = "Seçilen tarih aralığında uygun oda yok.";
+                ShowDialogWarning( roomsInfoMessage );
+            }
+            else if ( !selectedRoomWasCleared )
+            {
+                ClearDialogResultMessage();
             }
 
             ValidateReservationPricing();
@@ -721,15 +740,9 @@
         }
     }
 
-    private void OnDatesFocus()
-    {
-        isEditingDates = true;
-    }
-
     private async Task OnDatesChanged()
     {
         await LoadAvailableRoomsAsync();
-        isEditingDates = false;
         ValidateReservationPricing();
         await InvokeAsync( StateHasChanged );
     }
@@ -856,7 +869,7 @@
         var validationMessage = editContext.GetValidationMessages().FirstOrDefault();
         if ( !string.IsNullOrWhiteSpace( validationMessage ) )
         {
-            toastService.ShowError( validationMessage );
+            ShowDialogError( validationMessage );
         }
     }
 
@@ -871,19 +884,19 @@
 
         if ( model.CustomerId is null )
         {
-            toastService.ShowError( "Müşteri seçin!" );
+            ShowDialogError( "Müşteri seçin!" );
             return false;
         }
 
         if ( model.CoolingRoomId is null )
         {
-            toastService.ShowError( "Soğuk oda seçin!" );
+            ShowDialogError( "Soğuk oda seçin!" );
             return false;
         }
 
         if ( model.PaymentTypeId is null )
         {
-            toastService.ShowError( "Ödeme tipi seçin!" );
+            ShowDialogError( "Ödeme tipi seçin!" );
             return false;
         }
 
@@ -902,7 +915,7 @@
 
         if ( IsReservationEnded )
         {
-            toastService.ShowError( "Bitiş tarihi geçmiş rezervasyon güncellenemez." );
+            ShowDialogError( "Bitiş tarihi geçmiş rezervasyon güncellenemez." );
             return;
         }
 
@@ -915,30 +928,35 @@
 
             if ( hasPaidAmountExceedsTotalError || hasPriceOverrideReasonError )
             {
+                var validationMessage = editContext.GetValidationMessages().FirstOrDefault();
+                if ( !string.IsNullOrWhiteSpace( validationMessage ) )
+                {
+                    ShowDialogError( validationMessage );
+                }
                 return;
             }
 
             if ( model.DeliveryDate is null || model.PickUpDate is null )
             {
-                toastService.ShowError( "Lütfen rezervasyon başlangıç ve bitiş tarihlerini seçin." );
+                ShowDialogError( "Lütfen rezervasyon başlangıç ve bitiş tarihlerini seçin." );
                 return;
             }
 
             if ( !TimeOnly.TryParse( model.DeliveryTime, out var deliveryTime ) )
             {
-                toastService.ShowError( "Rezervasyon saatini doğru giriniz!" );
+                ShowDialogError( "Rezervasyon saatini doğru giriniz!" );
                 return;
             }
 
             if ( !TimeOnly.TryParse( model.PickUpTime, out var pickUpTime ) )
             {
-                toastService.ShowError( "Rezervasyon alma saatini doğru giriniz!" );
+                ShowDialogError( "Rezervasyon alma saatini doğru giriniz!" );
                 return;
             }
 
             if ( !paymentReceived && noPayPaymentTypeId is null )
             {
-                toastService.ShowError( "NoPay ödeme tipi bulunamadı." );
+                ShowDialogError( "NoPay ödeme tipi bulunamadı." );
                 return;
             }
 
@@ -974,23 +992,67 @@
             var result = await reservationService.UpdateAsync( ReservationId.Value, request );
             apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = true } );
 
+            var resultMessage = GetResultMessage(
+                result,
+                result.IsSuccessful
+                    ? "Rezervasyon başarıyla güncellendi."
+                    : "Rezervasyon güncellenemedi." );
+
             if ( !result.IsSuccessful )
             {
+                ShowDialogResultMessage( resultMessage, "alert-danger" );
                 return;
             }
+
+            ShowDialogResultMessage( resultMessage, "alert-success" );
+            operationCompleted = true;
 
             if ( ReservationUpdated.HasDelegate )
             {
                 await ReservationUpdated.InvokeAsync();
             }
-
-            await HideAsync();
-            InitForm();
         }
         finally
         {
             isSubmit = false;
         }
+    }
+
+    private void ShowDialogError( string message )
+    {
+        ShowDialogResultMessage( message, "alert-danger" );
+        toastService.ShowError( message );
+    }
+
+    private void ShowDialogWarning( string message )
+    {
+        ShowDialogResultMessage( message, "alert-warning" );
+        toastService.ShowWarning( message );
+    }
+
+    private void ShowDialogResultMessage( string message, string cssClass )
+    {
+        dialogResultMessage = message;
+        dialogResultCssClass = cssClass;
+    }
+
+    private void ClearDialogResultMessage()
+    {
+        dialogResultMessage = null;
+        dialogResultCssClass = "alert-info";
+    }
+
+    private static string GetResultMessage( Result<string> result, string fallback )
+    {
+        if ( result.IsSuccessful )
+        {
+            return string.IsNullOrWhiteSpace( result.Data )
+                ? fallback
+                : result.Data;
+        }
+
+        return result.ErrorMessages?.FirstOrDefault( x => !string.IsNullOrWhiteSpace( x ) )
+            ?? fallback;
     }
 
     private sealed class UpdateReservationViewModel
