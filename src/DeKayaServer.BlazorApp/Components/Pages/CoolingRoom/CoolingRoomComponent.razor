@@ -172,22 +172,7 @@
                     <div class="d-flex justify-content-center mt-3">
                         <div class="cr-ring" style="--p:@GetProgress( room ); --accent:@GetAccent( room );">
                             <div class="cr-ring__center text-center px-2">
-                                @if ( room.Status == CoolingRoomStatus.Available )
-                                {
-                                    <div class="fw-semibold">Müsait</div>
-
-                                    @if ( room.NextReservationStart is not null )
-                                    {
-                                        <div class="small text-body-secondary">
-                                            Sonraki: @FormatDateTime( room.NextReservationStart.Value )
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="small text-body-secondary">Rezervasyon yok</div>
-                                    }
-                                }
-                                else if ( room.Status == CoolingRoomStatus.Faulty )
+                                @if ( room.Status == CoolingRoomStatus.Faulty )
                                 {
                                     <div class="fw-semibold text-danger">Arıza/Bakım</div>
 
@@ -201,6 +186,12 @@
                                     {
                                         <div class="small text-body-secondary">Servis kaydı var</div>
                                     }
+                                }
+                                else if ( GetRoomDisplayStatus( room ) == CoolingRoomStatus.Available )
+                                {
+                                    <div class="fw-semibold">Müsait</div>
+
+                                    <div class="small text-body-secondary">Rezervasyon yok</div>
                                 }
                                 else if ( room.CurrentReservationEnd is not null )
                                 {
@@ -278,7 +269,7 @@
                                 <span class="fw-medium">@FormatDateTime( room.NextAvailableAt.Value )</span>
                             </div>
                         }
-                        else if ( room.Status == CoolingRoomStatus.Available )
+                        else if ( GetRoomDisplayStatus( room ) == CoolingRoomStatus.Available )
                         {
                             <div class="d-flex justify-content-between gap-3 mt-2">
                                 <span class="text-body-secondary">Müsaitlik</span>
@@ -356,7 +347,7 @@
             .Where( r => shelfFilter == ShelfFilter.All
                 || ( shelfFilter == ShelfFilter.Shelf && r.Shelf )
                 || ( shelfFilter == ShelfFilter.NoShelf && !r.Shelf ) )
-            .Where( r => statusFilter is null || r.Status == statusFilter.Value )
+            .Where( r => statusFilter is null || GetRoomDisplayStatus( r ) == statusFilter.Value )
             .Where( r =>
             {
                 var term = searchText.Trim();
@@ -502,8 +493,7 @@
         return key switch
         {
             "uygun" => CoolingRoomStatus.Available,
-            "reserve" or "rezerve" => CoolingRoomStatus.Reserved,
-            "booked" => CoolingRoomStatus.Occupied,
+            "reserve" or "rezerve" or "booked" => CoolingRoomStatus.Available,
             "arıza/bakım" or "ariza/bakim" or "arıza" or "ariza" or "bakım" or "bakim" => CoolingRoomStatus.Faulty,
             _ => CoolingRoomStatus.Available
         };
@@ -537,6 +527,13 @@
 
         if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.DeliveredToCustomer
              && room.CurrentReservationEnd is not null
+             && room.CurrentReservationEnd.Value <= DateTime.Now )
+        {
+            return "Geri alım gecikti";
+        }
+
+        if ( room.CurrentReservationStatus == ( int )ReservationOperationStatusDto.DeliveredToCustomer
+             && room.CurrentReservationEnd is not null
              && room.CurrentReservationEnd.Value <= DateTime.Now.AddHours( 24 ) )
         {
             return "Geri alım bekliyor";
@@ -561,25 +558,22 @@
             return "Teslimat bekliyor";
         }
 
-        if ( room.Status == CoolingRoomStatus.Available )
-        {
-            return "Uygun";
-        }
-
-        if ( room.Status == CoolingRoomStatus.Reserved )
+        if ( room.NextReservationStart is not null )
         {
             return "Rezerve";
         }
 
-        if ( room.Status == CoolingRoomStatus.Occupied )
-        {
-            return "Müşteride";
-        }
-
-        return !string.IsNullOrWhiteSpace( room.StatusName )
-            ? room.StatusName
-            : "-";
+        return "Uygun";
     }
+
+    private static CoolingRoomStatus GetRoomDisplayStatus( CoolingRoomViewModel room )
+        => GetRoomOperationText( room ) switch
+        {
+            "Arıza/Bakım" => CoolingRoomStatus.Faulty,
+            "Rezerve" => CoolingRoomStatus.Reserved,
+            "Müşteride" or "Geri alım bekliyor" or "Geri alım gecikti" or "Teslim kaydı eksik" or "Teslimat bekliyor" => CoolingRoomStatus.Occupied,
+            _ => CoolingRoomStatus.Available
+        };
 
     private static string GetStatusBadgeClass( CoolingRoomViewModel room )
         => GetRoomOperationText( room ) switch
@@ -587,6 +581,7 @@
             "Uygun" => "text-bg-success",
             "Müşteride" => "text-bg-warning",
             "Geri alım bekliyor" => "text-bg-warning",
+            "Geri alım gecikti" => "text-bg-danger",
             "Teslimat bekliyor" => "text-bg-warning",
             "Teslim kaydı eksik" => "text-bg-danger",
             "Arıza/Bakım" => "text-bg-danger",
@@ -600,6 +595,7 @@
             "Uygun" => "bi-check2-circle",
             "Müşteride" => "bi-hourglass-split",
             "Geri alım bekliyor" => "bi-arrow-return-left",
+            "Geri alım gecikti" => "bi-exclamation-triangle",
             "Teslimat bekliyor" => "bi-truck",
             "Teslim kaydı eksik" => "bi-exclamation-triangle",
             "Arıza/Bakım" => "bi-exclamation-octagon",
@@ -611,7 +607,7 @@
     {
         var now = DateTime.Now;
 
-        if ( room.Status == CoolingRoomStatus.Available )
+        if ( GetRoomDisplayStatus( room ) == CoolingRoomStatus.Available )
         {
             return 0;
         }
@@ -694,7 +690,8 @@
             return "#f39c12";
         }
 
-        if ( operationText == "Teslim kaydı eksik" )
+        if ( operationText == "Teslim kaydı eksik"
+             || operationText == "Geri alım gecikti" )
         {
             return "#e74c3c";
         }

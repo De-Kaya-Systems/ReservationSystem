@@ -148,6 +148,12 @@ public sealed class Reservation : Entity
         DeliveredAt = new DeliveredAt( DateTime.Now );
     }
 
+    public void MarkAsDelivered( DeliveredAt deliveredAt )
+    {
+        Status = ReservationStatus.DeliveredToCustomer;
+        DeliveredAt = deliveredAt;
+    }
+
     public void MarkAsPickedUp()
     {
         Status = ReservationStatus.PickedUpFromCustomer;

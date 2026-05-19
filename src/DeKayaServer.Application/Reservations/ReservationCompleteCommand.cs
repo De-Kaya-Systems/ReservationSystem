@@ -14,6 +14,7 @@ using DeKayaServer.Domain.Reservations.Enum;
 using DeKayaServer.Domain.Reservations.ValueObjects;
 using FluentValidation;
 using GenericRepository;
+using Microsoft.EntityFrameworkCore;
 using TS.MediatR;
 using TS.Result;
 
@@ -116,6 +117,11 @@ internal sealed class ReservationCompleteCommandHandler(
             return Result<string>.Failure( "İptal edilmiş rezervasyon tamamlanamaz." );
         }
 
+        if ( reservation.Status != ReservationStatus.DeliveredToCustomer )
+        {
+            return Result<string>.Failure( "Oda müşteriye teslim edilmeden rezervasyon tamamlanamaz. Önce rezervasyonu müşteriye teslim edildi olarak işaretleyin." );
+        }
+
         var coolingRoom = await coolingRoomRepository.FirstOrDefaultAsync( x => x.Id == reservation.CoolingRoomId.Value, cancellationToken );
 
         if ( coolingRoom is null )
@@ -136,10 +142,10 @@ internal sealed class ReservationCompleteCommandHandler(
         var newOutstandingAmount = totalAmount - newPaidAmount;
         reservation.SetPaidAtReservation( new PaidAtReservation( newPaidAmount ) );
 
-        var deliverdAt = new DeliveredAt( request.DeliveredAt );
+        var deliveredAt = new DeliveredAt( request.DeliveredAt );
         var pickedUpAt = new PickedUpAt( request.PickedUpAt );
 
-        reservation.CompleteReservation( deliverdAt, pickedUpAt );
+        reservation.CompleteReservation( deliveredAt, pickedUpAt );
 
         reservation.SetNote(
             string.IsNullOrWhiteSpace( request.Note )
@@ -172,9 +178,18 @@ internal sealed class ReservationCompleteCommandHandler(
             return roomStatusResult;
         }
 
+        var futureReservationWarning = request.HasFault
+            ? await BuildFutureReservationWarningAsync( coolingRoom, request, cancellationToken ) : null;
         await unitOfWork.SaveChangesAsync( cancellationToken );
 
-        return "Rezervasyon başarıyla tamamlandı.";
+        var successMessage = "Rezervasyon başarıyla tamamlandı.";
+
+        if ( !string.IsNullOrWhiteSpace( futureReservationWarning ) )
+        {
+            successMessage = $"{successMessage} {futureReservationWarning}";
+        }
+
+        return successMessage;
     }
 
     private async Task<Result<string>> UpdateCustomerBalanceAsync(
@@ -307,4 +322,39 @@ internal sealed class ReservationCompleteCommandHandler(
 
         return Result<string>.Succeed( string.Empty );
     }
+
+    private async Task<string?> BuildFutureReservationWarningAsync(
+        CoolingRoom coolingRoom,
+        ReservationCompleteCommand request,
+        CancellationToken cancellationToken )
+    {
+        var pickedUpDate = DateOnly.FromDateTime( request.PickedUpAt );
+
+        var futureReservations = await reservationRepository.GetAll()
+            .Where( x => x.Id != request.Id
+                && x.CoolingRoomId == coolingRoom.Id
+                && x.Status == ReservationStatus.Scheduled
+                && x.DeliveryDate.Value >= pickedUpDate )
+            .OrderBy( x => x.DeliveryDate.Value )
+            .ThenBy( x => x.DeliveryTime.Value )
+            .Select( x => new
+            {
+                ReservationNumber = x.ReservationNumber.Value,
+                DeliveryDate = x.DeliveryDate.Value,
+                DeliveryTime = x.DeliveryTime.Value
+            } )
+            .ToListAsync( cancellationToken );
+
+        if ( futureReservations.Count == 0 )
+        {
+            return null;
+        }
+
+        var firstReservation = futureReservations.First();
+
+        return futureReservations.Count == 1
+            ? $"Dikkat: Bu oda Arıza/Bakım durumuna alındı. Aynı oda için {firstReservation.DeliveryDate:dd.MM.yyyy} {firstReservation.DeliveryTime:HH\\:mm} tarihinde {firstReservation.ReservationNumber} numaralı gelecek rezervasyon bulunuyor. Rezervasyonu başka bir odaya taşımanız veya bakım tamamlandıktan sonra odayı Uygun yapmanız gerekir."
+            : $"Dikkat: Bu oda Arıza/Bakım durumuna alındı. Aynı oda için {futureReservations.Count} adet gelecek rezervasyon bulunuyor. İlk rezervasyon: {firstReservation.DeliveryDate:dd.MM.yyyy} {firstReservation.DeliveryTime:HH\\:mm}, rezervasyon no: {firstReservation.ReservationNumber}. Rezervasyonları kontrol etmeniz gerekir.";
+    }
+
 }

@@ -4,13 +4,17 @@ using DeKayaServer.Domain.CoolingRoomMaintenance;
 using DeKayaServer.Domain.CoolingRooms;
 using DeKayaServer.Domain.CoolingRoomStatus;
 using DeKayaServer.Domain.Reservations;
+using DeKayaServer.Domain.Reservations.Enum;
 using Microsoft.EntityFrameworkCore;
 using TS.MediatR;
 using TS.Result;
 
 namespace DeKayaServer.Application.CoolingRooms.SpecialQuery;
 
-public sealed record CoolingRoomGetAvailableQuery( DateOnly From, DateOnly To ) : IRequest<Result<List<CoolingRoomDto>>>;
+public sealed record CoolingRoomGetAvailableQuery(
+    DateOnly From,
+    DateOnly To,
+    Guid? ExcludedReservationId = null ) : IRequest<Result<List<CoolingRoomDto>>>;
 
 internal sealed class CoolingRoomGetAvailableQueryHandler(
     ICoolingRoomRepository coolingRoomRepository,
@@ -39,8 +43,12 @@ internal sealed class CoolingRoomGetAvailableQueryHandler(
           where m == null || !( m.MaintenanceDateStart.Value <= request.To && request.From <= m.MaintenanceDateEnd.Value )
           where !reservations.Any( res =>
               res.CoolingRoomId == r.Entity.Id
+              && res.Status != ReservationStatus.Completed
+              && res.Status != ReservationStatus.Cancelled
               && res.DeliveryDate.Value <= request.To
-              && request.From <= res.PickUpDate.Value )
+              && request.From <= res.PickUpDate.Value
+              && ( request.ExcludedReservationId == null || res.Id != request.ExcludedReservationId.Value ) )
+
           select new CoolingRoomDto
           {
               Id = r.Entity.Id,

@@ -12,9 +12,7 @@ public interface ICoolingRoomService
     Task<Result<CoolingRoomDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default );
     Task<Result<List<CoolingRoomDto>>> GetAllAsync( CancellationToken cancellationToken = default );
     Task<Result<List<CoolingRoomOverviewDto>>> GetOverviewAsync( CancellationToken cancellationToken = default );
-
-    Task<Result<List<CoolingRoomDto>>> GetAvailableAsync( DateOnly from, DateOnly to, CancellationToken cancellationToken = default );
-
+    Task<Result<List<CoolingRoomDto>>> GetAvailableAsync( DateOnly from, DateOnly to, Guid? excludedReservationId = null, CancellationToken cancellationToken = default );
     Task<Result<string>> DeleteAsync( Guid id, CancellationToken cancellationToken = default );
 }
 
@@ -70,8 +68,15 @@ public class CoolingRoomService( IApiClient apiClient ) : ICoolingRoomService
         public List<T> Value { get; set; } = [];
     }
 
-    public Task<Result<List<CoolingRoomDto>>> GetAvailableAsync( DateOnly from, DateOnly to, CancellationToken cancellationToken = default )
-    => apiClient.GetAsync<List<CoolingRoomDto>>(
-        $"{EndpointConstants.CoolingRoomsAvailable}?from={from:yyyy-MM-dd}&to={to:yyyy-MM-dd}",
-        cancellationToken );
+    public Task<Result<List<CoolingRoomDto>>> GetAvailableAsync( DateOnly from, DateOnly to, Guid? excludedReservationId = null, CancellationToken cancellationToken = default )
+    {
+        var url = $"{EndpointConstants.CoolingRoomsAvailable}?from={from:yyyy-MM-dd}&to={to:yyyy-MM-dd}";
+
+        if ( excludedReservationId is not null )
+        {
+            url += $"&excludedReservationId={excludedReservationId.Value}";
+        }
+
+        return apiClient.GetAsync<List<CoolingRoomDto>>( url, cancellationToken );
+    }
 }

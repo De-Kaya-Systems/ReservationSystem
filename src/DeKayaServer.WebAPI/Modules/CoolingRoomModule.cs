@@ -48,6 +48,27 @@ public static class CoolingRoomModule
             } )
             .Produces<Result<List<CoolingRoomOverviewDto>>>();
 
+        app.MapGet( "available",
+            async (
+                DateOnly from,
+                DateOnly to,
+                Guid? excludedReservationId,
+                ISender sender,
+                CancellationToken cancellationToken ) =>
+            {
+                var response = await sender.Send(
+                    new CoolingRoomGetAvailableQuery(
+                        From: from,
+                        To: to,
+                        ExcludedReservationId: excludedReservationId ),
+                    cancellationToken );
+
+                return response.IsSuccessful
+                    ? Results.Ok( response )
+                    : Results.BadRequest( response );
+            } )
+            .Produces<Result<List<CoolingRoomDto>>>();
+
         app.MapGet( "{id}",
             async ( Guid id, ISender sender, CancellationToken cancellationToken ) =>
             {
@@ -55,13 +76,5 @@ public static class CoolingRoomModule
                 return res.IsSuccessful ? Results.Ok( res ) : Results.InternalServerError( res );
             } )
             .Produces<Result<CoolingRoomDto>>();
-
-        app.MapGet( "available",
-            async ( DateOnly from, DateOnly to, ISender sender, CancellationToken cancellationToken ) =>
-            {
-                var res = await sender.Send( new CoolingRoomGetAvailableQuery( from, to ), cancellationToken );
-                return res.IsSuccessful ? Results.Ok( res ) : Results.BadRequest( res );
-            } )
-            .Produces<Result<List<CoolingRoomDto>>>();
     }
 }

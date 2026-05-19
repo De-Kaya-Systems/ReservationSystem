@@ -2,6 +2,7 @@
 @using DeKayaServer.BlazorApp.Models
 @using DeKayaServer.Contracts.PaymentTypes
 @using DeKayaServer.Contracts.Reservations
+@using TS.Result
 @inject IReservationService reservationService
 @inject IPaymentTypeService paymentTypeService
 @inject IApiResultPresenter apiResultPresenter
@@ -25,6 +26,13 @@
         {
             <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
                 <DataAnnotationsValidator />
+
+                @if ( !string.IsNullOrWhiteSpace( dialogResultMessage ) )
+                {
+                    <div class="alert @dialogResultCssClass py-2 px-3 mb-3">
+                        @dialogResultMessage
+                    </div>
+                }
 
                 @if ( RequiresDeliveredAtInput )
                 {
@@ -113,7 +121,7 @@
                         else
                         {
                             <div class="small text-body-secondary">
-                                Ödeme alınmadı. Ödeme tipi NoPay olarak gönderilecek.
+                                Ödeme alınmadı. Ödeme tipi Borç olarak gönderilecek.
                             </div>
                         }
                     </div>
@@ -168,12 +176,12 @@
                             class="btn btn-outline-secondary px-4 py-2 fw-semibold"
                             @onclick="HideAsync"
                             disabled="@isSubmit">
-                        İptal
+                        @(operationCompleted ? "Kapat" : "İptal")
                     </button>
 
                     <button type="submit"
                             class="btn btn-outline-success px-4 py-2 fw-semibold"
-                            disabled="@isSubmit">
+                            disabled="@(isSubmit || operationCompleted)">
                         Rezervasyonu Tamamla
                     </button>
                 </div>
@@ -192,6 +200,10 @@
 
     private List<PaymentTypeOption> paymentTypes = [];
     private Guid? noPayPaymentTypeId;
+
+    private string? dialogResultMessage;
+    private string dialogResultCssClass = "alert-info";
+    private bool operationCompleted;
 
     [Parameter] public Guid? ReservationId { get; set; }
     [Parameter] public EventCallback ReservationCompleted { get; set; }
@@ -246,6 +258,10 @@
     private void InitForm()
     {
         reservation = null;
+        dialogResultMessage = null;
+        dialogResultCssClass = "alert-info";
+        operationCompleted = false;
+
         model = new CompleteReservationViewModel
         {
             PickedUpDate = DateOnly.FromDateTime( DateTime.Now ),
@@ -279,7 +295,7 @@
 
         if ( !result.IsSuccessful || result.Data is null )
         {
-            toastService.ShowError( result.ErrorMessages?.FirstOrDefault() ?? "Rezervasyon getirilemedi." );
+            ShowDialogError( result.ErrorMessages?.FirstOrDefault() ?? "Rezervasyon getirilemedi." );
             return;
         }
 
@@ -334,37 +350,37 @@
 
         if ( pickedUpAt < deliveredAt )
         {
-            toastService.ShowError( "Geri alım tarihi teslim tarihinden önce olamaz." );
+            ShowDialogError( "Geri alım tarihi teslim tarihinden önce olamaz." );
             return;
         }
 
         if ( model.PaymentTypeId is null )
         {
-            toastService.ShowError( "Ödeme tipi seçilmelidir." );
+            ShowDialogError( "Ödeme tipi seçilmelidir." );
             return;
         }
 
         if ( model.PaymentReceived && model.PaymentAmount <= 0 )
         {
-            toastService.ShowError( "Ödeme alındıysa ödeme tutarı 0'dan büyük olmalıdır." );
+            ShowDialogError( "Ödeme alındıysa ödeme tutarı 0'dan büyük olmalıdır." );
             return;
         }
 
         if ( !model.PaymentReceived && model.PaymentAmount != 0 )
         {
-            toastService.ShowError( "Ödeme alınmadıysa ödeme tutarı 0 olmalıdır." );
+            ShowDialogError( "Ödeme alınmadıysa ödeme tutarı 0 olmalıdır." );
             return;
         }
 
         if ( model.PaymentAmount > RemainingAmount )
         {
-            toastService.ShowError( "Alınan ödeme kalan bakiyeden büyük olamaz." );
+            ShowDialogError( "Alınan ödeme kalan bakiyeden büyük olamaz." );
             return;
         }
 
         if ( model.HasFault && string.IsNullOrWhiteSpace( model.FaultDescription ) )
         {
-            toastService.ShowError( "Arıza varsa arıza açıklaması girilmelidir." );
+            ShowDialogError( "Arıza varsa arıza açıklaması girilmelidir." );
             return;
         }
 
@@ -388,17 +404,30 @@
             var result = await reservationService.CompleteAsync( ReservationId.Value, request );
             apiResultPresenter.Present( result, new ApiPresentationOptions { ShowSuccess = true } );
 
+            var resultMessage = GetResultMessage(
+                result,
+                result.IsSuccessful
+                    ? "Rezervasyon başarıyla tamamlandı."
+                    : "Rezervasyon tamamlanamadı." );
+
             if ( !result.IsSuccessful )
             {
+                ShowDialogResultMessage( resultMessage, "alert-danger" );
                 return;
             }
+
+            var isWarningMessage = resultMessage.Contains( "Dikkat:", StringComparison.OrdinalIgnoreCase );
+
+            ShowDialogResultMessage(
+                resultMessage,
+                isWarningMessage ? "alert-warning" : "alert-success" );
+
+            operationCompleted = true;
 
             if ( ReservationCompleted.HasDelegate )
             {
                 await ReservationCompleted.InvokeAsync();
             }
-
-            await HideAsync();
         }
         finally
         {
@@ -419,13 +448,13 @@
         {
             if ( model.DeliveredDate is null )
             {
-                toastService.ShowError( "Gerçek teslim tarihini seçin." );
+                ShowDialogError( "Gerçek teslim tarihini seçin." );
                 return false;
             }
 
             if ( !TimeOnly.TryParse( model.DeliveredTime, out var deliveredTime ) )
             {
-                toastService.ShowError( "Gerçek teslim saatini doğru girin." );
+                ShowDialogError( "Gerçek teslim saatini doğru girin." );
                 return false;
             }
 
@@ -434,18 +463,43 @@
 
         if ( model.PickedUpDate is null )
         {
-            toastService.ShowError( "Gerçek geri alım tarihini seçin." );
+            ShowDialogError( "Gerçek geri alım tarihini seçin." );
             return false;
         }
 
         if ( !TimeOnly.TryParse( model.PickedUpTime, out var pickedUpTime ) )
         {
-            toastService.ShowError( "Gerçek geri alım saatini doğru girin." );
+            ShowDialogError( "Gerçek geri alım saatini doğru girin." );
             return false;
         }
 
         pickedUpAt = model.PickedUpDate.Value.ToDateTime( pickedUpTime );
         return true;
+    }
+
+    private void ShowDialogError( string message )
+    {
+        ShowDialogResultMessage( message, "alert-danger" );
+        toastService.ShowError( message );
+    }
+
+    private void ShowDialogResultMessage( string message, string cssClass )
+    {
+        dialogResultMessage = message;
+        dialogResultCssClass = cssClass;
+    }
+
+    private static string GetResultMessage( Result<string> result, string fallback )
+    {
+        if ( result.IsSuccessful )
+        {
+            return string.IsNullOrWhiteSpace( result.Data )
+                ? fallback
+                : result.Data;
+        }
+
+        return result.ErrorMessages?.FirstOrDefault( x => !string.IsNullOrWhiteSpace( x ) )
+            ?? fallback;
     }
 
     private static bool IsNoPay( string? name )

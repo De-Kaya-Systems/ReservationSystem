@@ -12,6 +12,7 @@ public interface IReservationService
     Task<Result<string>> CreateAsync( CreateReservationRequest request, CancellationToken cancellationToken = default );
     Task<Result<string>> UpdateAsync( Guid Id, UpdateReservationRequest request, CancellationToken cancellationToken = default );
     Task<Result<string>> CompleteAsync( Guid id, CompleteReservationRequest request, CancellationToken cancellationToken = default );
+    Task<Result<string>> MarkAsDeliveredAsync( Guid id, MarkReservationDeliveredRequest request, CancellationToken cancellationToken = default );
     Task<Result<ReservationDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default );
     Task<Result<List<ReservationDto>>> GetAllAsync( CancellationToken cancellationToken = default );
     Task<Result<string>> DeleteAsync( Guid id, CancellationToken cancellationToken = default );
@@ -75,6 +76,12 @@ public class ReservationService( IApiClient apiClient ) : IReservationService
         $"{EndpointConstants.Reservations}/{id}/complete",
         request,
         cancellationToken );
+
+    public Task<Result<string>> MarkAsDeliveredAsync( Guid id, MarkReservationDeliveredRequest request, CancellationToken cancellationToken = default )
+        => apiClient.PutAsync<MarkReservationDeliveredRequest, string>(
+            $"{EndpointConstants.Reservations}/{id}/mark-delivered",
+            request,
+            cancellationToken );
 
     public Task<Result<ReservationDto>> GetByIdAsync( Guid id, CancellationToken cancellationToken = default )
         => apiClient.GetAsync<ReservationDto>( $"{EndpointConstants.Reservations}/{id}", cancellationToken );
