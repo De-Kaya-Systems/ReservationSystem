@@ -112,7 +112,12 @@
                 </div>
             </div>
         </div>
-
+        @if ( !string.IsNullOrWhiteSpace( debugSortInfo ) )
+        {
+            <div class="px-3 py-2 small text-muted border-bottom">
+                @debugSortInfo
+            </div>
+        }
         <QuickGrid 
                 TGridItem="ReservationListItemDto"
                 @ref="grid"
@@ -131,13 +136,18 @@
 
             <PropertyColumn Property="@(r => r.ReservationStart)"
                             Title="Rezervasyon Başlangıç"
-                            Format="dd-MM-yyyy - HH:mm" />
+                            Format="dd-MM-yyyy - HH:mm"
+                            Sortable="true"/>
 
             <PropertyColumn Property="@(r => r.ReservationEnd)"
                             Title="Rezervasyon Bitiş"
-                            Format="dd-MM-yyyy - HH:mm" />
+                            Format="dd-MM-yyyy - HH:mm"
+                            Sortable="true"/>
 
-            <TemplateColumn Title="Operasyon Durumu" Context="r">
+            <TemplateColumn 
+                Title="Operasyon Durumu"
+                Context="r"
+                SortBy="GridSort<ReservationListItemDto>.ByAscending(r => r.OperationStatus)">
                 <span class="badge @GetOperationStatusBadgeClass( r ) p-2">
                     @Display( r.OperationStatusText )
                 </span>
@@ -251,6 +261,7 @@
     private int totalItemCount;
     private int pageSize = 25;
     private PaginationState pagination = new() { ItemsPerPage = 25 };
+    private string debugSortInfo = string.Empty;
 
     private string customerNameFilter = string.Empty;
     private DateOnly? reservationStartDateFilter;
@@ -305,11 +316,30 @@
                 ? 0
                 : request.StartIndex / resolvedPageSize;
 
+            // var sortBy = ResolveSortBy( request );
+            // var sortDirection = ResolveSortDirection( request );
+            // debugSortInfo = $"SortBy: {sortBy}, Direction: {sortDirection}";
+
+            var sortProperties = request.GetSortByProperties().ToList();
+
+            var rawSortInfo = sortProperties.Count == 0
+                ? "No sort properties"
+                : string.Join(
+                    ", ",
+                    sortProperties.Select( x => $"{x.PropertyName} / {x.Direction}" ) );
+
+            var sortBy = ResolveSortBy( request );
+            var sortDirection = ResolveSortDirection( request );
+
+            debugSortInfo = $"Raw: {rawSortInfo} | SortBy: {sortBy}, SortDirection: {sortDirection}";
+
             var result = await reservationService.GetListAsync(
                 customerName: customerNameFilter,
                 reservationStartDate: reservationStartDateFilter,
                 reservationEndDate: reservationEndDateFilter,
                 operationStatus: SelectedOperationStatus,
+                sortBy: sortBy,
+                sortDirection: sortDirection,
                 pageIndex: pageIndex,
                 pageSize: resolvedPageSize,
                 cancellationToken: CancellationToken.None );
@@ -341,6 +371,31 @@
             }
         }
     }
+
+    private static ReservationListSortByDto ResolveSortBy(
+        GridItemsProviderRequest<ReservationListItemDto> request )
+    {
+        return request.SortByColumn?.Title switch
+        {
+            "Rezervasyon Başlangıç" => ReservationListSortByDto.ReservationStart,
+            "Rezervasyon Bitiş" => ReservationListSortByDto.ReservationEnd,
+            "Operasyon Durumu" => ReservationListSortByDto.OperationStatus,
+            _ => ReservationListSortByDto.Smart
+        };
+    }
+
+    private static ReservationListSortDirectionDto ResolveSortDirection(
+        GridItemsProviderRequest<ReservationListItemDto> request )
+    {
+        var sort = request.GetSortByProperties()
+            .FirstOrDefault();
+
+        return sort.Direction == SortDirection.Descending
+            ? ReservationListSortDirectionDto.Descending
+            : ReservationListSortDirectionDto.Ascending;
+    }
+
+
 
     private async Task ApplyFiltersAsync()
     {

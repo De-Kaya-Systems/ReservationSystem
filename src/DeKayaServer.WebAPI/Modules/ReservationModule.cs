@@ -23,6 +23,8 @@ public static class ReservationModule
                 DateOnly? reservationStartDate,
                 DateOnly? reservationEndDate,
                 ReservationOperationFilterDto? operationStatus,
+                ReservationListSortByDto? sortBy,
+                ReservationListSortDirectionDto? sortDirection,
                 int? pageIndex,
                 int? pageSize,
                 ISender sender,
@@ -34,6 +36,8 @@ public static class ReservationModule
                         ReservationStartDate: reservationStartDate,
                         ReservationEndDate: reservationEndDate,
                         OperationStatus: operationStatus,
+                        SortBy: sortBy ?? ReservationListSortByDto.Smart,
+                        SortDirection: sortDirection ?? ReservationListSortDirectionDto.Ascending,
                         PageIndex: pageIndex ?? 0,
                         PageSize: pageSize ?? 25 ),
                     cancellationToken );

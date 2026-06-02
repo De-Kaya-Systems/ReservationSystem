@@ -21,6 +21,8 @@ public interface IReservationService
         DateOnly? reservationStartDate,
         DateOnly? reservationEndDate,
         ReservationOperationFilterDto? operationStatus,
+        ReservationListSortByDto sortBy,
+        ReservationListSortDirectionDto sortDirection,
         int pageIndex,
         int pageSize,
         CancellationToken cancellationToken = default );
@@ -34,6 +36,8 @@ public class ReservationService( IApiClient apiClient ) : IReservationService
         DateOnly? reservationStartDate,
         DateOnly? reservationEndDate,
         ReservationOperationFilterDto? operationStatus,
+        ReservationListSortByDto sortBy,
+        ReservationListSortDirectionDto sortDirection,
         int pageIndex,
         int pageSize,
         CancellationToken cancellationToken = default )
@@ -41,7 +45,9 @@ public class ReservationService( IApiClient apiClient ) : IReservationService
         var query = new List<string>
         {
             $"pageIndex={pageIndex}",
-            $"pageSize={pageSize}"
+            $"pageSize={pageSize}",
+            $"sortBy={( int )sortBy}",
+            $"sortDirection={( int )sortDirection}"
         };
 
         if ( !string.IsNullOrWhiteSpace( customerName ) )
