@@ -17,6 +17,8 @@ public sealed record ReservationListQuery(
     DateOnly? ReservationStartDate,
     DateOnly? ReservationEndDate,
     ReservationOperationFilterDto? OperationStatus,
+    ReservationListSortByDto SortBy,
+    ReservationListSortDirectionDto SortDirection,
     int PageIndex,
     int PageSize )
     : IRequest<Result<PagedResultDto<ReservationListItemDto>>>;
@@ -75,9 +77,11 @@ internal sealed class ReservationListQueryHandler(
 
         var totalCount = await query.CountAsync( cancellationToken );
 
-        var rows = await query
-            .OrderBy( x => x.DeliveryTime )
-            .ThenBy( x => x.ReservationNumber )
+        var rows = await ApplySorting(
+            query,
+            request.SortBy,
+            request.SortDirection,
+            operationWindowEnd )
             .Skip( pageIndex * pageSize )
             .Take( pageSize )
             .ToListAsync( cancellationToken );
@@ -176,6 +180,56 @@ internal sealed class ReservationListQueryHandler(
         } );
     }
 
+    private static IOrderedQueryable<ReservationDto> ApplySorting(
+        IQueryable<ReservationDto> query,
+        ReservationListSortByDto sortBy,
+        ReservationListSortDirectionDto sortDirection,
+        DateTime operationWindowEnd )
+    {
+        return sortBy switch
+        {
+            ReservationListSortByDto.ReservationStart =>
+                sortDirection == ReservationListSortDirectionDto.Descending
+                    ? query
+                        .OrderByDescending( x => x.DeliveryTime )
+                        .ThenBy( x => x.ReservationNumber )
+                    : query
+                        .OrderBy( x => x.DeliveryTime )
+                        .ThenBy( x => x.ReservationNumber ),
+
+            ReservationListSortByDto.ReservationEnd =>
+                sortDirection == ReservationListSortDirectionDto.Descending
+                ? query
+                    .OrderByDescending( x =>
+                        x.Status == ( int )ReservationOperationStatusDto.Scheduled
+                        && x.DeliveryTime <= operationWindowEnd ? 0
+                        : x.Status == ( int )ReservationOperationStatusDto.DeliveredToCustomer
+                          && x.PickUpTime <= operationWindowEnd ? 1
+                        : x.Status == ( int )ReservationOperationStatusDto.DeliveredToCustomer ? 2
+                        : x.Status == ( int )ReservationOperationStatusDto.Scheduled ? 3
+                        : x.Status == ( int )ReservationOperationStatusDto.PickedUpFromCustomer ? 4
+                        : x.Status == ( int )ReservationOperationStatusDto.Completed ? 5
+                        : 6 )
+                    .ThenBy( x => x.DeliveryTime )
+                    .ThenBy( x => x.ReservationNumber )
+                : query
+                    .OrderBy( x =>
+                        x.Status == ( int )ReservationOperationStatusDto.Scheduled
+                        && x.DeliveryTime <= operationWindowEnd ? 0
+                        : x.Status == ( int )ReservationOperationStatusDto.DeliveredToCustomer
+                          && x.PickUpTime <= operationWindowEnd ? 1
+                        : x.Status == ( int )ReservationOperationStatusDto.DeliveredToCustomer ? 2
+                        : x.Status == ( int )ReservationOperationStatusDto.Scheduled ? 3
+                        : x.Status == ( int )ReservationOperationStatusDto.PickedUpFromCustomer ? 4
+                        : x.Status == ( int )ReservationOperationStatusDto.Completed ? 5
+                        : 6 )
+                    .ThenBy( x => x.DeliveryTime )
+                    .ThenBy( x => x.ReservationNumber ),
+
+            _ => ApplySmartSorting( query, operationWindowEnd )
+        };
+    }
+
     private static IQueryable<ReservationDto> ApplyOperationStatusFilter(
         IQueryable<ReservationDto> query,
         ReservationOperationFilterDto? operationStatus,
@@ -217,6 +271,90 @@ internal sealed class ReservationListQueryHandler(
             _ => query
         };
     }
+
+    private static IOrderedQueryable<ReservationDto> ApplySmartSorting(
+    IQueryable<ReservationDto> query,
+    DateTime operationWindowEnd )
+    {
+        var now = DateTime.Now;
+        var today = now.Date;
+
+        return query
+            .OrderBy( x =>
+                x.Status == ( int )ReservationOperationStatusDto.Scheduled
+                && x.DeliveryTime <= operationWindowEnd
+                && x.DeliveryTime >= today ? 0
+                : x.Status == ( int )ReservationOperationStatusDto.DeliveredToCustomer
+                  && x.PickUpTime <= operationWindowEnd ? 1
+                : x.Status == ( int )ReservationOperationStatusDto.Scheduled
+                  && x.DeliveryTime >= now ? 2
+                : x.Status == ( int )ReservationOperationStatusDto.DeliveredToCustomer ? 3
+                : x.Status == ( int )ReservationOperationStatusDto.PickedUpFromCustomer ? 4
+                : x.Status == ( int )ReservationOperationStatusDto.Completed ? 5
+                : 6 )
+            .ThenBy( x => x.DeliveryTime )
+            .ThenBy( x => x.ReservationNumber );
+    }
+
+    //private static int GetSmartSortGroup(
+    //    ReservationDto reservation,
+    //    DateTime now,
+    //    DateTime operationWindowEnd )
+    //{
+    //    var status = ( ReservationOperationStatusDto )reservation.Status;
+
+    //    if ( status == ReservationOperationStatusDto.Scheduled
+    //         && reservation.DeliveryTime <= operationWindowEnd
+    //         && reservation.DeliveryTime >= now.Date )
+    //    {
+    //        return 0;
+    //    }
+
+    //    if ( status == ReservationOperationStatusDto.DeliveredToCustomer
+    //         && reservation.PickUpTime <= operationWindowEnd )
+    //    {
+    //        return 1;
+    //    }
+
+    //    if ( status == ReservationOperationStatusDto.Scheduled
+    //         && reservation.DeliveryTime >= now )
+    //    {
+    //        return 2;
+    //    }
+
+    //    if ( status == ReservationOperationStatusDto.DeliveredToCustomer )
+    //    {
+    //        return 3;
+    //    }
+
+    //    if ( status == ReservationOperationStatusDto.PickedUpFromCustomer )
+    //    {
+    //        return 4;
+    //    }
+
+    //    if ( status == ReservationOperationStatusDto.Completed )
+    //    {
+    //        return 5;
+    //    }
+
+    //    return 6;
+    //}
+
+    //private static int GetOperationStatusSortOrder(
+    //ReservationDto reservation,
+    //DateTime operationWindowEnd )
+    //{
+    //    return GetOperationStatus( reservation, operationWindowEnd ) switch
+    //    {
+    //        ReservationOperationFilterDto.WaitingDelivery => 0,
+    //        ReservationOperationFilterDto.WaitingPickup => 1,
+    //        ReservationOperationFilterDto.DeliveredToCustomer => 2,
+    //        ReservationOperationFilterDto.Reserved => 3,
+    //        ReservationOperationFilterDto.PickedUpFromCustomer => 4,
+    //        ReservationOperationFilterDto.Completed => 5,
+    //        _ => 6
+    //    };
+    //}
 
     private static ReservationOperationFilterDto? GetOperationStatus(
         ReservationDto reservation,
